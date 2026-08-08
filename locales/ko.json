@@ -1,0 +1,245 @@
+{
+  "common": {
+    "loading": "로딩 중...",
+    "error": "오류",
+    "success": "성공",
+    "cancel": "취소",
+    "confirm": "확인",
+    "save": "저장",
+    "delete": "삭제",
+    "edit": "편집",
+    "close": "닫기",
+    "back": "뒤로",
+    "next": "다음",
+    "submit": "제출",
+    "search": "검색",
+    "filter": "필터",
+    "clear": "지우기",
+    "viewAll": "전체 보기",
+    "readMore": "더 읽기",
+    "learnMore": "자세히 알아보기"
+  },
+  "navigation": {
+    "home": "홈",
+    "about": "소개",
+    "news": "뉴스",
+    "projects": "프로젝트",
+    "academicDocuments": "학술 문서",
+    "studio": "스튜디오",
+    "contact": "연락처",
+    "login": "로그인",
+    "register": "회원가입",
+    "logout": "로그아웃",
+    "profile": "내 프로필",
+    "dashboard": "대시보드"
+  },
+  "hero": {
+    "title": "유라시아 사회복지재단",
+    "subtitle": "전문 사회복지 실천을 통한 지역사회 역량 강화",
+    "description": "문화 간 교류를 촉진하고 협력을 장려하며 유라시아 지역의 사회복지 교육과 실천을 발전시킵니다.",
+    "cta": "커뮤니티 참여하기",
+    "learnMore": "EFSW에 대해 더 알아보기"
+  },
+  "about": {
+    "title": "EFSW 소개",
+    "subtitle": "유라시아 전역의 사회복지 발전",
+    "vision": {
+      "title": "비전",
+      "description": "유라시아 전역의 사회복지 전문가를 위한 선도적인 플랫폼이 되어 협력, 지식 교환 및 전문성을 촉진합니다."
+    },
+    "mission": {
+      "title": "미션",
+      "description": "국제 협력과 전문성 개발을 통해 유라시아 지역 전역의 사회복지 실천, 교육 및 연구를 강화합니다."
+    },
+    "values": {
+      "title": "가치",
+      "excellence": "전문성",
+      "excellenceDesc": "사회복지 실천과 교육의 최고 기준 추구",
+      "collaboration": "문화 간 협력",
+      "collaborationDesc": "다양한 지역사회와 전문가 네트워크 간의 교류 촉진",
+      "innovation": "혁신",
+      "innovationDesc": "변화하는 사회 문제에 대한 새로운 접근 방식 수용",
+      "integrity": "정직성",
+      "integrityDesc": "모든 업무에서 윤리적 원칙 고수"
+    },
+    "organization": {
+      "title": "조직",
+      "subtitle": "리더십과 구조",
+      "roles": "조직 역할"
+    }
+  },
+  "membership": {
+    "title": "회원",
+    "subtitle": "EFSW 커뮤니티 가입",
+    "types": {
+      "professional": {
+        "title": "전문 회원",
+        "description": "면허를 받은 사회복지사 및 실무자용",
+        "price": "연회비"
+      },
+      "student": {
+        "title": "학생 회원",
+        "description": "사회복지 전공 학생용",
+        "price": "할인 요금"
+      },
+      "institutional": {
+        "title": "기관 회원",
+        "description": "조직 및 대학용",
+        "price": "문의하기"
+      }
+    },
+    "benefits": {
+      "title": "회원 혜택",
+      "networking": "전문가 네트워킹",
+      "resources": "리소스 액세스",
+      "events": "컨퍼런스 할인",
+      "publications": "학술 출판물",
+      "training": "교육 기회"
+    },
+    "register": {
+      "title": "회원 가입",
+      "firstName": "이름",
+      "lastName": "성",
+      "email": "이메일 주소",
+      "password": "비밀번호",
+      "confirmPassword": "비밀번호 확인",
+      "memberType": "회원 유형",
+      "selectType": "회원 유형 선택",
+      "organization": "조직",
+      "country": "국가",
+      "acceptTerms": "이용약관에 동의합니다",
+      "submit": "신청서 제출",
+      "alreadyMember": "이미 회원이신가요?",
+      "loginHere": "여기서 로그인"
+    },
+    "status": {
+      "pending": "승인 대기 중",
+      "active": "활성",
+      "suspended": "정지됨",
+      "expired": "만료됨"
+    }
+  },
+  "news": {
+    "title": "최신 뉴스",
+    "subtitle": "EFSW 활동 업데이트",
+    "categories": {
+      "all": "전체 뉴스",
+      "events": "이벤트",
+      "research": "연구",
+      "announcements": "공지사항",
+      "achievements": "성과"
+    },
+    "publishedOn": "게시일",
+    "readingTime": "{minutes}분 읽기",
+    "shareArticle": "기사 공유",
+    "relatedArticles": "관련 기사"
+  },
+  "documents": {
+    "title": "학술 문서",
+    "subtitle": "연구, 출판물 및 리소스",
+    "categories": {
+      "all": "모든 문서",
+      "research": "연구 논문",
+      "guidelines": "실천 지침",
+      "reports": "연간 보고서",
+      "publications": "출판물"
+    },
+    "download": "다운로드",
+    "viewDocument": "문서 보기",
+    "fileSize": "파일 크기",
+    "uploadDate": "업로드 날짜"
+  },
+  "profile": {
+    "title": "내 프로필",
+    "subtitle": "계정 정보 관리",
+    "personalInfo": "개인 정보",
+    "membershipInfo": "회원 정보",
+    "professionalInfo": "전문 정보",
+    "contactPreferences": "연락 환경설정",
+    "changePassword": "비밀번호 변경",
+    "uploadPhoto": "사진 업로드",
+    "removePhoto": "사진 제거",
+    "saveChanges": "변경사항 저장",
+    "editProfile": "프로필 편집",
+    "viewCard": "회원 카드 보기"
+  },
+  "menu": {
+    "myProfile": "내 프로필",
+    "trainingHistory": "교육 이력",
+    "myArticles": "내 기사",
+    "messages": "메시지",
+    "settings": "설정",
+    "help": "도움말",
+    "logout": "로그아웃"
+  },
+  "card": {
+    "membershipCard": "회원 카드",
+    "memberId": "회원 ID",
+    "memberSince": "가입일",
+    "validUntil": "유효 기간",
+    "scanToVerify": "QR 코드를 스캔하여 확인",
+    "flipCard": "카드를 탭하여 뒤집기",
+    "download": "카드 다운로드"
+  },
+  "admin": {
+    "dashboard": "관리자 대시보드",
+    "overview": "개요",
+    "members": "회원",
+    "content": "콘텐츠 관리",
+    "messages": "메시지",
+    "settings": "설정",
+    "activityLog": "활동 로그",
+    "totalMembers": "총 회원 수",
+    "pendingApprovals": "승인 대기 중",
+    "activeMembers": "활성 회원",
+    "recentActivity": "최근 활동",
+    "manageMember": "회원 관리",
+    "approveMember": "승인",
+    "rejectMember": "거부",
+    "suspendMember": "정지",
+    "createContent": "콘텐츠 생성",
+    "publishContent": "게시",
+    "sendMessage": "메시지 보내기",
+    "selectRecipients": "수신자 선택",
+    "individual": "개인",
+    "group": "그룹",
+    "broadcast": "전체에게 방송",
+    "allowReplies": "답장 허용",
+    "messageSubject": "제목",
+    "messageBody": "메시지"
+  },
+  "auth": {
+    "login": {
+      "title": "회원 로그인",
+      "subtitle": "EFSW 계정에 액세스",
+      "email": "이메일 주소",
+      "password": "비밀번호",
+      "rememberMe": "로그인 상태 유지",
+      "forgotPassword": "비밀번호를 잊으셨나요?",
+      "loginButton": "로그인",
+      "noAccount": "계정이 없으신가요?",
+      "registerNow": "지금 가입하기"
+    },
+    "errors": {
+      "invalidCredentials": "잘못된 이메일 또는 비밀번호",
+      "accountPending": "귀하의 계정은 승인 대기 중입니다",
+      "accountSuspended": "귀하의 계정이 정지되었습니다",
+      "required": "이 필드는 필수입니다",
+      "invalidEmail": "잘못된 이메일 주소",
+      "passwordTooShort": "비밀번호는 최소 8자 이상이어야 합니다",
+      "passwordMismatch": "비밀번호가 일치하지 않습니다"
+    }
+  },
+  "footer": {
+    "description": "국제 협력을 통해 유라시아 지역 전역의 사회복지 실천과 교육을 발전시킵니다.",
+    "quickLinks": "빠른 링크",
+    "resources": "리소스",
+    "legal": "법률",
+    "privacyPolicy": "개인정보 보호정책",
+    "termsOfService": "서비스 약관",
+    "followUs": "팔로우",
+    "copyright": "© {year} 유라시아 사회복지재단. 모든 권리 보유.",
+    "contactEmail": "이메일",
+    "contactPhone": "전화"
+  }
+}

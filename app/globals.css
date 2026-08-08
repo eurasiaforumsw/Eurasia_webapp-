@@ -85,9 +85,74 @@ html, body {
     --ease-expo: cubic-bezier(0.19, 1, 0.22, 1);
     --ease-back: cubic-bezier(0.6, -0.28, 0.735, 0.045);
     --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
 
-    /* Color scheme */
-    color-scheme: dark light;
+  /* Dark Theme (Default) */
+  html[data-theme="dark"],
+  html:not([data-theme]) {
+    color-scheme: dark;
+
+    /* Surface colors - Dark */
+    --surface-deepest: #05070C;
+    --surface-deep: #0A0D12;
+    --surface-base: #0F131C;
+    --surface-raised: #152029;
+    --surface-elevated: #1C2936;
+    --surface-overlay: #243342;
+
+    /* Text colors - Dark */
+    --text-primary: hsl(210, 15%, 95%);
+    --text-secondary: hsl(210, 12%, 75%);
+    --text-muted: hsl(210, 10%, 55%);
+
+    /* Accent colors - Dark */
+    --accent-primary: hsl(187, 62%, 50%);
+    --accent-hover: hsl(187, 62%, 45%);
+    --accent-secondary: hsl(155, 62%, 50%);
+
+    /* Border colors - Dark */
+    --border-subtle: hsl(210, 25%, 18%);
+    --border-base: hsl(210, 20%, 22%);
+
+    /* Shadow - Dark */
+    --shadow: hsl(0, 0%, 0% / 0.5);
+    --shadow-soft: hsl(0, 0%, 0% / 0.3);
+  }
+
+  /* Light Theme */
+  html[data-theme="light"] {
+    color-scheme: light;
+
+    /* Surface colors - Light */
+    --surface-deepest: oklch(99% 0.006 82);
+    --surface-deep: oklch(97% 0.012 82);
+    --surface-base: oklch(99% 0.006 82);
+    --surface-raised: oklch(97% 0.012 82);
+    --surface-elevated: oklch(94% 0.014 82);
+    --surface-overlay: oklch(91% 0.016 82);
+
+    /* Text colors - Light */
+    --text-primary: oklch(20% 0.018 62);
+    --text-secondary: oklch(37% 0.016 62);
+    --text-muted: oklch(52% 0.013 62);
+
+    /* Accent colors - Light */
+    --accent-primary: oklch(66% 0.19 180);
+    --accent-hover: oklch(60% 0.18 180);
+    --accent-secondary: oklch(66% 0.19 155);
+
+    /* Border colors - Light */
+    --border-subtle: oklch(88% 0.012 72);
+    --border-base: oklch(79% 0.015 70);
+
+    /* Shadow - Light */
+    --shadow: oklch(20% 0.018 62 / 0.12);
+    --shadow-soft: oklch(20% 0.018 62 / 0.07);
+  }
+
+  /* Theme transition */
+  html {
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
 
   * {

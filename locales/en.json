@@ -1,0 +1,245 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "submit": "Submit",
+    "search": "Search",
+    "filter": "Filter",
+    "clear": "Clear",
+    "viewAll": "View All",
+    "readMore": "Read More",
+    "learnMore": "Learn More"
+  },
+  "navigation": {
+    "home": "Home",
+    "about": "About",
+    "news": "News",
+    "projects": "Projects",
+    "academicDocuments": "Academic Documents",
+    "studio": "Studio",
+    "contact": "Contact",
+    "login": "Login",
+    "register": "Register",
+    "logout": "Logout",
+    "profile": "My Profile",
+    "dashboard": "Dashboard"
+  },
+  "hero": {
+    "title": "Eurasia Foundation for Social Work",
+    "subtitle": "Empowering communities through professional social work practice",
+    "description": "Building bridges across cultures, fostering collaboration, and advancing social work education and practice in the Eurasian region.",
+    "cta": "Join Our Community",
+    "learnMore": "Learn More About EFSW"
+  },
+  "about": {
+    "title": "About EFSW",
+    "subtitle": "Advancing Social Work Across Eurasia",
+    "vision": {
+      "title": "Our Vision",
+      "description": "To be the leading platform for social work professionals across Eurasia, fostering collaboration, knowledge exchange, and professional excellence."
+    },
+    "mission": {
+      "title": "Our Mission",
+      "description": "To strengthen social work practice, education, and research across the Eurasian region through international collaboration and professional development."
+    },
+    "values": {
+      "title": "Our Values",
+      "excellence": "Professional Excellence",
+      "excellenceDesc": "Committed to the highest standards in social work practice and education",
+      "collaboration": "Cross-Cultural Collaboration",
+      "collaborationDesc": "Building bridges between diverse communities and professional networks",
+      "innovation": "Innovation",
+      "innovationDesc": "Embracing new approaches to address evolving social challenges",
+      "integrity": "Integrity",
+      "integrityDesc": "Upholding ethical principles in all our work"
+    },
+    "organization": {
+      "title": "Our Organization",
+      "subtitle": "Leadership and Structure",
+      "roles": "Organizational Roles"
+    }
+  },
+  "membership": {
+    "title": "Membership",
+    "subtitle": "Join EFSW Community",
+    "types": {
+      "professional": {
+        "title": "Professional Member",
+        "description": "For licensed social workers and practitioners",
+        "price": "Annual Fee"
+      },
+      "student": {
+        "title": "Student Member",
+        "description": "For social work students",
+        "price": "Discounted Rate"
+      },
+      "institutional": {
+        "title": "Institutional Member",
+        "description": "For organizations and universities",
+        "price": "Contact Us"
+      }
+    },
+    "benefits": {
+      "title": "Member Benefits",
+      "networking": "Professional Networking",
+      "resources": "Access to Resources",
+      "events": "Conference Discounts",
+      "publications": "Academic Publications",
+      "training": "Training Opportunities"
+    },
+    "register": {
+      "title": "Become a Member",
+      "firstName": "First Name",
+      "lastName": "Last Name",
+      "email": "Email Address",
+      "password": "Password",
+      "confirmPassword": "Confirm Password",
+      "memberType": "Membership Type",
+      "selectType": "Select membership type",
+      "organization": "Organization",
+      "country": "Country",
+      "acceptTerms": "I accept the terms and conditions",
+      "submit": "Submit Application",
+      "alreadyMember": "Already a member?",
+      "loginHere": "Login here"
+    },
+    "status": {
+      "pending": "Pending Approval",
+      "active": "Active",
+      "suspended": "Suspended",
+      "expired": "Expired"
+    }
+  },
+  "news": {
+    "title": "Latest News",
+    "subtitle": "Stay updated with EFSW activities",
+    "categories": {
+      "all": "All News",
+      "events": "Events",
+      "research": "Research",
+      "announcements": "Announcements",
+      "achievements": "Achievements"
+    },
+    "publishedOn": "Published on",
+    "readingTime": "{minutes} min read",
+    "shareArticle": "Share Article",
+    "relatedArticles": "Related Articles"
+  },
+  "documents": {
+    "title": "Academic Documents",
+    "subtitle": "Research, publications, and resources",
+    "categories": {
+      "all": "All Documents",
+      "research": "Research Papers",
+      "guidelines": "Practice Guidelines",
+      "reports": "Annual Reports",
+      "publications": "Publications"
+    },
+    "download": "Download",
+    "viewDocument": "View Document",
+    "fileSize": "File Size",
+    "uploadDate": "Upload Date"
+  },
+  "profile": {
+    "title": "My Profile",
+    "subtitle": "Manage your account information",
+    "personalInfo": "Personal Information",
+    "membershipInfo": "Membership Information",
+    "professionalInfo": "Professional Information",
+    "contactPreferences": "Contact Preferences",
+    "changePassword": "Change Password",
+    "uploadPhoto": "Upload Photo",
+    "removePhoto": "Remove Photo",
+    "saveChanges": "Save Changes",
+    "editProfile": "Edit Profile",
+    "viewCard": "View Membership Card"
+  },
+  "menu": {
+    "myProfile": "My Profile",
+    "trainingHistory": "Training History",
+    "myArticles": "My Articles",
+    "messages": "Messages",
+    "settings": "Settings",
+    "help": "Help",
+    "logout": "Logout"
+  },
+  "card": {
+    "membershipCard": "Membership Card",
+    "memberId": "Member ID",
+    "memberSince": "Member Since",
+    "validUntil": "Valid Until",
+    "scanToVerify": "Scan QR code to verify",
+    "flipCard": "Tap to flip card",
+    "download": "Download Card"
+  },
+  "admin": {
+    "dashboard": "Admin Dashboard",
+    "overview": "Overview",
+    "members": "Members",
+    "content": "Content Management",
+    "messages": "Messages",
+    "settings": "Settings",
+    "activityLog": "Activity Log",
+    "totalMembers": "Total Members",
+    "pendingApprovals": "Pending Approvals",
+    "activeMembers": "Active Members",
+    "recentActivity": "Recent Activity",
+    "manageMember": "Manage Member",
+    "approveMember": "Approve",
+    "rejectMember": "Reject",
+    "suspendMember": "Suspend",
+    "createContent": "Create Content",
+    "publishContent": "Publish",
+    "sendMessage": "Send Message",
+    "selectRecipients": "Select Recipients",
+    "individual": "Individual",
+    "group": "Group",
+    "broadcast": "Broadcast to All",
+    "allowReplies": "Allow Replies",
+    "messageSubject": "Subject",
+    "messageBody": "Message"
+  },
+  "auth": {
+    "login": {
+      "title": "Member Login",
+      "subtitle": "Access your EFSW account",
+      "email": "Email Address",
+      "password": "Password",
+      "rememberMe": "Remember me",
+      "forgotPassword": "Forgot password?",
+      "loginButton": "Login",
+      "noAccount": "Don't have an account?",
+      "registerNow": "Register now"
+    },
+    "errors": {
+      "invalidCredentials": "Invalid email or password",
+      "accountPending": "Your account is pending approval",
+      "accountSuspended": "Your account has been suspended",
+      "required": "This field is required",
+      "invalidEmail": "Invalid email address",
+      "passwordTooShort": "Password must be at least 8 characters",
+      "passwordMismatch": "Passwords do not match"
+    }
+  },
+  "footer": {
+    "description": "Advancing social work practice and education across the Eurasian region through international collaboration.",
+    "quickLinks": "Quick Links",
+    "resources": "Resources",
+    "legal": "Legal",
+    "privacyPolicy": "Privacy Policy",
+    "termsOfService": "Terms of Service",
+    "followUs": "Follow Us",
+    "copyright": "© {year} Eurasia Foundation for Social Work. All rights reserved.",
+    "contactEmail": "Email",
+    "contactPhone": "Phone"
+  }
+}

@@ -1,0 +1,245 @@
+{
+  "common": {
+    "loading": "กำลังโหลด...",
+    "error": "ข้อผิดพลาด",
+    "success": "สำเร็จ",
+    "cancel": "ยกเลิก",
+    "confirm": "ยืนยัน",
+    "save": "บันทึก",
+    "delete": "ลบ",
+    "edit": "แก้ไข",
+    "close": "ปิด",
+    "back": "กลับ",
+    "next": "ถัดไป",
+    "submit": "ส่ง",
+    "search": "ค้นหา",
+    "filter": "กรอง",
+    "clear": "ล้าง",
+    "viewAll": "ดูทั้งหมด",
+    "readMore": "อ่านเพิ่มเติม",
+    "learnMore": "เรียนรู้เพิ่มเติม"
+  },
+  "navigation": {
+    "home": "หน้าแรก",
+    "about": "เกี่ยวกับเรา",
+    "news": "ข่าวสาร",
+    "projects": "โครงการ",
+    "academicDocuments": "เอกสารวิชาการ",
+    "studio": "สตูดิโอ",
+    "contact": "ติดต่อเรา",
+    "login": "เข้าสู่ระบบ",
+    "register": "สมัครสมาชิก",
+    "logout": "ออกจากระบบ",
+    "profile": "โปรไฟล์ของฉัน",
+    "dashboard": "แดชบอร์ด"
+  },
+  "hero": {
+    "title": "มูลนิธิยูเรเซียเพื่อการสังคมสงเคราะห์",
+    "subtitle": "เสริมสร้างศักยภาพชุมชนผ่านการปฏิบัติงานสังคมสงเคราะห์อาชีพ",
+    "description": "สร้างสะพานเชื่อมข้ามวัฒนธรรม ส่งเสริมความร่วมมือ และพัฒนาการศึกษาและการปฏิบัติงานสังคมสงเคราะห์ในภูมิภาคยูเรเซีย",
+    "cta": "เข้าร่วมชุมชนของเรา",
+    "learnMore": "เรียนรู้เพิ่มเติมเกี่ยวกับ EFSW"
+  },
+  "about": {
+    "title": "เกี่ยวกับ EFSW",
+    "subtitle": "พัฒนาการสังคมสงเคราะห์ข้ามยูเรเซีย",
+    "vision": {
+      "title": "วิสัยทัศน์ของเรา",
+      "description": "เป็นแพลตฟอร์มชั้นนำสำหรับนักสังคมสงเคราะห์มืออาชีพทั่วยูเรเซีย ส่งเสริมความร่วมมือ การแลกเปลี่ยนความรู้ และความเป็นเลิศทางวิชาชีพ"
+    },
+    "mission": {
+      "title": "พันธกิจของเรา",
+      "description": "เสริมสร้างการปฏิบัติงาน การศึกษา และการวิจัยด้านสังคมสงเคราะห์ทั่วภูมิภาคยูเรเซียผ่านความร่วมมือระหว่างประเทศและการพัฒนาวิชาชีพ"
+    },
+    "values": {
+      "title": "ค่านิยมของเรา",
+      "excellence": "ความเป็นเลิศทางวิชาชีพ",
+      "excellenceDesc": "มุ่งมั่นสู่มาตรฐานสูงสุดในการปฏิบัติงานและการศึกษาด้านสังคมสงเคราะห์",
+      "collaboration": "ความร่วมมือข้ามวัฒนธรรม",
+      "collaborationDesc": "สร้างสะพานเชื่อมระหว่างชุมชนที่หลากหลายและเครือข่ายวิชาชีพ",
+      "innovation": "นวัตกรรม",
+      "innovationDesc": "ยอมรับแนวทางใหม่ในการแก้ไขปัญหาสังคมที่เปลี่ยนแปลง",
+      "integrity": "ความซื่อสัตย์",
+      "integrityDesc": "ยึดมั่นหลักจริยธรรมในทุกงานของเรา"
+    },
+    "organization": {
+      "title": "องค์กรของเรา",
+      "subtitle": "ผู้นำและโครงสร้าง",
+      "roles": "บทบาทองค์กร"
+    }
+  },
+  "membership": {
+    "title": "สมาชิกภาพ",
+    "subtitle": "เข้าร่วมชุมชน EFSW",
+    "types": {
+      "professional": {
+        "title": "สมาชิกวิชาชีพ",
+        "description": "สำหรับนักสังคมสงเคราะห์ที่ได้รับใบอนุญาตและผู้ปฏิบัติงาน",
+        "price": "ค่าสมาชิกรายปี"
+      },
+      "student": {
+        "title": "สมาชิกนักศึกษา",
+        "description": "สำหรับนักศึกษาสังคมสงเคราะห์",
+        "price": "อัตราพิเศษ"
+      },
+      "institutional": {
+        "title": "สมาชิกสถาบัน",
+        "description": "สำหรับองค์กรและมหาวิทยาลัย",
+        "price": "ติดต่อเรา"
+      }
+    },
+    "benefits": {
+      "title": "สิทธิประโยชน์สมาชิก",
+      "networking": "เครือข่ายวิชาชีพ",
+      "resources": "เข้าถึงทรัพยากร",
+      "events": "ส่วนลดการประชุม",
+      "publications": "สิ่งพิมพ์ทางวิชาการ",
+      "training": "โอกาสการฝึกอบรม"
+    },
+    "register": {
+      "title": "สมัครสมาชิก",
+      "firstName": "ชื่อ",
+      "lastName": "นามสกุล",
+      "email": "อีเมล",
+      "password": "รหัสผ่าน",
+      "confirmPassword": "ยืนยันรหัสผ่าน",
+      "memberType": "ประเภทสมาชิก",
+      "selectType": "เลือกประเภทสมาชิก",
+      "organization": "องค์กร",
+      "country": "ประเทศ",
+      "acceptTerms": "ฉันยอมรับข้อกำหนดและเงื่อนไข",
+      "submit": "ส่งใบสมัคร",
+      "alreadyMember": "เป็นสมาชิกแล้ว?",
+      "loginHere": "เข้าสู่ระบบที่นี่"
+    },
+    "status": {
+      "pending": "รออนุมัติ",
+      "active": "ใช้งานอยู่",
+      "suspended": "ระงับการใช้งาน",
+      "expired": "หมดอายุ"
+    }
+  },
+  "news": {
+    "title": "ข่าวสารล่าสุด",
+    "subtitle": "ติดตามกิจกรรมของ EFSW",
+    "categories": {
+      "all": "ข่าวทั้งหมด",
+      "events": "กิจกรรม",
+      "research": "งานวิจัย",
+      "announcements": "ประกาศ",
+      "achievements": "ความสำเร็จ"
+    },
+    "publishedOn": "เผยแพร่เมื่อ",
+    "readingTime": "{minutes} นาทีในการอ่าน",
+    "shareArticle": "แชร์บทความ",
+    "relatedArticles": "บทความที่เกี่ยวข้อง"
+  },
+  "documents": {
+    "title": "เอกสารวิชาการ",
+    "subtitle": "งานวิจัย สิ่งพิมพ์ และทรัพยากร",
+    "categories": {
+      "all": "เอกสารทั้งหมด",
+      "research": "บทความวิจัย",
+      "guidelines": "แนวปฏิบัติ",
+      "reports": "รายงานประจำปี",
+      "publications": "สิ่งพิมพ์"
+    },
+    "download": "ดาวน์โหลด",
+    "viewDocument": "ดูเอกสาร",
+    "fileSize": "ขนาดไฟล์",
+    "uploadDate": "วันที่อัพโหลด"
+  },
+  "profile": {
+    "title": "โปรไฟล์ของฉัน",
+    "subtitle": "จัดการข้อมูลบัญชีของคุณ",
+    "personalInfo": "ข้อมูลส่วนตัว",
+    "membershipInfo": "ข้อมูลสมาชิก",
+    "professionalInfo": "ข้อมูลวิชาชีพ",
+    "contactPreferences": "การตั้งค่าการติดต่อ",
+    "changePassword": "เปลี่ยนรหัสผ่าน",
+    "uploadPhoto": "อัพโหลดรูปภาพ",
+    "removePhoto": "ลบรูปภาพ",
+    "saveChanges": "บันทึกการเปลี่ยนแปลง",
+    "editProfile": "แก้ไขโปรไฟล์",
+    "viewCard": "ดูบัตรสมาชิก"
+  },
+  "menu": {
+    "myProfile": "โปรไฟล์ของฉัน",
+    "trainingHistory": "ประวัติการอบรม",
+    "myArticles": "บทความของฉัน",
+    "messages": "ข้อความ",
+    "settings": "การตั้งค่า",
+    "help": "ช่วยเหลือ",
+    "logout": "ออกจากระบบ"
+  },
+  "card": {
+    "membershipCard": "บัตรสมาชิก",
+    "memberId": "รหัสสมาชิก",
+    "memberSince": "เป็นสมาชิกตั้งแต่",
+    "validUntil": "ใช้ได้ถึง",
+    "scanToVerify": "สแกน QR code เพื่อยืนยัน",
+    "flipCard": "แตะเพื่อพลิกบัตร",
+    "download": "ดาวน์โหลดบัตร"
+  },
+  "admin": {
+    "dashboard": "แดชบอร์ดผู้ดูแลระบบ",
+    "overview": "ภาพรวม",
+    "members": "สมาชิก",
+    "content": "จัดการเนื้อหา",
+    "messages": "ข้อความ",
+    "settings": "การตั้งค่า",
+    "activityLog": "บันทึกกิจกรรม",
+    "totalMembers": "สมาชิกทั้งหมด",
+    "pendingApprovals": "รออนุมัติ",
+    "activeMembers": "สมาชิกที่ใช้งานอยู่",
+    "recentActivity": "กิจกรรมล่าสุด",
+    "manageMember": "จัดการสมาชิก",
+    "approveMember": "อนุมัติ",
+    "rejectMember": "ปฏิเสธ",
+    "suspendMember": "ระงับ",
+    "createContent": "สร้างเนื้อหา",
+    "publishContent": "เผยแพร่",
+    "sendMessage": "ส่งข้อความ",
+    "selectRecipients": "เลือกผู้รับ",
+    "individual": "รายบุคคล",
+    "group": "กลุ่ม",
+    "broadcast": "ส่งถึงทุกคน",
+    "allowReplies": "อนุญาตให้ตอบกลับ",
+    "messageSubject": "หัวข้อ",
+    "messageBody": "ข้อความ"
+  },
+  "auth": {
+    "login": {
+      "title": "เข้าสู่ระบบสมาชิก",
+      "subtitle": "เข้าสู่บัญชี EFSW ของคุณ",
+      "email": "อีเมล",
+      "password": "รหัสผ่าน",
+      "rememberMe": "จดจำฉัน",
+      "forgotPassword": "ลืมรหัสผ่าน?",
+      "loginButton": "เข้าสู่ระบบ",
+      "noAccount": "ยังไม่มีบัญชี?",
+      "registerNow": "สมัครเลย"
+    },
+    "errors": {
+      "invalidCredentials": "อีเมลหรือรหัสผ่านไม่ถูกต้อง",
+      "accountPending": "บัญชีของคุณรออนุมัติ",
+      "accountSuspended": "บัญชีของคุณถูกระงับ",
+      "required": "จำเป็นต้องกรอกช่องนี้",
+      "invalidEmail": "อีเมลไม่ถูกต้อง",
+      "passwordTooShort": "รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร",
+      "passwordMismatch": "รหัสผ่านไม่ตรงกัน"
+    }
+  },
+  "footer": {
+    "description": "พัฒนาการปฏิบัติงานและการศึกษาด้านสังคมสงเคราะห์ทั่วภูมิภาคยูเรเซียผ่านความร่วมมือระหว่างประเทศ",
+    "quickLinks": "ลิงก์ด่วน",
+    "resources": "ทรัพยากร",
+    "legal": "กฎหมาย",
+    "privacyPolicy": "นโยบายความเป็นส่วนตัว",
+    "termsOfService": "ข้อกำหนดการให้บริการ",
+    "followUs": "ติดตามเรา",
+    "copyright": "© {year} มูลนิธิยูเรเซียเพื่อการสังคมสงเคราะห์ สงวนลิขสิทธิ์",
+    "contactEmail": "อีเมล",
+    "contactPhone": "โทรศัพท์"
+  }
+}
