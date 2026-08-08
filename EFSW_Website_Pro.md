@@ -1,19 +1,79 @@
 # EFSW Website Development Specification (Pro Edition)
-### Comprehensive Blueprint for Eurasia Forum for Social Workers
+### Current Prototype and Production Blueprint for Eurasia Forum for Social Workers
 
 ---
 
 ## Executive Summary
 
-This document provides a complete, production-ready specification for developing the **Eurasia Forum for Social Workers (EFSW)** website — a premier international platform for professional networking, academic dissemination, and cross-border collaboration across the Eurasian region.
+This document records both the browser-functional prototype currently in this repository and the remaining production blueprint for the **Eurasia Forum for Social Workers (EFSW)** website. It is the reference for public content, membership workflows, administrator operations, and the transition from local prototype data to a secure shared backend.
 
-**Project Objective:** Build a trilingual (English, Korean, Thai) membership portal with secure user authentication, admin approval workflows, GDPR-compliant privacy controls, and a resource hub for social work professionals, students, and institutions.
+**Project Objective:** Deliver a trilingual (English, Korean, Thai) membership platform with secure authentication, administrator approval workflows, privacy controls, and a resource hub for social work professionals, students, and institutions.
 
-**Technology Stack (Updated):** Next.js 14 headless frontend with WordPress backend (WPGraphQL), Vercel Edge deployment with Blob Storage, trilingual support (next-intl), GSAP + Three.js for immersive experiences, Tailwind CSS design system, and automated email notification system (SendGrid).
+**Current Implementation Stack:** Next.js 14 App Router, React 18, TypeScript, Tailwind CSS and custom CSS tokens, Lenis, Framer Motion, GSAP, Three.js, React Three Fiber, and Lucide icons. The current member, administrator, content, activity, and settings data is stored in browser `localStorage` for prototype testing.
 
-**Design Direction:** Award-winning interactive experience inspired by Awwwards Site of the Year, featuring scroll-driven storytelling, 3D environmental scenes, parallax depth, and motion design that transforms traditional membership portals into emotional journeys. Every interaction reinforces EFSW's mission: Connect · Empower · Advocate.
+**Production Target:** Replace browser-only storage and authentication with a persistent database, server-side sessions, role-based authorization, media storage, email delivery, audit retention, and privacy controls. WordPress with WPGraphQL remains one possible backend option, but it is not connected to the current application.
+
+**Design Direction:** A calm editorial public experience with scroll-led storytelling, an immersive media hero, progressive content reveals, and a restrained operations-focused administrator workspace. Every interaction should support EFSW's mission: Connect · Empower · Advocate.
 
 > **📐 Design System:** See [DESIGN.md](./DESIGN.md) for complete visual language, component architecture, animation specifications, and technical implementation details.
+
+---
+
+## 0. Current Implementation Snapshot
+
+**Snapshot date:** August 8, 2026  
+**Prototype status:** Browser-functional, production build verified  
+**Local URL:** `http://localhost:2024`
+
+### 0.1 Implemented Routes
+
+| Route | Current capability |
+|---|---|
+| `/` | Homepage with navigation, international social-work hero, scroll narrative, featured voices, about bridge, news preview, and footer |
+| `/about` | About EFSW |
+| `/about/organization` | Organization structure |
+| `/news` | Public feed of administrator-published news |
+| `/academic-documents` | Public feed of administrator-published academic documents |
+| `/member/register` | Registration for professional, student, and institutional members |
+| `/member/login` | Prototype member authentication |
+| `/member/profile` | Protected member profile with editable account details and visible review status |
+| `/admin/login` | Prototype administrator authentication |
+| `/admin` | Protected operations workspace for members, content, activity, and settings |
+
+### 0.2 Member Workflow
+
+- Conditional registration fields for Professional, Student, and Institutional membership types
+- Browser-side password hashing and local session persistence for prototype use
+- Protected member profile, editable details, logout, and pending/active/suspended status display
+- New member records become available to the administrator workspace in the same browser
+- Administrator approval or suspension updates the corresponding local member profile
+
+### 0.3 Administrator Workspace
+
+- Responsive dashboard overview with member and publishing status summaries
+- Member search and status filters; review drawer; internal notes; approve, suspend, reactivate, delete, and CSV export actions
+- News and academic-document editor with draft, published, and archived states
+- Published content reflected on `/news` and `/academic-documents`, including cross-tab storage updates
+- Activity log for administrator actions and persisted organization/notification settings
+- Keyboard-operable member rows, focus trapping, Escape dismissal, focus restoration, scroll lock, responsive mobile navigation, empty states, and accessible status announcements
+
+**Prototype administrator account**
+
+```text
+Email: admin@efsw.local
+Password: EFSW-demo-admin
+```
+
+### 0.4 Verification Completed
+
+- `npm run type-check` passes
+- `npm run build` generates all current routes successfully
+- `git diff --check` passes for the implementation
+- Responsive administrator records collapse to stacked layouts without nested horizontal table scrolling
+
+### 0.5 Prototype Boundary
+
+The current system is intentionally client-only. `localStorage` data is limited to one browser profile, does not synchronize across devices, and is not a secure source of identity or authorization. Demo credentials are public, password hashing occurs in the browser, and no server validates administrator privileges. This implementation must not be used for real member data until the production backend and security controls in Sections 3 and 9 are complete.
 
 ---
 
@@ -82,16 +142,16 @@ EFSW offers three distinct membership tiers designed to serve professionals, stu
 - **Talent & Promotion:** Post job openings, training courses, and press releases directly to our international community.
 - **Group Access:** Complimentary passes to the annual EFSW forum for up to 3 representatives from your organization.
 
-### 2.2 Registration Process
+### 2.2 Registration and Review Process
 
 #### Step 1: Complete the Online Form
-Click the "Register Now" button and fill in your professional details through our secure registration portal.
+Open `/member/register`, select a membership type, and complete the relevant professional, student, or institutional fields.
 
-#### Step 2: Admin Verification
-Our team will review your application to maintain the security and integrity of our professional network. This verification process typically takes **2-3 business days**.
+#### Step 2: Administrator Verification
+The application enters the `pending` state and appears under `/admin` in the same browser. An administrator can record an internal review note and approve, suspend, reactivate, or delete the application.
 
-#### Step 3: Welcome Email
-Once approved, you will receive a confirmation email with your portal login credentials and instructions on how to access our member-exclusive platform.
+#### Step 3: Member Status and Profile
+The member can sign in at `/member/login`, edit profile information at `/member/profile`, and see the current review status. Automated acknowledgement and approval emails remain a production task described in Section 4.
 
 ---
 
@@ -100,32 +160,31 @@ Once approved, you will receive a confirmation email with your portal login cred
 ### 3.1 Core System Features
 
 #### 3.1.1 Multi-Language Content System
-- Structured multi-language URLs optimized for global SEO performance
-- Support for English, Korean, and Thai with separate URL paths (e.g., `/en/`, `/ko/`, `/th/`)
-- Dynamic language switcher in header navigation
-- RTL support preparation for future language expansion
+- Current content model supports Thai, English, and Korean locale values for administrator-managed content
+- Current public routes use a shared URL structure and mixed Thai/English interface copy
+- Separate locale paths, translated route metadata, and a production language switcher remain pending
+- `next-intl` is installed for the planned locale architecture
 
-#### 3.1.2 Resource & Publications Hub
-- Digital repository for research papers, academic journals, and global practice manuals
-- Categorized by topic, region, and publication date
-- Advanced search and filtering capabilities
-- PDF viewer integration with download tracking
+#### 3.1.2 Resource and Publications Hub
+- Implemented public feeds for published news and academic-document summaries
+- Implemented administrator categories, locale, status, summary, and update timestamp fields
+- Public feeds update from shared browser storage and handle intentionally empty datasets
+- File upload, PDF viewing, advanced filters, download tracking, and persistent media storage remain pending
 
-#### 3.1.3 Secure Membership Portal
-- Three-tier membership system (Professional, Student, Institutional)
-- Role-based access control (RBAC)
-- Internal admin approval workflow
-- Member directory with privacy controls
-- Downloadable membership certificates
+#### 3.1.3 Membership Portal
+- Implemented three-tier membership registration: Professional, Student, and Institutional
+- Implemented prototype member and administrator route protection
+- Implemented local administrator review and member status workflow
+- Production RBAC, shared member directory, account recovery, and downloadable certificates remain pending
 
-#### 3.1.4 Privacy & Compliance
-- Advanced cybersecurity settings
-- Cookie consent banner compliant with GDPR and CCPA standards
-- Privacy Policy and Cookie Policy pages in all three languages
-- Data retention and deletion workflows
-- Encrypted data transmission (SSL/TLS)
+#### 3.1.4 Privacy and Compliance
+- Prototype supports local deletion of member and content records
+- GDPR/CCPA consent management, translated policy pages, retention rules, export requests, and server-side deletion workflows remain pending
+- TLS, secure cookies, server-side authorization, rate limiting, and audit retention must be verified in the production environment
 
-### 3.2 WordPress Plugin Requirements
+### 3.2 Optional WordPress Backend Plan (Production Only)
+
+The current repository does not include WordPress, WPGraphQL, or the plugins below. This section is retained as one possible production backend approach. The team must compare it with a native Next.js API and database architecture before implementation; do not combine both approaches without a clear ownership and data-migration plan.
 
 #### 3.2.1 Ultimate Member (Community Management)
 - Custom registration forms with conditional fields
@@ -192,7 +251,9 @@ Once approved, you will receive a confirmation email with your portal login cred
 
 ---
 
-## 4. Automated Email System
+## 4. Automated Email System (Production Target)
+
+**Current status:** Not implemented. The prototype changes status locally and does not send acknowledgement, approval, suspension, rejection, or recovery email.
 
 ### 4.1 Email Sequence Overview
 
@@ -262,7 +323,9 @@ www.eurasiaforumsw.org
 
 ---
 
-## 5. GDPR & Privacy Compliance
+## 5. GDPR & Privacy Compliance (Production Target)
+
+**Current status:** Policy and consent implementation is pending. The text below is planning material and requires legal review before publication.
 
 ### 5.1 Cookie Consent Banner
 
