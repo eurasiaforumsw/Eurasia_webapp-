@@ -1,0 +1,67 @@
+- main [ref=e2]:
+  - region [ref=e3]:
+    - generic [ref=e4]:
+      - link "Axion Studio home" [ref=e5] [cursor=pointer]:
+        - /url: "#top"
+        - generic [ref=e6]: AX
+        - generic [ref=e7]: Axion Studio
+      - navigation "Primary navigation" [ref=e8]:
+        - link "Projects" [ref=e9] [cursor=pointer]:
+          - /url: "#work"
+        - link "Studio" [ref=e10] [cursor=pointer]:
+          - /url: "#about"
+      - generic [ref=e11]:
+        - generic [ref=e12]: "--:-- in London"
+        - link "See selected work" [ref=e16] [cursor=pointer]:
+          - /url: "#work"
+    - generic [ref=e23]:
+      - paragraph [ref=e24]: Axion Studio
+      - heading "We craft digital experiences for brands ready to dominate their category online." [level=1] [ref=e25]
+      - generic [ref=e26]:
+        - link "Explore our work" [ref=e27] [cursor=pointer]:
+          - /url: "#work"
+          - generic [ref=e28]:
+            - generic [ref=e29]: Explore our work
+            - generic [ref=e30]: Explore our work
+        - generic [ref=e34]:
+          - generic [ref=e37]: Certified Partner
+          - generic [ref=e38]: Featured
+  - region [ref=e39]:
+    - generic [ref=e40]:
+      - generic [ref=e41]:
+        - generic [ref=e42]: "1"
+        - generic [ref=e43]: Introducing Axion
+      - heading "Strategy-led creatives, delivering results in digital and beyond." [level=2] [ref=e44]
+      - generic [ref=e45]:
+        - figure [ref=e46]:
+          - img "Axion digital art study in warm orange tones" [ref=e47]
+        - generic [ref=e48]:
+          - paragraph [ref=e49]: Through research, creative thinking and iteration we help growing brands realize their full digital potential.
+          - link "Explore our projects" [ref=e50] [cursor=pointer]:
+            - /url: "#work"
+            - generic [ref=e51]:
+              - generic [ref=e52]: Explore our projects
+              - generic [ref=e53]: Explore our projects
+        - figure [ref=e57]:
+          - img "Axion brand experience study in soft lilac tones" [ref=e58]
+  - region [ref=e59]:
+    - generic [ref=e60]:
+      - generic [ref=e61]:
+        - generic [ref=e62]: "2"
+        - generic [ref=e63]: Featured client work
+      - heading "Our projects" [level=2] [ref=e64]
+      - generic [ref=e65]:
+        - article [ref=e66]:
+          - generic [ref=e67]:
+            - generic "Narrativ project preview" [ref=e68]
+            - button "Play Narrativ preview" [ref=e69] [cursor=pointer]
+          - generic [ref=e72]:
+            - paragraph [ref=e73]: Winner of Site of the Month 2025 - an interactive 3D showcase driving record engagement.
+            - heading "Narrativ" [level=3] [ref=e74]
+        - article [ref=e75]:
+          - generic [ref=e76]:
+            - generic "Luminar project preview" [ref=e77]
+            - button "Play Luminar preview" [ref=e78] [cursor=pointer]
+          - generic [ref=e81]:
+            - paragraph [ref=e82]: Transforming a dated platform into a conversion-focused brand experience.
+            - heading "Luminar" [level=3] [ref=e83]

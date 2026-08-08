@@ -1,0 +1,129 @@
+- main [ref=f3e2]:
+  - region [ref=f3e3]:
+    - navigation "Main navigation" [ref=f3e4]:
+      - link "EFSW home" [ref=f3e5] [cursor=pointer]:
+        - /url: "#home"
+        - text: E
+        - generic [ref=f3e6]: Eurasia Forumfor Social Workers
+      - generic [ref=f3e7]:
+        - link "หน้าหลักHome" [ref=f3e8] [cursor=pointer]:
+          - /url: /
+        - generic [ref=f3e9]:
+          - button "เกี่ยวกับเราAbout" [ref=f3e10]
+          - generic [ref=f3e13]:
+            - link "เกี่ยวกับเรา" [ref=f3e14] [cursor=pointer]:
+              - /url: /about
+            - link "โครงสร้างองค์กร" [ref=f3e18] [cursor=pointer]:
+              - /url: /about/organization
+        - link "ข่าวประชาสัมพันธ์News" [ref=f3e22] [cursor=pointer]:
+          - /url: /news
+        - link "เอกสารวิชาการAcademic documents" [ref=f3e23] [cursor=pointer]:
+          - /url: /academic-documents
+      - generic [ref=f3e24]:
+        - link "เข้าสู่ระบบ" [ref=f3e25] [cursor=pointer]:
+          - /url: /member/login
+        - link "สมัครสมาชิก" [ref=f3e29] [cursor=pointer]:
+          - /url: /member/register
+        - button "Open menu" [ref=f3e36]
+    - generic [ref=f3e38]:
+      - paragraph [ref=f3e39]: International social work across Eurasia
+      - heading "Social change has no borders." [level=1] [ref=f3e45]: Social changehas no borders.
+      - paragraph [ref=f3e46]: The Eurasia Forum for Social Workers connects people, practice, and research so communities can move forward with more care.
+      - generic [ref=f3e47]:
+        - link "เกี่ยวกับเรา" [ref=f3e48] [cursor=pointer]:
+          - /url: /about
+        - link "อ่านคำกล่าว" [ref=f3e52] [cursor=pointer]:
+          - /url: "#voices"
+    - generic [ref=f3e55]:
+      - text: Connect · Empower · Advocate
+      - generic [ref=f3e56]: Scroll to listen
+  - region [ref=f3e60]:
+    - generic [ref=f3e61]:
+      - generic [ref=f3e62]:
+        - generic [ref=f3e66]: "01"
+        - paragraph [ref=f3e67]: EFSW / FEATURED VOICE
+      - generic [ref=f3e68]:
+        - paragraph [ref=f3e69]: Dean's message
+        - heading "“ต้นฉบับคำกล่าวจากคณบดีจะปรากฏตรงนี้ เมื่อ EFSW ยืนยันข้อความอย่างเป็นทางการ”" [level=2] [ref=f3e70]
+        - paragraph [ref=f3e71]: พื้นที่สำหรับคำกล่าวจากคณบดี
+        - generic [ref=f3e72]: Approved institutional voice
+        - generic "Featured voice 1 of 3"
+  - region [ref=f3e73]:
+    - generic [ref=f3e74]: 01 / เกี่ยวกับเรา · About EFSW
+    - generic [ref=f3e75]:
+      - heading "A professional network with a human centre." [level=2] [ref=f3e76]
+      - generic [ref=f3e77]:
+        - paragraph [ref=f3e78]: We bring social workers, educators, researchers, students, and institutions into one regional conversation about social justice and human wellbeing.
+        - link "อ่านเกี่ยวกับเรา" [ref=f3e79] [cursor=pointer]:
+          - /url: /about
+  - region [ref=f3e83]:
+    - generic [ref=f3e84]: 02 / ข่าวสารประชาสัมพันธ์ · Newsroom
+    - generic [ref=f3e85]:
+      - heading "What is moving the network forward." [level=2] [ref=f3e86]: What is movingthe network forward.
+      - paragraph [ref=f3e87]: Briefings, platform updates, and resources from the work of connecting social workers across Eurasia.
+    - generic [ref=f3e88]:
+      - article [ref=f3e89]:
+        - generic [ref=f3e90]: 01Platform update
+        - heading "A trilingual platform for regional exchange" [level=3] [ref=f3e91]
+        - paragraph [ref=f3e92]: EFSW connects English, Korean, and Thai resources so professional knowledge can move more freely across Eurasia.
+        - link "Read the platform brief" [ref=f3e93] [cursor=pointer]:
+          - /url: /about
+      - article [ref=f3e97]:
+        - generic [ref=f3e98]: 02Membership
+        - heading "A network for professionals, students, and institutions" [level=3] [ref=f3e99]
+        - paragraph [ref=f3e100]: Three membership pathways make room for practitioners, emerging social workers, universities, NGOs, and public partners.
+        - link "Explore membership" [ref=f3e101] [cursor=pointer]:
+          - /url: /about
+      - article [ref=f3e105]:
+        - generic [ref=f3e106]: 03Resources
+        - heading "Research and practice belong in the same conversation" [level=3] [ref=f3e107]
+        - paragraph [ref=f3e108]: The resource hub brings research papers, case studies, field manuals, and regional learning into one shared place.
+        - link "Visit the resource hub" [ref=f3e109] [cursor=pointer]:
+          - /url: /about
+  - generic [ref=f3e113]:
+    - generic [ref=f3e114]:
+      - generic [ref=f3e115]:
+        - link "Back to EFSW home" [ref=f3e116] [cursor=pointer]:
+          - /url: "#home"
+          - text: E
+          - generic [ref=f3e117]: Eurasia Forumfor Social Workers
+        - paragraph [ref=f3e118]: Connect · Empower · Advocate
+      - generic [ref=f3e119]:
+        - link "เกี่ยวกับเรา" [ref=f3e120] [cursor=pointer]:
+          - /url: /about
+        - link "ข่าวสารประชาสัมพันธ์" [ref=f3e121] [cursor=pointer]:
+          - /url: /news
+        - link "สมาชิก" [ref=f3e122] [cursor=pointer]:
+          - /url: /about#membership
+      - generic [ref=f3e123]:
+        - text: Start a conversation
+        - link "support@eurasiaforumsw.org" [ref=f3e124] [cursor=pointer]:
+          - /url: mailto:support@eurasiaforumsw.org
+    - generic [ref=f3e125]:
+      - text: © 2026 EFSWEnglish · 한국어 · ไทย
+      - link "Back to top" [ref=f3e126] [cursor=pointer]:
+        - /url: "#home"
+  - generic [ref=f3e131]:
+    - text: Navigate EFSW
+    - link [ref=f3e132] [cursor=pointer]:
+      - /url: /
+      - text: หน้าหลัก
+    - generic [ref=f3e136]:
+      - link [ref=f3e137] [cursor=pointer]:
+        - /url: /about
+        - text: เกี่ยวกับเรา
+      - link [ref=f3e141] [cursor=pointer]:
+        - /url: /about/organization
+        - text: โครงสร้างองค์กร
+    - link [ref=f3e145] [cursor=pointer]:
+      - /url: /news
+      - text: ข่าวประชาสัมพันธ์
+    - link [ref=f3e149] [cursor=pointer]:
+      - /url: /academic-documents
+      - text: เอกสารวิชาการ
+    - link [ref=f3e153] [cursor=pointer]:
+      - /url: /member/login
+      - text: เข้าสู่ระบบสมาชิก
+    - link [ref=f3e157] [cursor=pointer]:
+      - /url: /member/register
+      - text: สมัครสมาชิก

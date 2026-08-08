@@ -1,0 +1,11 @@
+{
+  "date": "2026-08-07",
+  "brief": "Axion Studio light design-agency landing page",
+  "macrostructure": "Portfolio Grid",
+  "navigation": "N1b",
+  "footer": "none",
+  "theme": "custom",
+  "axes": ["light", "geometric-sans", "chromatic-terracotta"],
+  "enrichment": "shader stack",
+  "framework": "Next.js App Router"
+}

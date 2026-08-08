@@ -1,0 +1,124 @@
+- generic [active] [ref=f1e1]:
+  - main [ref=f1e2]:
+    - complementary [ref=f1e3]:
+      - generic [ref=f1e4]:
+        - link "EFSW home" [ref=f1e5] [cursor=pointer]:
+          - /url: /
+          - generic [ref=f1e6]: E
+          - generic [ref=f1e7]: Eurasia Forumfor Social Workers
+        - generic [ref=f1e8]: OPERATIONS
+      - navigation "เมนูผู้ดูแลระบบ" [ref=f1e9]:
+        - generic [ref=f1e10]: Workspace
+        - button "ภาพรวม Overview" [ref=f1e11] [cursor=pointer]:
+          - generic [ref=f1e17]:
+            - text: ภาพรวม
+            - generic [ref=f1e18]: Overview
+        - button "จัดการสมาชิก Members" [ref=f1e19] [cursor=pointer]:
+          - generic [ref=f1e24]:
+            - text: จัดการสมาชิก
+            - generic [ref=f1e25]: Members
+        - button "เนื้อหาเว็บไซต์ Content" [ref=f1e26] [cursor=pointer]:
+          - generic [ref=f1e30]:
+            - text: เนื้อหาเว็บไซต์
+            - generic [ref=f1e31]: Content
+        - button "ประวัติการทำงาน Activity" [ref=f1e32] [cursor=pointer]:
+          - generic [ref=f1e35]:
+            - text: ประวัติการทำงาน
+            - generic [ref=f1e36]: Activity
+        - button "การตั้งค่า Settings" [ref=f1e37] [cursor=pointer]:
+          - generic [ref=f1e41]:
+            - text: การตั้งค่า
+            - generic [ref=f1e42]: Settings
+      - generic [ref=f1e43]:
+        - generic [ref=f1e49]:
+          - strong [ref=f1e50]: EFSW Administrator
+          - generic [ref=f1e51]: super-admin
+        - button "ออกจากระบบ" [ref=f1e52] [cursor=pointer]
+    - generic [ref=f1e56]:
+      - generic [ref=f1e57]:
+        - generic [ref=f1e58]:
+          - paragraph [ref=f1e59]: EFSW / Admin console
+          - generic [ref=f1e60]: วันเสาร์ที่ 8 สิงหาคม พ.ศ. 2569
+        - generic [ref=f1e61]:
+          - link "ดูเว็บไซต์" [ref=f1e62] [cursor=pointer]:
+            - /url: /
+          - generic [ref=f1e66]: Local prototype
+      - region [ref=f1e71]:
+        - generic [ref=f1e72]:
+          - generic [ref=f1e73]:
+            - paragraph [ref=f1e74]: Good morning / สวัสดี
+            - heading "ภาพรวม EFSW" [level=1] [ref=f1e75]
+            - paragraph [ref=f1e76]: จุดเริ่มต้นสำหรับดูสุขภาพของเครือข่ายและงานที่ต้องจัดการวันนี้.
+          - button "ดู activity log" [ref=f1e78] [cursor=pointer]
+        - generic [ref=f1e81]:
+          - generic [ref=f1e82]:
+            - generic [ref=f1e88]: สมาชิกทั้งหมด
+            - strong [ref=f1e89]: "0"
+            - generic [ref=f1e90]: รายการใน local workspace
+          - button "รอตรวจสอบ 0 ควรตรวจสอบก่อนอนุมัติ" [ref=f1e91] [cursor=pointer]:
+            - generic [ref=f1e97]: รอตรวจสอบ
+            - strong [ref=f1e98]: "0"
+            - generic [ref=f1e99]: ควรตรวจสอบก่อนอนุมัติ
+          - button "เผยแพร่แล้ว 6 ข่าวและเอกสารบนระบบ" [ref=f1e103] [cursor=pointer]:
+            - generic [ref=f1e108]: เผยแพร่แล้ว
+            - strong [ref=f1e109]: "6"
+            - generic [ref=f1e110]: ข่าวและเอกสารบนระบบ
+          - button "ฉบับร่าง 0 เนื้อหาที่รอการจัดทำ" [ref=f1e114] [cursor=pointer]:
+            - generic [ref=f1e119]: ฉบับร่าง
+            - strong [ref=f1e120]: "0"
+            - generic [ref=f1e121]: เนื้อหาที่รอการจัดทำ
+        - generic [ref=f1e125]:
+          - generic [ref=f1e126]:
+            - generic [ref=f1e127]:
+              - generic [ref=f1e128]:
+                - paragraph [ref=f1e129]: Member health
+                - heading "สถานะสมาชิก" [level=2] [ref=f1e130]
+              - button "ดูทั้งหมด" [ref=f1e131] [cursor=pointer]
+            - generic [ref=f1e135]:
+              - generic [ref=f1e137]:
+                - generic [ref=f1e138]: ใช้งานอยู่
+                - strong [ref=f1e139]: "0"
+              - generic [ref=f1e142]:
+                - generic [ref=f1e143]: รอตรวจสอบ
+                - strong [ref=f1e144]: "0"
+              - generic [ref=f1e147]:
+                - generic [ref=f1e148]: ระงับชั่วคราว
+                - strong [ref=f1e149]: "0"
+            - generic [ref=f1e151]: ข้อมูลจะอัปเดตเมื่อมีการสมัครสมาชิกหรือทีมงานเปลี่ยนสถานะ
+          - generic [ref=f1e154]:
+            - generic [ref=f1e156]:
+              - paragraph [ref=f1e157]: Quick actions
+              - heading "งานที่ใช้บ่อย" [level=2] [ref=f1e158]
+            - generic [ref=f1e159]:
+              - button "ตรวจสมาชิก 0 รายการรอการตรวจสอบ" [ref=f1e160] [cursor=pointer]:
+                - generic [ref=f1e165]: ตรวจสมาชิก
+                - generic [ref=f1e166]: 0 รายการรอการตรวจสอบ
+              - button "จัดการข่าว 3 รายการในระบบ" [ref=f1e167] [cursor=pointer]:
+                - generic [ref=f1e171]: จัดการข่าว
+                - generic [ref=f1e172]: 3 รายการในระบบ
+              - button "จัดการเอกสาร 3 รายการในระบบ" [ref=f1e173] [cursor=pointer]:
+                - generic [ref=f1e177]: จัดการเอกสาร
+                - generic [ref=f1e178]: 3 รายการในระบบ
+              - button "ตั้งค่าระบบ ข้อมูลองค์กรและการแจ้งเตือน" [ref=f1e179] [cursor=pointer]:
+                - generic [ref=f1e183]: ตั้งค่าระบบ
+                - generic [ref=f1e184]: ข้อมูลองค์กรและการแจ้งเตือน
+        - generic [ref=f1e185]:
+          - generic [ref=f1e186]:
+            - generic [ref=f1e187]:
+              - generic [ref=f1e188]:
+                - paragraph [ref=f1e189]: Latest members
+                - heading "สมาชิกใหม่ล่าสุด" [level=2] [ref=f1e190]
+              - button "จัดการ" [ref=f1e191] [cursor=pointer]
+            - generic [ref=f1e195]:
+              - heading "ยังไม่มีสมาชิก" [level=2] [ref=f1e200]
+              - paragraph [ref=f1e201]: เมื่อมีผู้สมัคร รายชื่อจะปรากฏที่นี่
+          - generic [ref=f1e202]:
+            - generic [ref=f1e203]:
+              - generic [ref=f1e204]:
+                - paragraph [ref=f1e205]: Recent activity
+                - heading "กิจกรรมล่าสุด" [level=2] [ref=f1e206]
+              - button "ทั้งหมด" [ref=f1e207] [cursor=pointer]
+            - generic [ref=f1e211]:
+              - heading "ยังไม่มี activity" [level=2] [ref=f1e214]
+              - paragraph [ref=f1e215]: การทำงานของผู้ดูแลจะแสดงที่นี่
+  - alert [ref=f1e216]

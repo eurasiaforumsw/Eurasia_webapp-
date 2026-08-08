@@ -1,0 +1,28 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - link "EFSW home" [ref=e3] [cursor=pointer]:
+      - /url: /
+      - generic [ref=e4]: E
+      - generic [ref=e5]: Eurasia Forumfor Social Workers
+    - region [ref=e6]:
+      - paragraph [ref=e12]: EFSW operations / ผู้ดูแลระบบ
+      - heading "เข้าสู่พื้นที่ ผู้ดูแลระบบ" [level=1] [ref=e13]: เข้าสู่พื้นที่ผู้ดูแลระบบ
+      - paragraph [ref=e14]: จัดการสมาชิก ข่าวประชาสัมพันธ์ เอกสารวิชาการ และการตั้งค่าของเว็บไซต์จากพื้นที่ทำงานเดียว
+      - generic [ref=e15]:
+        - generic [ref=e16]:
+          - text: อีเมลผู้ดูแล *
+          - textbox "อีเมลผู้ดูแล *" [ref=e17]
+        - generic [ref=e18]:
+          - generic [ref=e19]:
+            - text: รหัสผ่าน *
+            - textbox "รหัสผ่าน *" [ref=e20]
+          - button "แสดงรหัสผ่าน" [ref=e21] [cursor=pointer]
+        - button "เข้าสู่ระบบผู้ดูแล" [ref=e25] [cursor=pointer]
+      - generic [ref=e29]:
+        - generic [ref=e30]: Prototype access
+        - code [ref=e31]: admin@efsw.local
+        - code [ref=e32]: EFSW-demo-admin
+    - link "กลับหน้าหลัก" [ref=e33] [cursor=pointer]:
+      - /url: /
+    - paragraph [ref=e36]: "Prototype mode: session นี้เก็บไว้ในเบราว์เซอร์เพื่อทดสอบ workflow เท่านั้น"
+  - alert [ref=e37]

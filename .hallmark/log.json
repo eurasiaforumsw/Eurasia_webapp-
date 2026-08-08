@@ -1,0 +1,56 @@
+[
+  {
+    "date": "2026-08-08",
+    "macrostructure": "Operations Workspace",
+    "theme": "custom",
+    "axes": ["light", "geometric-sans", "chromatic-eucalyptus"],
+    "enrichment": "adaptive admin sidebar + member review drawer",
+    "brief": "Complete EFSW admin workspace with member, publishing, activity, and settings workflows",
+    "status": "implementation"
+  },
+  {
+    "date": "2026-08-07",
+    "macrostructure": "Member Workspace",
+    "theme": "custom",
+    "axes": ["light", "geometric-sans", "chromatic-eucalyptus"],
+    "enrichment": "two-step member onboarding + profile editor",
+    "brief": "Browser-functional EFSW registration, login, session, and editable member profile",
+    "status": "implementation"
+  },
+  {
+    "date": "2026-08-07",
+    "macrostructure": "N1b Navigation System",
+    "theme": "custom",
+    "axes": ["light", "geometric-sans", "chromatic-eucalyptus"],
+    "enrichment": "about dropdown + member auth entry",
+    "brief": "Thai EFSW navigation with About submenu, news, academic documents, login, and registration",
+    "status": "implementation"
+  },
+  {
+    "date": "2026-08-07",
+    "macrostructure": "Long Scroll Editorial",
+    "theme": "custom",
+    "axes": ["light", "geometric-sans", "chromatic-eucalyptus"],
+    "enrichment": "featured voice scroll reveal",
+    "brief": "EFSW homepage navigation, hero, featured voices, about bridge, newsroom, and footer",
+    "status": "implementation"
+  },
+  {
+    "date": "2026-08-07",
+    "macrostructure": "Scroll Narrative",
+    "theme": "custom",
+    "axes": ["light", "geometric-sans", "chromatic-eucalyptus"],
+    "enrichment": "progressive story reveal",
+    "brief": "EFSW scroll-led international social work narrative",
+    "status": "implementation"
+  },
+  {
+    "date": "2026-08-07",
+    "macrostructure": "Portfolio Grid",
+    "theme": "custom",
+    "axes": ["light", "geometric-sans", "chromatic-terracotta"],
+    "enrichment": "shader stack",
+    "brief": "Axion Studio light design-agency landing page",
+    "status": "implementation"
+  }
+]
