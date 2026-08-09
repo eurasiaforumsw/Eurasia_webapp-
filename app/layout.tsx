@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Bricolage_Grotesque, Inter } from "next/font/google";
 import "./globals.css";
+import { RevealObserver } from "@/components/efsw/RevealObserver";
 import { SmoothScrollProvider } from "@/components/efsw/SmoothScrollProvider";
 import { I18nProvider } from "@/contexts/I18nContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
@@ -65,6 +66,9 @@ export default function RootLayout({
         <ThemeProvider>
           <I18nProvider defaultLocale="en" messages={messages}>
             <SmoothScrollProvider>
+              {/* Watches every [data-reveal] element on any route and adds
+                  .is-visible when it scrolls into view. Renders nothing. */}
+              <RevealObserver />
               {children}
             </SmoothScrollProvider>
           </I18nProvider>

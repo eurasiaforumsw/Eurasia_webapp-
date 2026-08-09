@@ -3,8 +3,8 @@ import { ArrowUpRight, Globe2, UsersRound } from "lucide-react";
 import { SiteNav } from "@/components/efsw/SiteNav";
 
 export const metadata: Metadata = {
-  title: "เกี่ยวกับเรา | Eurasia Forum for Social Workers",
-  description: "รู้จักวิสัยทัศน์ พันธกิจ และเครือข่ายของ Eurasia Forum for Social Workers.",
+  title: "About | Eurasia Forum for Social Workers",
+  description: "The vision, mission, and network behind the Eurasia Forum for Social Workers.",
 };
 
 const principles = [
@@ -12,19 +12,19 @@ const principles = [
     number: "01",
     title: "Connect",
     thai: "เชื่อมโยง",
-    body: "สร้างพื้นที่ปลอดภัยสำหรับนักสังคมสงเคราะห์ นักวิจัย นักการศึกษา และภาคีจากหลากหลายประเทศได้แลกเปลี่ยนประสบการณ์",
+    body: "Building safe spaces where social workers, researchers, educators, and partners from across the region can exchange experience openly.",
   },
   {
     number: "02",
     title: "Empower",
     thai: "เสริมพลัง",
-    body: "สนับสนุนการเรียนรู้ เครื่องมือ และโอกาสพัฒนาวิชาชีพ เพื่อให้ความรู้เปลี่ยนเป็นการลงมือทำที่เหมาะกับแต่ละชุมชน",
+    body: "Supporting learning, tools, and professional development so knowledge becomes action that fits the reality of each community.",
   },
   {
     number: "03",
     title: "Advocate",
     thai: "เป็นกระบอกเสียง",
-    body: "ยืนหยัดเพื่อความยุติธรรมทางสังคม สิทธิมนุษยชน และศักดิ์ศรีของผู้คนที่อยู่เบื้องหลังทุกนโยบายและโครงการ",
+    body: "Standing up for social justice, human rights, and the dignity of the people behind every policy and every programme.",
   },
 ];
 
@@ -33,34 +33,52 @@ export default function AboutPage() {
     <>
       <SiteNav />
       <main className="efsw-about-page">
-      <section className="efsw-about-hero" aria-labelledby="about-title">
-        <div className="efsw-section-label"><Globe2 size={15} /> About EFSW / เกี่ยวกับเรา</div>
-        <div className="efsw-about-hero__grid">
-          <h1 id="about-title">A regional network<br /><span>with a human centre.</span></h1>
-          <div>
-            <p>Eurasia Forum for Social Workers คือพื้นที่ความร่วมมือระดับนานาชาติสำหรับผู้ทำงานด้านสังคมสงเคราะห์ นักวิชาการ นักศึกษา และองค์กรที่เชื่อว่าการเปลี่ยนแปลงที่ยั่งยืนเกิดจากการลงมือทำร่วมกัน</p>
-            <p>เราช่วยให้ความรู้จากพื้นที่หนึ่งเดินทางไปสร้างแรงบันดาลใจและทางเลือกใหม่ในอีกพื้นที่หนึ่ง โดยให้ความสำคัญกับบริบท ภาษา และเสียงของชุมชน</p>
+      <section className="efsw-about-hero" id="about-top" aria-labelledby="about-title">
+        <div className="efsw-section-label" data-reveal="fade"><Globe2 size={15} /> About EFSW / เกี่ยวกับเรา</div>
+        <div className="efsw-about-hero__grid" data-reveal-group>
+          <h1 id="about-title" data-reveal="clip" data-reveal-slow>
+            A regional network<br /><span>with a human centre.</span>
+          </h1>
+          <div data-reveal="slide">
+            <p>The Eurasia Forum for Social Workers is an international space for practitioners, academics, students, and organisations who believe that lasting change comes from working together.</p>
+            <p>We help knowledge travel from one place to another, where it becomes inspiration and new options, while keeping context, language, and community voices at the centre.</p>
           </div>
         </div>
       </section>
 
-      <section className="efsw-about-statement" aria-labelledby="vision-title">
-        <div className="efsw-section-label">Our direction / ทิศทางของเรา</div>
-        <div className="efsw-about-statement__grid">
-          <h2 id="vision-title">Social change has no borders.</h2>
-          <div>
-            <p>วิสัยทัศน์ของเราคือเครือข่ายระดับภูมิภาคที่ยกระดับการทำงานด้านสังคมสงเคราะห์ และสร้างความเปลี่ยนแปลงทางสังคมผ่านความเป็นน้ำหนึ่งใจเดียวกันระหว่างประเทศ</p>
+      <section className="efsw-about-statement" id="direction" aria-labelledby="vision-title">
+        <div className="efsw-section-label" data-reveal="fade">Our direction / ทิศทางของเรา</div>
+        <div className="efsw-about-statement__grid" data-reveal-group>
+          <h2 id="vision-title" data-reveal="clip" data-reveal-slow>Social change has no borders.</h2>
+          <div data-reveal="slide">
+            <p>Our vision is a regional network that raises the standard of social work practice and creates social change through genuine solidarity between countries.</p>
             <div className="efsw-about-stat"><UsersRound size={19} /><span>Professionals · Students · Institutions</span></div>
           </div>
         </div>
       </section>
 
-      <section className="efsw-principles" aria-labelledby="principles-title">
-        <div className="efsw-section-label">The three commitments / พันธกิจหลัก</div>
-        <h2 id="principles-title">What we practice<br /><span>together.</span></h2>
-        <div className="efsw-principles__grid">
+      <section className="efsw-about-reach" id="reach" aria-label="Network at a glance">
+        <div className="efsw-about-reach__inner" data-reveal-group>
+          {([
+            { value: "3", label: "Languages", note: "English · 한국어 · ไทย" },
+            { value: "4", label: "Member pathways", note: "Professional · Student · Institutional · Partner" },
+            { value: "1", label: "Regional network", note: "Connecting practitioners across Eurasia" },
+          ] as const).map(({ value, label, note }) => (
+            <div key={label} className="efsw-reach-stat" data-reveal="scale">
+              <strong>{value}</strong>
+              <span>{label}</span>
+              <small>{note}</small>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="efsw-principles" id="principles" aria-labelledby="principles-title">
+        <div className="efsw-section-label" data-reveal="fade">The three commitments / พันธกิจหลัก</div>
+        <h2 id="principles-title" data-reveal="clip" data-reveal-slow>What we practice<br /><span>together.</span></h2>
+        <div className="efsw-principles__grid" data-reveal-group>
           {principles.map((principle) => (
-            <article key={principle.number} className="efsw-principle-card">
+            <article key={principle.number} className="efsw-principle-card" data-reveal="scale">
               <span>{principle.number}</span>
               <h3>{principle.title}</h3>
               <small>{principle.thai}</small>
@@ -71,11 +89,11 @@ export default function AboutPage() {
       </section>
 
       <section className="efsw-about-cta" id="membership" aria-labelledby="about-cta-title">
-        <div>
-          <p className="efsw-section-label">Join the network / เข้าร่วมเครือข่าย</p>
-          <h2 id="about-cta-title">Bring your work<br /><span>into the conversation.</span></h2>
-          <p>เข้าร่วมเครือข่ายที่เปิดพื้นที่ให้ความรู้ ประสบการณ์ และความร่วมมือเดินทางข้ามพรมแดน</p>
-          <a href="mailto:support@eurasiaforumsw.org" className="efsw-button efsw-button--light">ติดต่อทีม EFSW <ArrowUpRight size={17} /></a>
+        <div data-reveal-group>
+          <p className="efsw-section-label" data-reveal="fade">Join the network / เข้าร่วมเครือข่าย</p>
+          <h2 id="about-cta-title" data-reveal="clip" data-reveal-slow>Bring your work<br /><span>into the conversation.</span></h2>
+          <p data-reveal="slide">Join a network that opens space for knowledge, experience, and collaboration to travel across borders.</p>
+          <a href="mailto:support@eurasiaforumsw.org" className="efsw-button efsw-button--light" data-reveal="slide">Contact the EFSW team <ArrowUpRight size={17} /></a>
         </div>
       </section>
 

@@ -2,8 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ArrowUpRight, Check, ChevronDown, Globe2, LogIn, Menu, UserPlus, X } from "lucide-react";
+
+const MotionLink = motion(Link);
 import { useI18n } from "@/contexts/I18nContext";
 import { useClickOutside } from "@/hooks/useClickOutside";
 
@@ -250,14 +253,14 @@ export function SiteNav() {
     <>
       <header ref={headerRef} className="efsw-nav" data-scrolled={scrolled}>
         <div className="efsw-nav__inner">
-          <a className="efsw-brand efsw-nav__brand" href="/" aria-label="Eurasia Forum for Social Workers — home">
+          <Link className="efsw-brand efsw-nav__brand" href="/" aria-label="Eurasia Forum for Social Workers — home">
             <span className="efsw-brand__mark" aria-hidden="true">E</span>
             <span className="efsw-nav__brand-text">
               Eurasia Forum
               <br />
               for Social Workers
             </span>
-          </a>
+          </Link>
 
           <nav className="efsw-nav__links" aria-label="Primary">
             {NAV_NODES.map((node) => {
@@ -266,7 +269,7 @@ export function SiteNav() {
 
               if (!node.children) {
                 return (
-                  <a
+                  <Link
                     key={node.href}
                     className="efsw-nav__link"
                     href={node.href}
@@ -274,7 +277,7 @@ export function SiteNav() {
                     aria-current={active ? "page" : undefined}
                   >
                     {label}
-                  </a>
+                  </Link>
                 );
               }
 
@@ -290,7 +293,7 @@ export function SiteNav() {
                   onBlur={handleGroupBlur}
                   {...hoverProps(node.labelKey)}
                 >
-                  <a
+                  <Link
                     className="efsw-nav__link efsw-nav__trigger"
                     href={node.href}
                     data-menu-trigger
@@ -309,14 +312,14 @@ export function SiteNav() {
                   >
                     {label}
                     <ChevronDown className="efsw-nav__chev" size={13} strokeWidth={2.2} aria-hidden="true" />
-                  </a>
+                  </Link>
 
                   <div className="efsw-nav__panel-wrap">
                     <div className="efsw-nav__panel">
                       {node.children.map((child) => {
                         const childActive = pathname === child.href;
                         return (
-                          <a
+                          <Link
                             key={child.href}
                             href={child.href}
                             data-menu-item
@@ -327,7 +330,7 @@ export function SiteNav() {
                           >
                             <span>{t("navigation." + child.labelKey)}</span>
                             <ArrowUpRight size={15} aria-hidden="true" />
-                          </a>
+                          </Link>
                         );
                       })}
                     </div>
@@ -388,12 +391,12 @@ export function SiteNav() {
 
             <span className="efsw-nav__divider" aria-hidden="true" />
 
-            <a className="efsw-nav__login" href="/member/login" aria-label={loginLabel}>
+            <Link className="efsw-nav__login" href="/member/login" aria-label={loginLabel}>
               <LogIn size={15} strokeWidth={1.9} aria-hidden="true" />
               <span className="efsw-nav__login-text">{loginLabel}</span>
-            </a>
+            </Link>
 
-            <motion.a
+            <MotionLink
               className="efsw-nav__join"
               href="/member/register"
               whileHover={{ scale: 1.05, transition: { type: "spring", stiffness: 420, damping: 26 } }}
@@ -404,7 +407,7 @@ export function SiteNav() {
               <span className="efsw-nav__join-icon" aria-hidden="true">
                 <ArrowUpRight size={15} strokeWidth={2} />
               </span>
-            </motion.a>
+            </MotionLink>
 
             <button
               type="button"
@@ -441,18 +444,18 @@ export function SiteNav() {
           <nav className="efsw-sheet__nav" aria-label="Mobile">
             {NAV_NODES.map((node, index) => (
               <div className="efsw-sheet__group" key={node.href}>
-                <a href={node.href} data-active={isActive(node.href)} onClick={() => setSheetOpen(false)}>
+                <Link href={node.href} data-active={isActive(node.href)} onClick={() => setSheetOpen(false)}>
                   <span className="efsw-sheet__index">{String(index + 1).padStart(2, "0")}</span>
                   <span>{t("navigation." + node.labelKey)}</span>
                   <ArrowUpRight size={18} aria-hidden="true" />
-                </a>
+                </Link>
                 {node.children && (
                   <div className="efsw-sheet__sub">
                     {node.children.map((child) => (
-                      <a key={child.href} href={child.href} onClick={() => setSheetOpen(false)}>
+                      <Link key={child.href} href={child.href} onClick={() => setSheetOpen(false)}>
                         {t("navigation." + child.labelKey)}
                         <ArrowUpRight size={15} aria-hidden="true" />
-                      </a>
+                      </Link>
                     ))}
                   </div>
                 )}
@@ -475,10 +478,10 @@ export function SiteNav() {
           </div>
 
           <div className="efsw-sheet__actions">
-            <a className="efsw-sheet__login" href="/member/login" onClick={() => setSheetOpen(false)}>
+            <Link className="efsw-sheet__login" href="/member/login" onClick={() => setSheetOpen(false)}>
               <LogIn size={17} aria-hidden="true" /> {loginLabel}
-            </a>
-            <motion.a
+            </Link>
+            <MotionLink
               className="efsw-nav__join"
               href="/member/register"
               onClick={() => setSheetOpen(false)}
@@ -489,7 +492,7 @@ export function SiteNav() {
               <span className="efsw-nav__join-icon" aria-hidden="true">
                 <ArrowUpRight size={15} strokeWidth={2} />
               </span>
-            </motion.a>
+            </MotionLink>
           </div>
         </div>
       </div>

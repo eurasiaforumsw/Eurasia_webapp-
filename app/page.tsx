@@ -4,6 +4,16 @@ import { useEffect, useMemo, useState } from "react";
 import { motion, useReducedMotion, useScroll, useSpring, useTransform } from "framer-motion";
 import { ArrowDownRight, ArrowUpRight, Globe2, MoveRight, Quote } from "lucide-react";
 import { SiteNav } from "@/components/efsw/SiteNav";
+import { ScrollProgress } from "@/components/efsw/ScrollProgress";
+
+/** Sections tracked by the side progress indicator. */
+const pageSections = [
+  { id: "top", label: "Introduction" },
+  { id: "voices", label: "Featured voices" },
+  { id: "about", label: "About EFSW" },
+  { id: "news", label: "Newsroom" },
+  { id: "footer", label: "Contact" },
+];
 
 /* ── Motion design tokens ─────────────────────────────────────────────────
    Physics-based springs: values chosen by feel, not arbitrary tweens.
@@ -211,6 +221,7 @@ export default function HomePage() {
   return (
     <>
       <SiteNav />
+      <ScrollProgress sections={pageSections} />
       <main className="efsw-home" id="home">
       <section className="efsw-hero" aria-labelledby="hero-title">
         {/* Parallax blobs — drifts at 2.5× content speed for depth */}
@@ -297,7 +308,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="efsw-about-bridge efsw-reveal" aria-labelledby="about-bridge-title">
+      <section className="efsw-about-bridge efsw-reveal" id="about" aria-labelledby="about-bridge-title">
         <div className="efsw-section-label">01 / About EFSW</div>
         <div className="efsw-about-bridge__grid efsw-reveal-group">
           <h2 id="about-bridge-title">A professional network with a human centre.</h2>

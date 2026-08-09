@@ -2716,7 +2716,8 @@ body {
   background: color-mix(in oklch, var(--efsw-paper) 72%, transparent);
   color: var(--efsw-ink);
   font-family: var(--font-body);
-  transition: background-color 300ms var(--ease-out), box-shadow 300ms var(--ease-out);
+  /* hero context — 400ms ease-in-out per motion spec */
+  transition: background-color 400ms ease-in-out, box-shadow 400ms ease-in-out, backdrop-filter 400ms ease-in-out;
 }
 
 .efsw-nav *,
@@ -3445,7 +3446,8 @@ body {
   white-space: nowrap;
   font-size: 0.82rem;
   font-weight: 750;
-  transition: transform 220ms var(--ease-out), background-color 220ms var(--ease-out), color 220ms var(--ease-out);
+  /* button context — 150ms ease per motion spec */
+  transition: transform 150ms ease, background-color 150ms ease, color 150ms ease, box-shadow 150ms ease, border-color 150ms ease;
 }
 
 .efsw-button svg:last-child {
@@ -3478,6 +3480,7 @@ body {
 .efsw-button:hover,
 .efsw-button:focus-visible {
   transform: translateY(-2px);
+  box-shadow: 0 8px 28px -6px color-mix(in oklch, var(--efsw-ink) 22%, transparent);
 }
 
 .efsw-text-link {
@@ -3489,7 +3492,8 @@ body {
   white-space: nowrap;
   font-size: 0.82rem;
   font-weight: 700;
-  transition: color 220ms var(--ease-out), border-color 220ms var(--ease-out);
+  /* link context — 150ms ease per motion spec */
+  transition: color 150ms ease, border-color 150ms ease, background 150ms ease, box-shadow 150ms ease;
 }
 
 .efsw-text-link:hover,
@@ -3967,15 +3971,15 @@ body {
 .efsw-voices__copy .efsw-kicker { color: var(--efsw-green-light); }
 
 .efsw-voices h2 {
-  max-width: 13ch;
+  max-width: 100%;
   margin: 0;
   overflow-wrap: anywhere;
   font-family: var(--font-display);
-  font-size: clamp(2.2rem, 4.0vw, 4.8rem);
+  font-size: clamp(1.6rem, 2.2vw, 2.8rem);
   font-style: normal;
   font-weight: 620;
-  letter-spacing: -0.025em;
-  line-height: 0.96;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
   animation: efswStoryPop 760ms var(--ease-out) both;
 }
 
@@ -4132,6 +4136,136 @@ body {
   margin-top: auto;
 }
 
+/* ── Scroll-reveal system ────────────────────────────────────────────────
+   Three flavours driven by [data-reveal] attribute + is-visible class.
+   RevealObserver (client component in layout) fires the observer globally.
+
+   fade   opacity only – for supporting text that should appear quietly
+   slide  translate-Y + fade – default; strongest directional emphasis
+   scale  scale from 0.94 – for cards, images, standalone blocks
+   clip   clip-path left wipe – for headline h1/h2 cinematic entrance
+
+   data-reveal-group triggers staggered children (0 → 80ms → 160ms…)
+────────────────────────────────────────────────────────────────────────── */
+
+/* shared base */
+[data-reveal] {
+  will-change: opacity, transform;
+  transition:
+    opacity  680ms var(--ease-out),
+    transform 780ms var(--ease-out),
+    clip-path 840ms var(--ease-out);
+}
+
+[data-reveal="fade"] {
+  opacity: 0;
+}
+[data-reveal="fade"].is-visible {
+  opacity: 1;
+}
+
+[data-reveal="slide"],
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(2.2rem);
+}
+[data-reveal="slide"].is-visible,
+[data-reveal].is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+[data-reveal="scale"] {
+  opacity: 0;
+  transform: scale(0.94) translateY(1rem);
+}
+[data-reveal="scale"].is-visible {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+}
+
+[data-reveal="clip"] {
+  opacity: 0;
+  clip-path: inset(0 100% 0 0);
+  transform: translateY(0.5rem);
+}
+[data-reveal="clip"].is-visible {
+  opacity: 1;
+  clip-path: inset(0 0% 0 0);
+  transform: translateY(0);
+  transition:
+    opacity 200ms var(--ease-out),
+    clip-path 920ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 920ms var(--ease-out);
+}
+
+/* Slow variant — big display headings need more time */
+[data-reveal][data-reveal-slow] {
+  transition-duration: 900ms, 1050ms, 1100ms;
+}
+
+/* ── Scroll progress nav (side dots) ──────────────────────────────────── */
+
+.efsw-scroll-progress {
+  position: fixed;
+  right: clamp(0.85rem, 2vw, 1.75rem);
+  top: 50%;
+  z-index: 35;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  transform: translateY(-50%);
+  opacity: 0;
+  transition: opacity 400ms var(--ease-out);
+  pointer-events: none;
+}
+
+.efsw-scroll-progress[data-visible="true"] {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.efsw-scroll-progress__dot {
+  display: block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: color-mix(in oklch, var(--efsw-ink) 28%, transparent);
+  transition: background 280ms var(--ease-out), transform 280ms var(--ease-out), width 280ms var(--ease-out);
+}
+
+.efsw-scroll-progress__dot[data-active="true"] {
+  width: 18px;
+  border-radius: 999px;
+  background: var(--efsw-gradient-line, var(--efsw-green));
+  transform: scaleY(1);
+}
+
+.efsw-scroll-progress__dot:hover {
+  background: color-mix(in oklch, var(--efsw-green) 72%, transparent);
+}
+
+@media (max-width: 55rem) {
+  .efsw-scroll-progress { display: none; }
+}
+
+/* Consent-first: no reveal motion when the OS asks for reduced motion.
+   Content is shown in its final state immediately, never hidden. */
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal],
+  [data-reveal].is-visible {
+    opacity: 1;
+    transform: none;
+    clip-path: none;
+    transition: none;
+  }
+
+  .efsw-scroll-progress__dot {
+    transition: none;
+  }
+}
+
+/* ── Legacy efsw-reveal (home page) — keep existing system intact ───── */
 /* One reveal per story beat keeps the page paced without animating every line. */
 .efsw-reveal {
   opacity: 0;
@@ -4927,4 +5061,504 @@ body {
   .work-card__meta-row {
     align-items: flex-end;
   }
+}
+
+/* ════════════════════════════════════════════════════
+   ABOUT PAGE — Reach strip
+   ════════════════════════════════════════════════════ */
+.efsw-about-reach { background: var(--efsw-paper-deep); }
+.efsw-about-reach__inner {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: min(100%, var(--efsw-max));
+  margin-inline: auto;
+}
+.efsw-reach-stat {
+  display: grid;
+  gap: 0.3rem;
+  padding: clamp(2rem, 4vw, 3.5rem) clamp(1.5rem, 3vw, 2.5rem);
+  border-inline-end: 1px solid var(--efsw-line);
+}
+.efsw-reach-stat:last-child { border-inline-end: 0; }
+.efsw-reach-stat strong {
+  font-family: var(--font-display);
+  font-size: clamp(3rem, 6vw, 7rem);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  color: var(--efsw-green);
+}
+.efsw-reach-stat span {
+  font-size: 0.82rem;
+  font-weight: 750;
+  color: var(--efsw-ink);
+  letter-spacing: 0.01em;
+}
+.efsw-reach-stat small {
+  font-size: 0.72rem;
+  color: var(--efsw-ink-soft);
+  line-height: 1.55;
+}
+
+/* ════════════════════════════════════════════════════
+   ORGANIZATION PAGE
+   ════════════════════════════════════════════════════ */
+.efsw-org-page { min-height: 100svh; background: var(--efsw-paper); color: var(--efsw-ink); }
+
+/* Masthead — dark header */
+.efsw-org-masthead { background: var(--efsw-ink); color: var(--efsw-cream); }
+.efsw-org-masthead__inner {
+  width: min(100%, var(--efsw-max));
+  margin-inline: auto;
+  padding: clamp(7rem, 15vw, 14rem) var(--efsw-gutter) clamp(4rem, 8vw, 8rem);
+}
+.efsw-org-masthead .efsw-section-label { color: var(--efsw-green-light); }
+.efsw-org-masthead h1 {
+  max-width: 10ch;
+  margin: 1.5rem 0 0;
+  font-family: var(--font-display);
+  font-size: clamp(3rem, 6.5vw, 8rem);
+  font-style: normal;
+  font-weight: 650;
+  letter-spacing: -0.03em;
+  line-height: 0.9;
+}
+.efsw-org-masthead h1 span { color: var(--efsw-sun); }
+.efsw-org-masthead > .efsw-org-masthead__inner > p {
+  max-width: 34rem;
+  margin: 2.5rem 0 0;
+  color: color-mix(in oklch, var(--efsw-cream) 72%, transparent);
+  font-size: clamp(1rem, 1.3vw, 1.2rem);
+  line-height: 1.65;
+}
+
+/* Org structure */
+.efsw-org-structure { padding: clamp(4rem, 9vw, 9rem) 0; }
+.efsw-org-structure__inner {
+  width: min(100%, var(--efsw-max));
+  margin-inline: auto;
+  padding-inline: var(--efsw-gutter);
+}
+
+/* Node base */
+.efsw-org-node {
+  padding: 2.5rem;
+  border: 1px solid var(--efsw-line);
+}
+.efsw-org-node__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+}
+.efsw-org-node__num {
+  color: var(--efsw-green);
+  font-size: 0.72rem;
+  font-weight: 750;
+  letter-spacing: 0.05em;
+}
+.efsw-org-node__tag {
+  padding: 0.2rem 0.65rem;
+  background: var(--efsw-paper-deep);
+  border-radius: 999px;
+  color: var(--efsw-ink-soft);
+  font-size: 0.63rem;
+  font-weight: 750;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+.efsw-org-node__icon { margin-bottom: 1.25rem; color: var(--efsw-green); opacity: 0.7; display: block; }
+.efsw-org-node h2 {
+  margin: 0 0 1rem;
+  font-family: var(--font-display);
+  font-size: clamp(1.6rem, 2.5vw, 3rem);
+  font-style: normal;
+  font-weight: 650;
+  letter-spacing: -0.025em;
+  line-height: 1;
+}
+.efsw-org-node p { margin: 0; max-width: 38rem; color: var(--efsw-ink-soft); font-size: 0.95rem; line-height: 1.65; }
+
+/* Primary — Executive Council */
+.efsw-org-node--primary {
+  border-top: 3px solid var(--efsw-green);
+  background: color-mix(in oklch, var(--efsw-paper-deep) 55%, var(--efsw-paper));
+}
+.efsw-org-node--primary h2 { font-size: clamp(2rem, 3.5vw, 4.5rem); }
+.efsw-org-node--primary .efsw-org-node__tag {
+  background: color-mix(in oklch, var(--efsw-green) 12%, transparent);
+  color: var(--efsw-green);
+}
+
+/* Visual connector */
+.efsw-org-connector {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 3.5rem;
+}
+.efsw-org-connector__stem {
+  display: block;
+  width: 1.5px;
+  height: 100%;
+  background: var(--efsw-line);
+}
+.efsw-org-connector__bar {
+  display: block;
+  position: absolute;
+  bottom: 0;
+  left: calc(-1 * var(--efsw-gutter));
+  right: calc(-1 * var(--efsw-gutter));
+  height: 1.5px;
+  background: var(--efsw-line);
+}
+
+/* Three branches */
+.efsw-org-branches {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.efsw-org-node--branch { border-inline-end: 0; }
+.efsw-org-node--branch + .efsw-org-node--branch { border-inline-start: 1px solid var(--efsw-line); }
+
+/* Membership section */
+.efsw-org-membership { background: var(--efsw-ink); color: var(--efsw-cream); padding: clamp(5rem, 11vw, 11rem) 0; }
+.efsw-org-membership__inner { width: min(100%, var(--efsw-max)); margin-inline: auto; padding-inline: var(--efsw-gutter); }
+.efsw-org-membership .efsw-section-label { color: var(--efsw-green-light); }
+.efsw-org-membership h2 {
+  max-width: 10ch;
+  margin: 1.5rem 0 3.5rem;
+  font-family: var(--font-display);
+  font-size: clamp(2.5rem, 5vw, 6rem);
+  font-style: normal;
+  font-weight: 650;
+  letter-spacing: -0.03em;
+  line-height: 0.9;
+}
+.efsw-org-membership h2 span { color: var(--efsw-sun); }
+.efsw-org-membership__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border-top: 1px solid color-mix(in oklch, var(--efsw-cream) 16%, transparent);
+  border-bottom: 1px solid color-mix(in oklch, var(--efsw-cream) 16%, transparent);
+}
+.efsw-membership-type { padding: 2rem; border-inline-end: 1px solid color-mix(in oklch, var(--efsw-cream) 16%, transparent); }
+.efsw-membership-type:last-child { border-inline-end: 0; }
+.efsw-membership-type strong {
+  display: block;
+  margin-bottom: 0.75rem;
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 650;
+  color: var(--efsw-cream);
+  letter-spacing: -0.01em;
+}
+.efsw-membership-type p { margin: 0; font-size: 0.9rem; line-height: 1.65; color: color-mix(in oklch, var(--efsw-cream) 65%, transparent); }
+
+/* ════════════════════════════════════════════════════
+   NEWSROOM PAGE
+   ════════════════════════════════════════════════════ */
+.efsw-newsroom-page { min-height: 100svh; background: var(--efsw-paper); color: var(--efsw-ink); }
+
+.efsw-newsroom-masthead {
+  width: min(100%, var(--efsw-max));
+  margin-inline: auto;
+  padding: clamp(7rem, 15vw, 13rem) var(--efsw-gutter) clamp(3rem, 5vw, 5rem);
+}
+.efsw-newsroom-masthead__meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 3rem;
+  color: var(--efsw-ink-soft);
+  font-size: 0.72rem;
+  font-weight: 750;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+.efsw-newsroom-sep { color: var(--efsw-line); user-select: none; }
+.efsw-newsroom-masthead__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  gap: clamp(2rem, 8vw, 9rem);
+  align-items: end;
+}
+.efsw-newsroom-masthead h1 {
+  max-width: 11ch;
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(3rem, 6.5vw, 8rem);
+  font-style: normal;
+  font-weight: 650;
+  letter-spacing: -0.03em;
+  line-height: 0.9;
+}
+.efsw-newsroom-masthead h1 span { color: var(--efsw-green); }
+.efsw-newsroom-masthead p { margin: 0; color: var(--efsw-ink-soft); font-size: clamp(1rem, 1.3vw, 1.2rem); line-height: 1.65; }
+
+/* Category filter strip */
+.efsw-newsroom-filters {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: min(100%, var(--efsw-max));
+  margin-inline: auto;
+  padding: 1.5rem var(--efsw-gutter);
+  border-bottom: 1px solid var(--efsw-line);
+  flex-wrap: wrap;
+}
+.efsw-newsroom-filter {
+  padding: 0.35rem 0.85rem;
+  border: 1px solid var(--efsw-line);
+  border-radius: 999px;
+  color: var(--efsw-ink-soft);
+  font-size: 0.72rem;
+  font-weight: 650;
+  letter-spacing: 0.03em;
+  cursor: default;
+  user-select: none;
+}
+.efsw-newsroom-filter--active {
+  background: var(--efsw-ink);
+  border-color: var(--efsw-ink);
+  color: var(--efsw-cream);
+}
+
+/* ════════════════════════════════════════════════════
+   LIBRARY / ACADEMIC DOCUMENTS PAGE
+   ════════════════════════════════════════════════════ */
+.efsw-library-page { min-height: 100svh; background: var(--efsw-paper); color: var(--efsw-ink); }
+
+.efsw-library-hero {
+  width: min(100%, var(--efsw-max));
+  margin-inline: auto;
+  padding: clamp(7rem, 15vw, 13rem) var(--efsw-gutter) clamp(3rem, 6vw, 6rem);
+}
+.efsw-library-hero h1 {
+  max-width: 12ch;
+  margin: 1.5rem 0 0;
+  font-family: var(--font-display);
+  font-size: clamp(3rem, 6.5vw, 8rem);
+  font-style: normal;
+  font-weight: 650;
+  letter-spacing: -0.03em;
+  line-height: 0.9;
+}
+.efsw-library-hero h1 span { color: var(--efsw-green); }
+.efsw-library-hero__text > p {
+  max-width: 36rem;
+  margin: 2rem 0 0;
+  color: var(--efsw-ink-soft);
+  font-size: clamp(1rem, 1.3vw, 1.2rem);
+  line-height: 1.65;
+}
+
+/* Category cards */
+.efsw-library-cats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 4rem;
+  border-top: 1px solid var(--efsw-line);
+  border-bottom: 1px solid var(--efsw-line);
+}
+.efsw-library-cat {
+  display: grid;
+  gap: 0.2rem;
+  padding: 2rem;
+  border-inline-end: 1px solid var(--efsw-line);
+  border-top: 3px solid transparent;
+}
+.efsw-library-cat:last-child { border-inline-end: 0; }
+.efsw-library-cat--research { border-top-color: var(--efsw-green); }
+.efsw-library-cat--practice { border-top-color: var(--efsw-green-light); }
+.efsw-library-cat--briefings { border-top-color: var(--efsw-sun); }
+.efsw-library-cat__icon { margin-bottom: 0.75rem; color: var(--efsw-ink-soft); }
+.efsw-library-cat strong {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+  color: var(--efsw-ink);
+}
+.efsw-library-cat span {
+  font-size: 0.7rem;
+  font-weight: 750;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--efsw-ink-soft);
+}
+.efsw-library-cat p { margin: 1rem 0 0; font-size: 0.88rem; line-height: 1.6; color: var(--efsw-ink-soft); }
+
+/* ════════════════════════════════════════════════════
+   ACCESSIBILITY UTILITY
+   ════════════════════════════════════════════════════ */
+.efsw-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ════════════════════════════════════════════════════
+   RESPONSIVE — new inner pages
+   ════════════════════════════════════════════════════ */
+@media (max-width: 55rem) {
+  .efsw-org-branches,
+  .efsw-org-membership__grid,
+  .efsw-about-reach__inner,
+  .efsw-library-cats { grid-template-columns: 1fr; }
+
+  .efsw-org-node--branch + .efsw-org-node--branch {
+    border-inline-start: 0;
+    border-top: 1px solid var(--efsw-line);
+  }
+  .efsw-membership-type {
+    border-inline-end: 0;
+    border-bottom: 1px solid color-mix(in oklch, var(--efsw-cream) 16%, transparent);
+  }
+  .efsw-membership-type:last-child { border-bottom: 0; }
+  .efsw-reach-stat { border-inline-end: 0; border-bottom: 1px solid var(--efsw-line); }
+  .efsw-reach-stat:last-child { border-bottom: 0; }
+  .efsw-library-cat { border-inline-end: 0; border-bottom: 1px solid var(--efsw-line); }
+  .efsw-library-cat:last-child { border-bottom: 0; }
+
+  .efsw-newsroom-masthead__body { grid-template-columns: 1fr; gap: 2rem; }
+  .efsw-org-connector { display: none; }
+}
+
+/* ════════════════════════════════════════════════════
+   MOTION SPEC — design tokens + context transitions
+   Scale: quick 150ms / appear 400ms · easing: ease / ease-in-out
+   ════════════════════════════════════════════════════ */
+
+/* ── Keyframes ──────────────────────────────────────── */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(1.25rem); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-1.25rem); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeInLeft {
+  from { opacity: 0; transform: translateX(-1.25rem); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+/* pulsingAutodigi — for primary CTA button to draw attention */
+@keyframes pulsingAutodigi {
+  0%   { box-shadow: 0 0 0 0 color-mix(in oklch, var(--efsw-green) 45%, transparent); }
+  65%  { box-shadow: 0 0 0 0.55rem transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+
+/* ── Nav join CTA — pulsing pattern ─────────────────── */
+.efsw-nav__join {
+  animation: pulsingAutodigi 2.8s ease infinite;
+}
+.efsw-nav__join:hover,
+.efsw-nav__join:focus-visible {
+  animation: none; /* pause pulse on hover, framer-motion takes over */
+}
+
+/* ── Card context — 150ms ease ──────────────────────── */
+.efsw-news-card,
+.efsw-principle-card,
+.efsw-org-node--branch,
+.efsw-library-cat,
+.efsw-newsroom-filter,
+.efsw-membership-type,
+.efsw-reach-stat {
+  transition: background 150ms ease, border-color 150ms ease, box-shadow 150ms ease, color 150ms ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  /* news cards */
+  .efsw-news-card:hover {
+    background: color-mix(in oklch, var(--efsw-paper-deep) 65%, var(--efsw-paper));
+  }
+
+  /* principle cards */
+  .efsw-principle-card:hover {
+    background: color-mix(in oklch, var(--efsw-paper-deep) 80%, var(--efsw-paper));
+    border-color: color-mix(in oklch, var(--efsw-green) 25%, var(--efsw-line));
+  }
+
+  /* org branch nodes */
+  .efsw-org-node--branch:hover {
+    background: color-mix(in oklch, var(--efsw-paper-deep) 75%, var(--efsw-paper));
+    border-color: color-mix(in oklch, var(--efsw-green) 30%, var(--efsw-line));
+  }
+
+  /* library category cards */
+  .efsw-library-cat:hover {
+    background: color-mix(in oklch, var(--efsw-paper-deep) 70%, var(--efsw-paper));
+  }
+
+  /* newsroom filter pills */
+  .efsw-newsroom-filter:not(.efsw-newsroom-filter--active):hover {
+    background: var(--efsw-paper-deep);
+    border-color: var(--efsw-ink-soft);
+    color: var(--efsw-ink);
+    cursor: pointer;
+  }
+
+  /* membership types (dark bg) */
+  .efsw-membership-type:hover {
+    background: color-mix(in oklch, var(--efsw-cream) 7%, var(--efsw-ink));
+  }
+}
+
+/* ── Media context — filter/opacity 400ms ease ──────── */
+.efsw-story__media img,
+.efsw-news-card img,
+.efsw-hero-media img {
+  transition: filter 400ms ease, opacity 400ms ease, transform 400ms ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .efsw-news-card:hover .efsw-news-card__img,
+  .efsw-story__media:hover img {
+    filter: brightness(1.04) saturate(1.08);
+    transform: scale(1.02);
+  }
+}
+
+/* ── Link context — color-shift hover pattern ───────── */
+/* Applied to content-area anchor links that don't already have hover styles */
+.efsw-about-page a:not([class]),
+.efsw-org-page a:not([class]),
+.efsw-newsroom-page a:not([class]),
+.efsw-library-page a:not([class]) {
+  transition: color 150ms ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .efsw-about-footer a:hover,
+  .efsw-org-page footer a:hover,
+  .efsw-newsroom-page footer a:hover,
+  .efsw-library-page footer a:hover {
+    color: var(--efsw-green-light);
+  }
+}
+
+/* ── Nav link — align to 150ms quick context ────────── */
+.efsw-nav__link {
+  transition: color 150ms ease, background-color 150ms ease;
+}
+.efsw-nav__link::after {
+  transition: opacity 150ms ease, transform 200ms ease;
+}
+/* Nav panel items */
+.efsw-nav__panel > a,
+.efsw-nav__panel > button {
+  transition: background 150ms ease, color 150ms ease;
+}
+.efsw-nav__panel > a svg,
+.efsw-nav__panel > button svg {
+  transition: transform 150ms ease, opacity 150ms ease;
 }
