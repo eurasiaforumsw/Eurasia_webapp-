@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir -p /tmp/nextcheck)",
+      "Bash(nohup npx next dev -p 2025)",
+      "Bash(echo \"started pid=$!\")",
+      "Read(//tmp/nextcheck/**)",
+      "Bash(exit 1)",
+      "Bash(rm -f .nav-check.mjs)",
+      "Bash(lsof -ti:2025)",
+      "Read(//private/tmp/**)"
+    ]
+  }
+}

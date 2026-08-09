@@ -31,7 +31,11 @@
     "register": "회원가입",
     "logout": "로그아웃",
     "profile": "내 프로필",
-    "dashboard": "대시보드"
+    "dashboard": "대시보드",
+    "overview": "개요",
+    "organization": "조직 구조",
+    "menu": "메뉴",
+    "language": "언어"
   },
   "hero": {
     "title": "유라시아 사회복지재단",

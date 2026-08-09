@@ -31,7 +31,11 @@
     "register": "Register",
     "logout": "Logout",
     "profile": "My Profile",
-    "dashboard": "Dashboard"
+    "dashboard": "Dashboard",
+    "overview": "Overview",
+    "organization": "Organization",
+    "menu": "Menu",
+    "language": "Language"
   },
   "hero": {
     "title": "Eurasia Foundation for Social Work",

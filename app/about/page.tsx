@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { ArrowUpRight, Globe2, MoveLeft, UsersRound } from "lucide-react";
+import { ArrowUpRight, Globe2, UsersRound } from "lucide-react";
+import { SiteNav } from "@/components/efsw/SiteNav";
 
 export const metadata: Metadata = {
   title: "เกี่ยวกับเรา | Eurasia Forum for Social Workers",
@@ -29,15 +30,9 @@ const principles = [
 
 export default function AboutPage() {
   return (
-    <main className="efsw-about-page">
-      <nav className="efsw-about-nav" aria-label="About navigation">
-        <a href="/" className="efsw-brand" aria-label="EFSW home">
-          <span className="efsw-brand__mark">E</span>
-          <span>Eurasia Forum<br />for Social Workers</span>
-        </a>
-        <a href="/" className="efsw-text-link"><MoveLeft size={16} /> กลับหน้าหลัก</a>
-      </nav>
-
+    <>
+      <SiteNav />
+      <main className="efsw-about-page">
       <section className="efsw-about-hero" aria-labelledby="about-title">
         <div className="efsw-section-label"><Globe2 size={15} /> About EFSW / เกี่ยวกับเรา</div>
         <div className="efsw-about-hero__grid">
@@ -85,6 +80,7 @@ export default function AboutPage() {
       </section>
 
       <footer className="efsw-about-footer"><span>© 2026 EFSW</span><a href="/">Eurasia Forum for Social Workers</a><span>English · 한국어 · ไทย</span></footer>
-    </main>
+      </main>
+    </>
   );
 }
