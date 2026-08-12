@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { ArrowUpRight, Quote } from "lucide-react";
 import { SiteNav } from "@/components/efsw/SiteNav";
 import { ScrollProgress } from "@/components/efsw/ScrollProgress";
@@ -172,20 +172,64 @@ export default function HomePage() {
       <section className="efsw-voices" id="voices" aria-labelledby="voices-title">
         <div className="efsw-voices__sticky">
           <div className="efsw-voices__visual" aria-hidden="true">
-            <Quote className="efsw-voices__quote-mark" size={66} strokeWidth={1.2} />
-            <div className="efsw-voices__number">{activeVoice.number}</div>
-            <div className="efsw-voices__orbit efsw-voices__orbit--outer" />
-            <div className="efsw-voices__orbit efsw-voices__orbit--inner" />
+            <div className="efsw-voices__glow" />
+            <Quote className="efsw-voices__quote-mark" size={68} strokeWidth={1.25} />
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeVoice.number}
+                initial={{ opacity: 0, scale: 0.7 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.7 }}
+                transition={{ duration: 0.35, ease: "easeOut" }}
+                className="efsw-voices__number"
+              >
+                {activeVoice.number}
+              </motion.div>
+            </AnimatePresence>
+            <motion.div
+              className="efsw-voices__orbit efsw-voices__orbit--outer"
+              animate={{ rotate: 360 }}
+              transition={{ repeat: Infinity, duration: 40, ease: "linear" }}
+            />
+            <motion.div
+              className="efsw-voices__orbit efsw-voices__orbit--inner"
+              animate={{ rotate: -360 }}
+              transition={{ repeat: Infinity, duration: 25, ease: "linear" }}
+            />
             <p>EFSW / FEATURED VOICE</p>
           </div>
 
           <div className="efsw-voices__copy" aria-live="polite">
-            <p className="efsw-kicker">{activeVoice.label}</p>
-            <h2 id="voices-title" key={activeVoiceIndex}>“{activeVoice.quote}”</h2>
-            <p className="efsw-voices__attribution" key={`attribution-${activeVoiceIndex}`}>{activeVoice.attribution}</p>
-            <div className="efsw-voices__note">{activeVoice.note}</div>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeVoiceIndex}
+                initial={{ opacity: 0, y: 28, filter: "blur(8px)" }}
+                animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                exit={{ opacity: 0, y: -22, filter: "blur(8px)" }}
+                transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+              >
+                <p className="efsw-kicker">{activeVoice.label}</p>
+                <h2 id="voices-title">“{activeVoice.quote}”</h2>
+                <p className="efsw-voices__attribution">{activeVoice.attribution}</p>
+                <div className="efsw-voices__note">{activeVoice.note}</div>
+              </motion.div>
+            </AnimatePresence>
             <div className="efsw-voices__progress" aria-label={`Featured voice ${activeVoiceIndex + 1} of ${featuredVoices.length}`}>
-              {featuredVoices.map((voice, index) => <span key={voice.number} className={index <= activeVoiceIndex ? "is-active" : ""} />)}
+              {featuredVoices.map((voice, index) => (
+                <button
+                  key={voice.number}
+                  type="button"
+                  onClick={() => {
+                    const voicesElement = document.getElementById("voices");
+                    if (voicesElement) {
+                      const stepHeight = (voicesElement.offsetHeight - window.innerHeight) / (featuredVoices.length - 1);
+                      window.scrollTo({ top: voicesElement.offsetTop + stepHeight * index, behavior: "smooth" });
+                    }
+                  }}
+                  className={index <= activeVoiceIndex ? "is-active" : ""}
+                  aria-label={`Go to voice ${voice.number}`}
+                />
+              ))}
             </div>
           </div>
         </div>
