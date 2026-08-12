@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowUpRight, Quote } from "lucide-react";
 import { SiteNav } from "@/components/efsw/SiteNav";
@@ -33,6 +34,9 @@ type FeaturedVoice = {
   attribution: string;
   quote: string;
   note: string;
+  /** Placeholder portrait — replace with an approved photo once EFSW supplies one. */
+  portrait: string;
+  portraitAlt: string;
 };
 
 const featuredVoices: FeaturedVoice[] = [
@@ -42,6 +46,8 @@ const featuredVoices: FeaturedVoice[] = [
     attribution: "Reserved for the Dean's institutional address",
     quote: "The official message from the Dean will appear here once EFSW confirms the text. This space is held for an authoritative institutional voice.",
     note: "Approved institutional voice",
+    portrait: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=900&h=1100&q=80",
+    portraitAlt: "Placeholder portrait representing the Dean's institutional address",
   },
   {
     number: "02",
@@ -49,6 +55,8 @@ const featuredVoices: FeaturedVoice[] = [
     attribution: "A voice from the field across Eurasia",
     quote: "Stories from real practice should cross borders, so that communities can learn from one another and carry those lessons forward.",
     note: "Regional practice voice",
+    portrait: "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?auto=format&fit=crop&w=900&h=1100&q=80",
+    portraitAlt: "Placeholder portrait representing a social work practitioner in the field",
   },
   {
     number: "03",
@@ -56,6 +64,8 @@ const featuredVoices: FeaturedVoice[] = [
     attribution: "EFSW / Connect · Empower · Advocate",
     quote: "Social change has no borders, and meaningful collaboration always begins with the willingness to listen.",
     note: "EFSW editorial perspective",
+    portrait: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=900&h=1100&q=80",
+    portraitAlt: "Placeholder portrait representing the EFSW editorial perspective",
   },
 ];
 
@@ -83,47 +93,92 @@ const newsItems = [
   },
 ];
 
+/** Above this scroll speed (px per ms) slides fold away instead of crossfading. */
+const FAST_SCROLL_ENTER = 1.1;
+/** Hysteresis: settle back to the readable pace only once clearly slow again. */
+const FAST_SCROLL_EXIT = 0.45;
+
 export default function HomePage() {
-  const [voiceProgress, setVoiceProgress] = useState(0);
+  const [activeVoiceIndex, setActiveVoiceIndex] = useState(0);
+  const [isScrollingFast, setIsScrollingFast] = useState(false);
   const [isStoryMotionEnabled, setIsStoryMotionEnabled] = useState(true);
 
   useEffect(() => {
     const motionQuery = window.matchMedia("(min-width: 40rem) and (prefers-reduced-motion: no-preference)");
-    const updateMotionPreference = () => setIsStoryMotionEnabled(motionQuery.matches);
-    updateMotionPreference();
-
     const voices = document.getElementById("voices");
+    let storyMotion = motionQuery.matches;
     let frame = 0;
+    let lastScrollY = window.scrollY;
+    let lastTimestamp = 0;
+    let velocity = 0;
+    let fast = false;
 
-    const updateProgress = () => {
-      if (!voices) return;
+    const updateMotionPreference = () => {
+      storyMotion = motionQuery.matches;
+      setIsStoryMotionEnabled(storyMotion);
+      if (!storyMotion) {
+        setActiveVoiceIndex(0);
+        setIsScrollingFast(false);
+      }
+    };
+    setIsStoryMotionEnabled(storyMotion);
+
+    // Runs on rAF but only commits React state when the active slide or the
+    // fast/slow pace actually flips, so scrolling no longer re-renders per frame.
+    const measure = (timestamp: number) => {
+      frame = 0;
+      if (!voices || !storyMotion) return;
+
+      const scrollY = window.scrollY;
+      const elapsed = lastTimestamp ? timestamp - lastTimestamp : 0;
+      if (elapsed > 0) {
+        const sample = Math.abs(scrollY - lastScrollY) / elapsed;
+        // Smooth the sample so a single stuttering frame cannot flip the pace.
+        velocity = velocity * 0.7 + sample * 0.3;
+      }
+      lastScrollY = scrollY;
+      lastTimestamp = timestamp;
+
+      const nextFast = fast ? velocity > FAST_SCROLL_EXIT : velocity > FAST_SCROLL_ENTER;
+      if (nextFast !== fast) {
+        fast = nextFast;
+        setIsScrollingFast(nextFast);
+      }
+
       const range = voices.offsetHeight - window.innerHeight;
       // Read the section's viewport position so this remains correct if a
       // browser chooses body or documentElement as the scrolling element.
       const progress = range <= 0 ? 0 : -voices.getBoundingClientRect().top / range;
-      const nextProgress = Math.min(1, Math.max(0, progress));
-      setVoiceProgress((previous) => Math.abs(previous - nextProgress) < 0.002 ? previous : nextProgress);
+      const clamped = Math.min(1, Math.max(0, progress));
+      const nextIndex = Math.min(featuredVoices.length - 1, Math.floor(clamped * featuredVoices.length));
+      setActiveVoiceIndex((previous) => (previous === nextIndex ? previous : nextIndex));
+
+      // Keep sampling while the page is still settling so velocity decays to rest.
+      if (velocity > FAST_SCROLL_EXIT) requestMeasure();
     };
 
-    const requestProgressUpdate = () => {
+    const requestMeasure = () => {
       if (frame) return;
-      frame = window.requestAnimationFrame(() => {
-        frame = 0;
-        updateProgress();
-      });
+      frame = window.requestAnimationFrame(measure);
     };
 
-    updateProgress();
-    window.addEventListener("scroll", requestProgressUpdate, { passive: true });
-    document.addEventListener("scroll", requestProgressUpdate, { passive: true, capture: true });
-    window.addEventListener("resize", requestProgressUpdate);
-    const resizeObserver = voices ? new ResizeObserver(requestProgressUpdate) : null;
+    const onScroll = () => requestMeasure();
+    const onResize = () => {
+      lastTimestamp = 0;
+      requestMeasure();
+    };
+
+    requestMeasure();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    document.addEventListener("scroll", onScroll, { passive: true, capture: true });
+    window.addEventListener("resize", onResize);
+    const resizeObserver = voices ? new ResizeObserver(onResize) : null;
     resizeObserver?.observe(voices as Element);
     motionQuery.addEventListener("change", updateMotionPreference);
     return () => {
-      window.removeEventListener("scroll", requestProgressUpdate);
-      document.removeEventListener("scroll", requestProgressUpdate, true);
-      window.removeEventListener("resize", requestProgressUpdate);
+      window.removeEventListener("scroll", onScroll);
+      document.removeEventListener("scroll", onScroll, true);
+      window.removeEventListener("resize", onResize);
       resizeObserver?.disconnect();
       motionQuery.removeEventListener("change", updateMotionPreference);
       if (frame) window.cancelAnimationFrame(frame);
@@ -154,12 +209,6 @@ export default function HomePage() {
     return () => observer.disconnect();
   }, []);
 
-  const activeVoiceIndex = useMemo(
-    () => isStoryMotionEnabled
-      ? Math.min(featuredVoices.length - 1, Math.floor(voiceProgress * featuredVoices.length))
-      : 0,
-    [isStoryMotionEnabled, voiceProgress],
-  );
   const activeVoice = featuredVoices[activeVoiceIndex];
 
   return (
@@ -169,50 +218,63 @@ export default function HomePage() {
       <main className="efsw-home" id="home">
       <AnimatedHero />
 
-      <section className="efsw-voices" id="voices" aria-labelledby="voices-title">
+      <section className="efsw-voices" id="voices" aria-label="Featured voices">
         <div className="efsw-voices__sticky">
-          <div className="efsw-voices__visual" aria-hidden="true">
-            <div className="efsw-voices__glow" />
-            <Quote className="efsw-voices__quote-mark" size={68} strokeWidth={1.25} />
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={activeVoice.number}
-                initial={{ opacity: 0, scale: 0.7 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.7 }}
-                transition={{ duration: 0.35, ease: "easeOut" }}
-                className="efsw-voices__number"
+          <div className={`efsw-voices__visual${isScrollingFast && isStoryMotionEnabled ? " is-folding" : ""}`}>
+            {/* All portraits stay mounted and crossfade via CSS, so switching
+                voices never triggers a fresh image decode mid-scroll. */}
+            {featuredVoices.map((voice, index) => (
+              <div
+                key={voice.number}
+                className="efsw-voices__portrait"
+                data-state={index === activeVoiceIndex ? "active" : index < activeVoiceIndex ? "past" : "upcoming"}
+                aria-hidden={index !== activeVoiceIndex}
               >
-                {activeVoice.number}
-              </motion.div>
-            </AnimatePresence>
-            <motion.div
-              className="efsw-voices__orbit efsw-voices__orbit--outer"
-              animate={{ rotate: 360 }}
-              transition={{ repeat: Infinity, duration: 40, ease: "linear" }}
-            />
-            <motion.div
-              className="efsw-voices__orbit efsw-voices__orbit--inner"
-              animate={{ rotate: -360 }}
-              transition={{ repeat: Infinity, duration: 25, ease: "linear" }}
-            />
-            <p>EFSW / FEATURED VOICE</p>
+                <Image
+                  src={voice.portrait}
+                  alt={index === activeVoiceIndex ? voice.portraitAlt : ""}
+                  sizes="(max-width: 64rem) 90vw, 34rem"
+                  priority={index === 0}
+                  fill
+                />
+              </div>
+            ))}
+            <div className="efsw-voices__scrim" aria-hidden="true" />
+            <Quote className="efsw-voices__quote-mark" size={34} strokeWidth={1.6} aria-hidden="true" />
+            <div className="efsw-voices__number" aria-hidden="true">{activeVoice.number}</div>
+            <p aria-hidden="true">EFSW / FEATURED VOICE</p>
           </div>
 
           <div className="efsw-voices__copy" aria-live="polite">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={activeVoiceIndex}
-                initial={{ opacity: 0, y: 28, filter: "blur(8px)" }}
-                animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-                exit={{ opacity: 0, y: -22, filter: "blur(8px)" }}
-                transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-              >
-                <p className="efsw-kicker">{activeVoice.label}</p>
-                <h2 id="voices-title">“{activeVoice.quote}”</h2>
-                <p className="efsw-voices__attribution">{activeVoice.attribution}</p>
-                <div className="efsw-voices__note">{activeVoice.note}</div>
-              </motion.div>
+            {/* Fast scroll: the quote folds away to a compact label. Slow scroll:
+                it opens up so each person's words are actually readable. */}
+            <AnimatePresence initial={false} mode="wait">
+              {isScrollingFast && isStoryMotionEnabled ? (
+                <motion.div
+                  key="folded"
+                  className="efsw-voices__folded"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.22, ease: "easeOut" }}
+                >
+                  <p className="efsw-kicker">{activeVoice.label}</p>
+                  <p className="efsw-voices__attribution">{activeVoice.attribution}</p>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key={activeVoiceIndex}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -16 }}
+                  transition={{ duration: 0.42, ease: [0.16, 1, 0.3, 1] }}
+                >
+                  <p className="efsw-kicker">{activeVoice.label}</p>
+                  <h2>“{activeVoice.quote}”</h2>
+                  <p className="efsw-voices__attribution">{activeVoice.attribution}</p>
+                  <div className="efsw-voices__note">{activeVoice.note}</div>
+                </motion.div>
+              )}
             </AnimatePresence>
             <div className="efsw-voices__progress" aria-label={`Featured voice ${activeVoiceIndex + 1} of ${featuredVoices.length}`}>
               {featuredVoices.map((voice, index) => (
@@ -240,6 +302,13 @@ export default function HomePage() {
           {featuredVoices.slice(1).map((voice) => (
             <article className="efsw-voices__mobile-item" key={voice.number}>
               <div className="efsw-voices__mobile-item-top">
+                <Image
+                  className="efsw-voices__avatar"
+                  src={voice.portrait}
+                  alt={voice.portraitAlt}
+                  width={44}
+                  height={44}
+                />
                 <span>{voice.number}</span>
                 <small>{voice.label}</small>
               </div>
