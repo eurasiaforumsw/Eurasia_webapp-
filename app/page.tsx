@@ -1,63 +1,24 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { motion, useReducedMotion, useScroll, useSpring, useTransform } from "framer-motion";
-import { ArrowDownRight, ArrowUpRight, Globe2, MoveRight, Quote } from "lucide-react";
+import { motion } from "framer-motion";
+import { ArrowUpRight, Quote } from "lucide-react";
 import { SiteNav } from "@/components/efsw/SiteNav";
 import { ScrollProgress } from "@/components/efsw/ScrollProgress";
+import { AnimatedHero } from "@/components/ui/animated-hero";
 
 /** Sections tracked by the side progress indicator. */
 const pageSections = [
-  { id: "top", label: "Introduction" },
+  { id: "home", label: "Introduction" },
   { id: "voices", label: "Featured voices" },
   { id: "about", label: "About EFSW" },
   { id: "news", label: "Newsroom" },
   { id: "footer", label: "Contact" },
 ];
 
-/* ── Motion design tokens ─────────────────────────────────────────────────
-   Physics-based springs: values chosen by feel, not arbitrary tweens.
-   Stiffness controls how quickly energy returns; damping how fast it settles.
-
-   dramatic  — hero headline, slight overshoot → alive, editorial
-   natural   — body copy / lede, smooth settle → readable, calm
-   snappy    — CTA buttons, instant feedback → decisive
-────────────────────────────────────────────────────────────────────────── */
-const dramatic: Parameters<typeof motion.div>[0]["transition"] = {
-  type: "spring", stiffness: 280, damping: 20, mass: 1.0,
-};
-const natural: Parameters<typeof motion.div>[0]["transition"] = {
-  type: "spring", stiffness: 220, damping: 26, mass: 0.9,
-};
-const snappy: Parameters<typeof motion.div>[0]["transition"] = {
-  type: "spring", stiffness: 400, damping: 28, mass: 0.8,
-};
-
-// Stagger container — children spring in 90 ms apart
-const heroContainer = {
-  hidden: {},
-  visible: { transition: { staggerChildren: 0.09, delayChildren: 0.08 } },
-} as const;
-
-// Each hero item rises from below with the dramatic spring
-const heroItem = {
-  hidden: { opacity: 0, y: 30 },
-  visible: { opacity: 1, y: 0, transition: dramatic },
-} as const;
-
-// Lede / body text: subtler, natural spring
-const heroItemSoft = {
-  hidden: { opacity: 0, y: 18 },
-  visible: { opacity: 1, y: 0, transition: natural },
-} as const;
-
-// Meta bar: drifts up late, no spring needed — just a clean fade
-const heroMeta = {
-  hidden: { opacity: 0, y: 10 },
-  visible: { opacity: 1, y: 0, transition: { delay: 0.65, duration: 0.7, ease: [0.16, 1, 0.3, 1] } },
-} as const;
-
 // Scroll-reveal cards: spring in from below once 20 % is visible
+const natural = { type: "spring" as const, stiffness: 220, damping: 26, mass: 0.9 };
+
 const cardItem = (i: number) => ({
   hidden: { opacity: 0, y: 22 },
   visible: {
@@ -123,23 +84,6 @@ const newsItems = [
 ];
 
 export default function HomePage() {
-  const reducedMotion = useReducedMotion();
-
-  // ── Scroll-driven parallax ───────────────────────────────────────────────
-  // Spring-smoothed values create natural deceleration (physics, not tweens).
-  // When reduced motion is preferred, all ranges collapse to [0,0] → no movement.
-  const { scrollY } = useScroll();
-  const rm = reducedMotion ?? false;
-
-  const rawBlobY     = useTransform(scrollY, [0, 800], rm ? [0,   0] : [0, -200]);
-  const rawOrbitY    = useTransform(scrollY, [0, 800], rm ? [0,   0] : [0,   90]);
-  const rawContentY  = useTransform(scrollY, [0, 800], rm ? [0,   0] : [0,  -55]);
-
-  // Low stiffness = dreamy inertia; higher damping = no oscillation past start
-  const yBlobs   = useSpring(rawBlobY,    { stiffness: 55, damping: 18, mass: 1.1 });
-  const yOrbit   = useSpring(rawOrbitY,   { stiffness: 50, damping: 20, mass: 1.0 });
-  const yContent = useSpring(rawContentY, { stiffness: 80, damping: 24, mass: 1.0 });
-
   const [voiceProgress, setVoiceProgress] = useState(0);
   const [isStoryMotionEnabled, setIsStoryMotionEnabled] = useState(true);
 
@@ -223,52 +167,7 @@ export default function HomePage() {
       <SiteNav />
       <ScrollProgress sections={pageSections} />
       <main className="efsw-home" id="home">
-      <section className="efsw-hero" aria-labelledby="hero-title">
-        {/* Parallax blobs — drifts at 2.5× content speed for depth */}
-        <motion.div className="efsw-hero__wash" aria-hidden="true" style={{ y: yBlobs }} />
-        {/* Orbit ring — moves in opposite direction for layered depth */}
-        <motion.div className="efsw-hero__orbit" aria-hidden="true" style={{ y: yOrbit }} />
-
-        <motion.div
-          className="efsw-hero__content"
-          id="top"
-          variants={heroContainer}
-          initial="hidden"
-          animate="visible"
-          style={{ y: yContent }}
-        >
-          <motion.p className="efsw-kicker" variants={heroItem}>
-            <Globe2 size={15} /> International social work across Eurasia
-          </motion.p>
-          <motion.h1 id="hero-title" variants={heroItem}>
-            Social change<br /><span>has no borders.</span>
-          </motion.h1>
-          <motion.p className="efsw-hero__lede" variants={heroItemSoft}>
-            The Eurasia Forum for Social Workers connects people, practice, and research so communities can move forward with more care.
-          </motion.p>
-          <motion.div className="efsw-hero__actions" variants={heroItemSoft}>
-            <motion.a
-              href="/about"
-              className="efsw-button efsw-button--dark"
-              whileHover={{ scale: 1.04, transition: snappy }}
-              whileTap={{ scale: 0.97, transition: snappy }}
-            >
-              About EFSW <ArrowUpRight size={17} />
-            </motion.a>
-            <a href="#voices" className="efsw-text-link">Read the voices <MoveRight size={17} /></a>
-          </motion.div>
-        </motion.div>
-
-        <motion.div
-          className="efsw-hero__meta"
-          variants={heroMeta}
-          initial="hidden"
-          animate="visible"
-        >
-          <span>Connect · Empower · Advocate</span>
-          <span className="efsw-scroll-cue"><ArrowDownRight size={16} /> Scroll to listen</span>
-        </motion.div>
-      </section>
+      <AnimatedHero />
 
       <section className="efsw-voices" id="voices" aria-labelledby="voices-title">
         <div className="efsw-voices__sticky">
@@ -338,7 +237,7 @@ export default function HomePage() {
               <div className="efsw-news-card__top"><span>{item.number}</span><small>{item.category}</small></div>
               <h3>{item.title}</h3>
               <p>{item.body}</p>
-              <a href="/about" className="efsw-text-link">{item.link} <ArrowUpRight size={16} /></a>
+              <a href="/news" className="efsw-text-link">{item.link} <ArrowUpRight size={16} /></a>
             </motion.article>
           ))}
         </div>

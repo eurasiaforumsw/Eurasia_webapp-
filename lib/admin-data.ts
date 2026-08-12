@@ -19,6 +19,7 @@ export type AdminContentItem = {
   category: string;
   title: string;
   summary: string;
+  body: string;
   status: AdminContentStatus;
   locale: "th" | "en" | "ko";
   updatedAt: string;
@@ -58,6 +59,7 @@ const initialContent: AdminContentItem[] = [
     category: "Platform update",
     title: "A trilingual platform for regional exchange",
     summary: "EFSW connects English, Korean, and Thai resources so professional knowledge can move more freely across Eurasia.",
+    body: "",
     status: "published",
     locale: "en",
     updatedAt: "2026-08-07T00:00:00.000Z",
@@ -68,6 +70,7 @@ const initialContent: AdminContentItem[] = [
     category: "Membership",
     title: "A network for professionals, students, and institutions",
     summary: "Three membership pathways make room for practitioners, emerging social workers, universities, NGOs, and public partners.",
+    body: "",
     status: "published",
     locale: "en",
     updatedAt: "2026-08-07T00:00:00.000Z",
@@ -78,6 +81,7 @@ const initialContent: AdminContentItem[] = [
     category: "Resources",
     title: "Research and practice belong in the same conversation",
     summary: "The resource hub brings research papers, case studies, field manuals, and regional learning into one shared place.",
+    body: "",
     status: "published",
     locale: "en",
     updatedAt: "2026-08-07T00:00:00.000Z",
@@ -88,6 +92,7 @@ const initialContent: AdminContentItem[] = [
     category: "Research",
     title: "คลังงานวิจัยและบทความ",
     summary: "พื้นที่สำหรับบทความวิชาการ งานวิจัยเชิงพื้นที่ และบทเรียนจากการทำงานระดับภูมิภาค",
+    body: "",
     status: "published",
     locale: "th",
     updatedAt: "2026-08-07T00:00:00.000Z",
@@ -98,6 +103,7 @@ const initialContent: AdminContentItem[] = [
     category: "Practice",
     title: "คู่มือการปฏิบัติงาน",
     summary: "ทรัพยากรที่ช่วยให้นักสังคมสงเคราะห์นำความรู้ไปปรับใช้ในบริบทของตนเอง",
+    body: "",
     status: "published",
     locale: "th",
     updatedAt: "2026-08-07T00:00:00.000Z",
@@ -108,6 +114,7 @@ const initialContent: AdminContentItem[] = [
     category: "Briefings",
     title: "เอกสารสรุปเชิงนโยบาย",
     summary: "มุมมองสั้น กระชับ และพร้อมใช้สำหรับการพูดคุยเรื่องนโยบายและความร่วมมือ",
+    body: "",
     status: "published",
     locale: "th",
     updatedAt: "2026-08-07T00:00:00.000Z",
@@ -135,6 +142,10 @@ const write = (key: string, value: unknown) => {
 const migrateLegacyContent = (content: AdminContentItem[]) => {
   let changed = false;
   const next = content.map((item) => {
+    if (typeof item.body === "undefined") {
+      item = { ...item, body: "" };
+      changed = true;
+    }
     const initialItem = initialContent.find((entry) => entry.id === item.id);
     const isUntouchedLegacyDocument = initialItem?.kind === "document"
       && item.kind === initialItem.kind

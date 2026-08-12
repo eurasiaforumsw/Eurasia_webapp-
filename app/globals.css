@@ -3523,6 +3523,26 @@ body {
   color: var(--efsw-green);
 }
 
+/* ── Animated word cycling in hero headline ──────────────────────────────
+   Container holds exactly one line-height worth of space; individual word
+   spans are absolutely positioned so they can translate in and out without
+   disturbing document flow. */
+.efsw-hero__word-slot {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  /* 0.91em matches the h1 line-height so the slot is one headline-row tall */
+  height: 0.92em;
+  margin-top: 0.04em;
+}
+
+.efsw-hero__word-item {
+  position: absolute;
+  inset: 0;
+  color: var(--efsw-green);
+  font-style: italic;
+}
+
 .efsw-story {
   position: relative;
   min-height: 400svh;
