@@ -145,19 +145,19 @@ export default function HomePage() {
     <>
       <SiteNav />
       <ScrollProgress sections={pageSections} />
-      <main className=”efsw-home” id=”home”>
+      <main className="efsw-home" id="home">
       <AnimatedHero />
 
       {isStoryMotionEnabled ? (
         <VoicesGSAP voices={featuredVoices} />
       ) : (
-        <section className=”efsw-voices” id=”voices” aria-label=”Featured voices”>
-          <div className=”efsw-voices__mobile-list”>
+        <section className="efsw-voices" id="voices" aria-label="Featured voices">
+          <div className="efsw-voices__mobile-list">
             {featuredVoices.map((voice) => (
-              <article className=”efsw-voices__mobile-item” key={voice.number}>
-                <div className=”efsw-voices__mobile-item-top”>
+              <article className="efsw-voices__mobile-item" key={voice.number}>
+                <div className="efsw-voices__mobile-item-top">
                   <Image
-                    className=”efsw-voices__avatar”
+                    className="efsw-voices__avatar"
                     src={voice.portrait}
                     alt={voice.portraitAlt}
                     width={44}
@@ -166,9 +166,9 @@ export default function HomePage() {
                   <span>{voice.number}</span>
                   <small>{voice.label}</small>
                 </div>
-                <h3>”{voice.quote}”</h3>
+                <h3>"{voice.quote}"</h3>
                 <p>{voice.attribution}</p>
-                <span className=”efsw-voices__mobile-note”>{voice.note}</span>
+                <span className="efsw-voices__mobile-note">{voice.note}</span>
               </article>
             ))}
           </div>
