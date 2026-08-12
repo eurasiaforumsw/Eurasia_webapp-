@@ -7,6 +7,7 @@ import { ArrowUpRight, Quote } from "lucide-react";
 import { SiteNav } from "@/components/efsw/SiteNav";
 import { ScrollProgress } from "@/components/efsw/ScrollProgress";
 import { AnimatedHero } from "@/components/ui/animated-hero";
+import { VoicesGSAP } from "@/components/efsw/VoicesGSAP";
 
 /** Sections tracked by the side progress indicator. */
 const pageSections = [
@@ -99,89 +100,20 @@ const FAST_SCROLL_ENTER = 1.1;
 const FAST_SCROLL_EXIT = 0.45;
 
 export default function HomePage() {
-  const [activeVoiceIndex, setActiveVoiceIndex] = useState(0);
-  const [isScrollingFast, setIsScrollingFast] = useState(false);
   const [isStoryMotionEnabled, setIsStoryMotionEnabled] = useState(true);
 
   useEffect(() => {
     const motionQuery = window.matchMedia("(min-width: 40rem) and (prefers-reduced-motion: no-preference)");
-    const voices = document.getElementById("voices");
-    let storyMotion = motionQuery.matches;
-    let frame = 0;
-    let lastScrollY = window.scrollY;
-    let lastTimestamp = 0;
-    let velocity = 0;
-    let fast = false;
-
-    const updateMotionPreference = () => {
-      storyMotion = motionQuery.matches;
-      setIsStoryMotionEnabled(storyMotion);
-      if (!storyMotion) {
-        setActiveVoiceIndex(0);
-        setIsScrollingFast(false);
-      }
-    };
+    const storyMotion = motionQuery.matches;
     setIsStoryMotionEnabled(storyMotion);
 
-    // Runs on rAF but only commits React state when the active slide or the
-    // fast/slow pace actually flips, so scrolling no longer re-renders per frame.
-    const measure = (timestamp: number) => {
-      frame = 0;
-      if (!voices || !storyMotion) return;
-
-      const scrollY = window.scrollY;
-      const elapsed = lastTimestamp ? timestamp - lastTimestamp : 0;
-      if (elapsed > 0) {
-        const sample = Math.abs(scrollY - lastScrollY) / elapsed;
-        // Smooth the sample so a single stuttering frame cannot flip the pace.
-        velocity = velocity * 0.7 + sample * 0.3;
-      }
-      lastScrollY = scrollY;
-      lastTimestamp = timestamp;
-
-      const nextFast = fast ? velocity > FAST_SCROLL_EXIT : velocity > FAST_SCROLL_ENTER;
-      if (nextFast !== fast) {
-        fast = nextFast;
-        setIsScrollingFast(nextFast);
-      }
-
-      const range = voices.offsetHeight - window.innerHeight;
-      // Read the section's viewport position so this remains correct if a
-      // browser chooses body or documentElement as the scrolling element.
-      const progress = range <= 0 ? 0 : -voices.getBoundingClientRect().top / range;
-      const clamped = Math.min(1, Math.max(0, progress));
-      const nextIndex = Math.min(featuredVoices.length - 1, Math.floor(clamped * featuredVoices.length));
-      setActiveVoiceIndex((previous) => (previous === nextIndex ? previous : nextIndex));
-
-      // Keep sampling while the page is still settling so velocity decays to rest.
-      if (velocity > FAST_SCROLL_EXIT) requestMeasure();
+    const updateMotionPreference = () => {
+      setIsStoryMotionEnabled(motionQuery.matches);
     };
 
-    const requestMeasure = () => {
-      if (frame) return;
-      frame = window.requestAnimationFrame(measure);
-    };
-
-    const onScroll = () => requestMeasure();
-    const onResize = () => {
-      lastTimestamp = 0;
-      requestMeasure();
-    };
-
-    requestMeasure();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    document.addEventListener("scroll", onScroll, { passive: true, capture: true });
-    window.addEventListener("resize", onResize);
-    const resizeObserver = voices ? new ResizeObserver(onResize) : null;
-    resizeObserver?.observe(voices as Element);
     motionQuery.addEventListener("change", updateMotionPreference);
     return () => {
-      window.removeEventListener("scroll", onScroll);
-      document.removeEventListener("scroll", onScroll, true);
-      window.removeEventListener("resize", onResize);
-      resizeObserver?.disconnect();
       motionQuery.removeEventListener("change", updateMotionPreference);
-      if (frame) window.cancelAnimationFrame(frame);
     };
   }, []);
 
@@ -209,116 +141,39 @@ export default function HomePage() {
     return () => observer.disconnect();
   }, []);
 
-  const activeVoice = featuredVoices[activeVoiceIndex];
-
   return (
     <>
       <SiteNav />
       <ScrollProgress sections={pageSections} />
-      <main className="efsw-home" id="home">
+      <main className=”efsw-home” id=”home”>
       <AnimatedHero />
 
-      <section className="efsw-voices" id="voices" aria-label="Featured voices">
-        <div className="efsw-voices__sticky">
-          <div className={`efsw-voices__visual${isScrollingFast && isStoryMotionEnabled ? " is-folding" : ""}`}>
-            {/* All portraits stay mounted and crossfade via CSS, so switching
-                voices never triggers a fresh image decode mid-scroll. */}
-            {featuredVoices.map((voice, index) => (
-              <div
-                key={voice.number}
-                className="efsw-voices__portrait"
-                data-state={index === activeVoiceIndex ? "active" : index < activeVoiceIndex ? "past" : "upcoming"}
-                aria-hidden={index !== activeVoiceIndex}
-              >
-                <Image
-                  src={voice.portrait}
-                  alt={index === activeVoiceIndex ? voice.portraitAlt : ""}
-                  sizes="(max-width: 64rem) 90vw, 34rem"
-                  priority={index === 0}
-                  fill
-                />
-              </div>
+      {isStoryMotionEnabled ? (
+        <VoicesGSAP voices={featuredVoices} />
+      ) : (
+        <section className=”efsw-voices” id=”voices” aria-label=”Featured voices”>
+          <div className=”efsw-voices__mobile-list”>
+            {featuredVoices.map((voice) => (
+              <article className=”efsw-voices__mobile-item” key={voice.number}>
+                <div className=”efsw-voices__mobile-item-top”>
+                  <Image
+                    className=”efsw-voices__avatar”
+                    src={voice.portrait}
+                    alt={voice.portraitAlt}
+                    width={44}
+                    height={44}
+                  />
+                  <span>{voice.number}</span>
+                  <small>{voice.label}</small>
+                </div>
+                <h3>”{voice.quote}”</h3>
+                <p>{voice.attribution}</p>
+                <span className=”efsw-voices__mobile-note”>{voice.note}</span>
+              </article>
             ))}
-            <div className="efsw-voices__scrim" aria-hidden="true" />
-            <Quote className="efsw-voices__quote-mark" size={34} strokeWidth={1.6} aria-hidden="true" />
-            <div className="efsw-voices__number" aria-hidden="true">{activeVoice.number}</div>
-            <p aria-hidden="true">EFSW / FEATURED VOICE</p>
           </div>
-
-          <div className="efsw-voices__copy" aria-live="polite">
-            {/* Fast scroll: the quote folds away to a compact label. Slow scroll:
-                it opens up so each person's words are actually readable. */}
-            <AnimatePresence initial={false} mode="wait">
-              {isScrollingFast && isStoryMotionEnabled ? (
-                <motion.div
-                  key="folded"
-                  className="efsw-voices__folded"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8 }}
-                  transition={{ duration: 0.22, ease: "easeOut" }}
-                >
-                  <p className="efsw-kicker">{activeVoice.label}</p>
-                  <p className="efsw-voices__attribution">{activeVoice.attribution}</p>
-                </motion.div>
-              ) : (
-                <motion.div
-                  key={activeVoiceIndex}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -16 }}
-                  transition={{ duration: 0.42, ease: [0.16, 1, 0.3, 1] }}
-                >
-                  <p className="efsw-kicker">{activeVoice.label}</p>
-                  <h2>“{activeVoice.quote}”</h2>
-                  <p className="efsw-voices__attribution">{activeVoice.attribution}</p>
-                  <div className="efsw-voices__note">{activeVoice.note}</div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-            <div className="efsw-voices__progress" aria-label={`Featured voice ${activeVoiceIndex + 1} of ${featuredVoices.length}`}>
-              {featuredVoices.map((voice, index) => (
-                <button
-                  key={voice.number}
-                  type="button"
-                  onClick={() => {
-                    const voicesElement = document.getElementById("voices");
-                    if (voicesElement) {
-                      const stepHeight = (voicesElement.offsetHeight - window.innerHeight) / (featuredVoices.length - 1);
-                      window.scrollTo({ top: voicesElement.offsetTop + stepHeight * index, behavior: "smooth" });
-                    }
-                  }}
-                  className={index <= activeVoiceIndex ? "is-active" : ""}
-                  aria-label={`Go to voice ${voice.number}`}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-        <div className="efsw-voices__steps" aria-hidden="true">
-          {featuredVoices.map((voice) => <div key={voice.number} />)}
-        </div>
-        <div className="efsw-voices__mobile-list" aria-label="More featured voices">
-          {featuredVoices.slice(1).map((voice) => (
-            <article className="efsw-voices__mobile-item" key={voice.number}>
-              <div className="efsw-voices__mobile-item-top">
-                <Image
-                  className="efsw-voices__avatar"
-                  src={voice.portrait}
-                  alt={voice.portraitAlt}
-                  width={44}
-                  height={44}
-                />
-                <span>{voice.number}</span>
-                <small>{voice.label}</small>
-              </div>
-              <h3>“{voice.quote}”</h3>
-              <p>{voice.attribution}</p>
-              <span className="efsw-voices__mobile-note">{voice.note}</span>
-            </article>
-          ))}
-        </div>
-      </section>
+        </section>
+      )}
 
       <section className="efsw-about-bridge efsw-reveal" id="about" aria-labelledby="about-bridge-title">
         <div className="efsw-section-label">01 / About EFSW</div>
