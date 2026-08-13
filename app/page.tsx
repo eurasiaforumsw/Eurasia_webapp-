@@ -7,7 +7,7 @@ import { ArrowUpRight, Quote } from "lucide-react";
 import { SiteNav } from "@/components/efsw/SiteNav";
 import { ScrollProgress } from "@/components/efsw/ScrollProgress";
 import { AnimatedHero } from "@/components/ui/animated-hero";
-import { VoicesGSAP } from "@/components/efsw/VoicesGSAP";
+import { DeanMessage } from "@/components/efsw/DeanMessage";
 
 /** Sections tracked by the side progress indicator. */
 const pageSections = [
@@ -29,44 +29,34 @@ const cardItem = (i: number) => ({
   },
 } as const);
 
-type FeaturedVoice = {
-  number: string;
-  label: string;
-  attribution: string;
-  quote: string;
-  note: string;
-  /** Placeholder portrait — replace with an approved photo once EFSW supplies one. */
-  portrait: string;
-  portraitAlt: string;
-};
-
-const featuredVoices: FeaturedVoice[] = [
+// Dean profiles for carousel - multiple people
+const deanProfiles = [
   {
-    number: "01",
-    label: "Dean's message",
-    attribution: "Reserved for the Dean's institutional address",
-    quote: "The official message from the Dean will appear here once EFSW confirms the text. This space is held for an authoritative institutional voice.",
-    note: "Approved institutional voice",
+    name: "Emily Peterson",
+    title: "Senior General Dentist",
+    quote: "Dr. Emily Peterson has over 10 years of experience, specializing in personalized care. She focuses on individualized treatment in a calm environment and emphasizes prevention and oral hygiene.",
+    specializations: ["Cavity Treatment", "Endodontics", "Tooth Restoration"],
+    portrait: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=900&h=1100&q=80",
+    portraitAlt: "Dr. Emily Peterson, Senior General Dentist",
+    textPosition: "both" as const, // Show text on both sides
+  },
+  {
+    name: "Michael Chen",
+    title: "Chief Medical Officer",
+    quote: "With 15 years of experience in healthcare leadership, Dr. Chen focuses on innovation and patient-centered care delivery across multiple disciplines.",
+    specializations: ["Healthcare Leadership", "Medical Innovation", "Patient Care"],
     portrait: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=900&h=1100&q=80",
-    portraitAlt: "Placeholder portrait representing the Dean's institutional address",
+    portraitAlt: "Dr. Michael Chen, Chief Medical Officer",
+    textPosition: "left" as const, // Text on right side only
   },
   {
-    number: "02",
-    label: "Practitioner's perspective",
-    attribution: "A voice from the field across Eurasia",
-    quote: "Stories from real practice should cross borders, so that communities can learn from one another and carry those lessons forward.",
-    note: "Regional practice voice",
+    name: "Sarah Williams",
+    title: "Dean of Social Work",
+    quote: "Building bridges across communities through evidence-based practice and compassionate leadership in social work education.",
+    specializations: ["Community Development", "Social Policy", "Clinical Practice"],
     portrait: "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?auto=format&fit=crop&w=900&h=1100&q=80",
-    portraitAlt: "Placeholder portrait representing a social work practitioner in the field",
-  },
-  {
-    number: "03",
-    label: "A shared principle",
-    attribution: "EFSW / Connect · Empower · Advocate",
-    quote: "Social change has no borders, and meaningful collaboration always begins with the willingness to listen.",
-    note: "EFSW editorial perspective",
-    portrait: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=900&h=1100&q=80",
-    portraitAlt: "Placeholder portrait representing the EFSW editorial perspective",
+    portraitAlt: "Dr. Sarah Williams, Dean of Social Work",
+    textPosition: "both" as const, // Name/Title/Spec left | Portrait center | Quote right
   },
 ];
 
@@ -94,29 +84,7 @@ const newsItems = [
   },
 ];
 
-/** Above this scroll speed (px per ms) slides fold away instead of crossfading. */
-const FAST_SCROLL_ENTER = 1.1;
-/** Hysteresis: settle back to the readable pace only once clearly slow again. */
-const FAST_SCROLL_EXIT = 0.45;
-
 export default function HomePage() {
-  const [isStoryMotionEnabled, setIsStoryMotionEnabled] = useState(true);
-
-  useEffect(() => {
-    const motionQuery = window.matchMedia("(min-width: 40rem) and (prefers-reduced-motion: no-preference)");
-    const storyMotion = motionQuery.matches;
-    setIsStoryMotionEnabled(storyMotion);
-
-    const updateMotionPreference = () => {
-      setIsStoryMotionEnabled(motionQuery.matches);
-    };
-
-    motionQuery.addEventListener("change", updateMotionPreference);
-    return () => {
-      motionQuery.removeEventListener("change", updateMotionPreference);
-    };
-  }, []);
-
   useEffect(() => {
     const revealItems = Array.from(document.querySelectorAll<HTMLElement>(".efsw-reveal"));
     if (!revealItems.length) return;
@@ -148,32 +116,8 @@ export default function HomePage() {
       <main className="efsw-home" id="home">
       <AnimatedHero />
 
-      {isStoryMotionEnabled ? (
-        <VoicesGSAP voices={featuredVoices} />
-      ) : (
-        <section className="efsw-voices" id="voices" aria-label="Featured voices">
-          <div className="efsw-voices__mobile-list">
-            {featuredVoices.map((voice) => (
-              <article className="efsw-voices__mobile-item" key={voice.number}>
-                <div className="efsw-voices__mobile-item-top">
-                  <Image
-                    className="efsw-voices__avatar"
-                    src={voice.portrait}
-                    alt={voice.portraitAlt}
-                    width={44}
-                    height={44}
-                  />
-                  <span>{voice.number}</span>
-                  <small>{voice.label}</small>
-                </div>
-                <h3>"{voice.quote}"</h3>
-                <p>{voice.attribution}</p>
-                <span className="efsw-voices__mobile-note">{voice.note}</span>
-              </article>
-            ))}
-          </div>
-        </section>
-      )}
+      {/* Dean Message - New clean white design with auto-carousel */}
+      <DeanMessage profiles={deanProfiles} autoPlayInterval={3000} />
 
       <section className="efsw-about-bridge efsw-reveal" id="about" aria-labelledby="about-bridge-title">
         <div className="efsw-section-label">01 / About EFSW</div>

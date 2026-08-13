@@ -1,0 +1,419 @@
+/* ============================================
+   Dean Message Section - Clean White Design
+   ============================================ */
+
+.dean-message {
+  background: #FFFFFF;
+  padding: 5rem 2rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.dean-message__container {
+  max-width: 1600px;
+  margin: 0 auto;
+  position: relative;
+}
+
+/* ============================================
+   Layout Grid - Portrait always centered
+   ============================================ */
+
+.dean-message__content {
+  display: grid;
+  gap: 3rem;
+  align-items: center;
+  min-height: 500px;
+}
+
+/* Text position: left - Quote left | Portrait center | Name/Title/Spec right */
+.dean-message__content[data-text-position="left"] {
+  grid-template-columns: 1.2fr 1fr 1.2fr;
+}
+
+/* Text position: right - Name/Title/Spec left | Portrait center | Empty right (balanced) */
+.dean-message__content[data-text-position="right"] {
+  grid-template-columns: 1.2fr 1fr 1.2fr;
+}
+
+/* Text position: both - Name/Title/Spec left | Portrait center | Quote right */
+.dean-message__content[data-text-position="both"] {
+  grid-template-columns: 1.2fr 1fr 1.2fr;
+}
+
+/* ============================================
+   Portrait
+   ============================================ */
+
+.dean-message__portrait {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dean-message__portrait-frame {
+  position: relative;
+  width: 100%;
+  max-width: 500px;
+  aspect-ratio: 3 / 4;
+  border-radius: 20px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #F8F9FA 0%, #E9ECEF 100%);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.06);
+  margin: 0 auto;
+}
+
+.dean-message__img {
+  object-fit: cover;
+  transition: transform 0.8s cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+.dean-message__portrait:hover .dean-message__img {
+  transform: scale(1.05);
+}
+
+/* Portrait animation on slide change */
+.dean-message__portrait-animate {
+  animation: portraitFadeIn 0.8s cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+@keyframes portraitFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* ============================================
+   Text Sections
+   ============================================ */
+
+.dean-message__text {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.dean-message__text--left {
+  justify-content: center;
+}
+
+.dean-message__text--right {
+  justify-content: center;
+}
+
+/* ============================================
+   Header (Name + Title)
+   ============================================ */
+
+.dean-message__header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.dean-message__name {
+  font-family: var(--font-dm-serif-display), "DM Serif Display", serif;
+  font-size: clamp(3rem, 6vw, 5rem);
+  font-weight: 400;
+  font-style: italic;
+  line-height: 1.05;
+  color: #0F172A;
+  letter-spacing: -0.02em;
+}
+
+.dean-message__title {
+  font-family: var(--font-inter), system-ui, sans-serif;
+  font-size: clamp(1.125rem, 2.5vw, 1.5rem);
+  font-weight: 400;
+  color: #64748B;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* ============================================
+   Specializations
+   ============================================ */
+
+.dean-message__specializations {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+}
+
+.dean-message__spec-label {
+  font-family: var(--font-inter), system-ui, sans-serif;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #94A3B8;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.dean-message__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.625rem;
+}
+
+.dean-message__tag {
+  font-family: var(--font-inter), system-ui, sans-serif;
+  font-size: 1rem;
+  font-weight: 400;
+  color: #475569;
+  padding: 0;
+  white-space: nowrap;
+  position: relative;
+  animation: tagPopIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+}
+
+.dean-message__tag:not(:last-child)::after {
+  content: "•";
+  margin-left: 0.625rem;
+  color: #CBD5E1;
+}
+
+@keyframes tagPopIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ============================================
+   Quote & Bio
+   ============================================ */
+
+.dean-message__quote {
+  font-family: var(--font-inter), system-ui, sans-serif;
+  font-size: clamp(1.25rem, 2.5vw, 1.625rem);
+  font-weight: 400;
+  line-height: 1.6;
+  color: #1E293B;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.dean-message__quote p {
+  margin: 0;
+}
+
+.dean-message__bio {
+  font-family: var(--font-inter), system-ui, sans-serif;
+  font-size: clamp(1.125rem, 2.5vw, 1.375rem);
+  font-weight: 400;
+  line-height: 1.6;
+  color: #475569;
+}
+
+.dean-message__bio p {
+  margin: 0;
+}
+
+/* ============================================
+   Text Animation - Fade Up with Pop
+   ============================================ */
+
+.dean-message__animate-in {
+  animation: fadeIn 0.6s cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+.dean-message__fade-up {
+  animation: fadeUp 0.7s cubic-bezier(0.19, 1, 0.22, 1) backwards;
+}
+
+.dean-message__fade-up--delay-1 {
+  animation-delay: 0.15s;
+}
+
+.dean-message__fade-up--delay-2 {
+  animation-delay: 0.3s;
+}
+
+.dean-message__fade-up--delay-3 {
+  animation-delay: 0.45s;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ============================================
+   Navigation
+   ============================================ */
+
+.dean-message__nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 3rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #E2E8F0;
+}
+
+.dean-message__counter {
+  font-family: var(--font-inter), system-ui, sans-serif;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: #64748B;
+  letter-spacing: 0.05em;
+}
+
+/* Dots indicator */
+.dean-message__dots {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.dean-message__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #CBD5E1;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+.dean-message__dot:hover {
+  background: #94A3B8;
+  transform: scale(1.2);
+}
+
+.dean-message__dot--active {
+  width: 32px;
+  background: #0F172A;
+}
+
+/* Arrows */
+.dean-message__arrows {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.dean-message__arrow {
+  width: 48px;
+  height: 48px;
+  border-radius: 999px;
+  border: 1px solid #E2E8F0;
+  background: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.19, 1, 0.22, 1);
+  color: #0F172A;
+}
+
+.dean-message__arrow:hover:not(:disabled) {
+  background: #0F172A;
+  color: #FFFFFF;
+  border-color: #0F172A;
+  transform: scale(1.05);
+}
+
+.dean-message__arrow:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* ============================================
+   Responsive
+   ============================================ */
+
+@media (max-width: 1024px) {
+  .dean-message {
+    padding: 4rem 2rem;
+  }
+
+  .dean-message__content[data-text-position="left"],
+  .dean-message__content[data-text-position="right"],
+  .dean-message__content[data-text-position="both"] {
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+  }
+
+  .dean-message__text--left,
+  .dean-message__text--right {
+    justify-content: flex-start;
+  }
+
+  .dean-message__portrait {
+    order: 2;
+  }
+
+  .dean-message__text--left {
+    order: 1;
+  }
+
+  .dean-message__text--right {
+    order: 3;
+  }
+
+  .dean-message__portrait-frame {
+    max-width: 400px;
+    margin: 0 auto;
+  }
+}
+
+@media (max-width: 640px) {
+  .dean-message {
+    padding: 3rem 1.5rem;
+  }
+
+  .dean-message__name {
+    font-size: 2.5rem;
+  }
+
+  .dean-message__portrait-frame {
+    max-width: 100%;
+  }
+
+  .dean-message__nav {
+    flex-direction: column;
+    gap: 1.5rem;
+    align-items: stretch;
+  }
+
+  .dean-message__dots {
+    order: -1;
+    justify-content: center;
+  }
+
+  .dean-message__arrows {
+    justify-content: center;
+  }
+
+  .dean-message__counter {
+    text-align: center;
+  }
+}
