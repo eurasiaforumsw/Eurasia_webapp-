@@ -2,7 +2,6 @@
 
 import React from 'react';
 import { CardFlip } from './CardFlip';
-import { QRCodeGenerator } from '../qr/QRCodeGenerator';
 import { AvatarDisplay } from '../avatar/AvatarDisplay';
 
 interface Member {
@@ -172,20 +171,27 @@ export function DigitalMembershipCard({
       <div style={{
         display: 'grid',
         placeItems: 'center',
-        height: '100%'
+        height: '100%',
+        gap: '1rem'
       }}>
-        <QRCodeGenerator
-          memberData={{
-            id: member.id,
-            name: fullName,
-            nameLocal: fullName,
-            memberType: member.memberType,
-            avatarUrl: member.avatarUrl || '',
-            status: member.status
-          }}
-          logoUrl={organizationLogo}
-          size={200}
-        />
+        <div style={{
+          width: '200px',
+          height: '200px',
+          background: 'rgba(249, 250, 251, 0.1)',
+          borderRadius: '1rem',
+          display: 'grid',
+          placeItems: 'center',
+          border: '1px solid rgba(249, 250, 251, 0.2)'
+        }}>
+          <div style={{
+            fontSize: '0.75rem',
+            color: 'rgba(249, 250, 251, 0.5)',
+            textAlign: 'center',
+            padding: '1rem'
+          }}>
+            QR Code<br />Coming Soon
+          </div>
+        </div>
         <div style={{
           fontSize: 'clamp(0.625rem, 1.2vw, 0.75rem)',
           color: 'rgba(249, 250, 251, 0.5)',

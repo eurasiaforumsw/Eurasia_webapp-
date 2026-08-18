@@ -1,7 +1,7 @@
 "use client";
 
 import { Globe2, Check } from "lucide-react";
-import { useTranslation } from "@/contexts/I18nContext";
+import { useI18n } from "@/contexts/I18nContext";
 import { useState, useRef, useEffect } from "react";
 
 const languages = [
@@ -11,7 +11,7 @@ const languages = [
 ];
 
 export function LanguageSwitcher() {
-  const { locale, setLocale } = useTranslation();
+  const { locale, setLocale } = useI18n();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 

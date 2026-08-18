@@ -60,24 +60,7 @@ export default function NewsPage() {
           </div>
         </header>
 
-        {/* ── Category strip ── */}
-        <nav
-          className="efsw-newsroom-filters"
-          aria-label="Filter by category"
-          data-reveal="fade"
-        >
-          {filterLabels.map((label, i) => (
-            <span
-              key={label}
-              className={`efsw-newsroom-filter${i === 0 ? " efsw-newsroom-filter--active" : ""}`}
-              aria-current={i === 0 ? "true" : undefined}
-            >
-              {label}
-            </span>
-          ))}
-        </nav>
-
-        {/* ── Articles ── */}
+        {/* ── Articles & Interactive News Feed ── */}
         <PublicContentFeed
           kind="news"
           initialItems={newsItems}

@@ -2,17 +2,28 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { motion, AnimatePresence } from "framer-motion";
-import { ArrowUpRight, Quote } from "lucide-react";
+import { motion } from "framer-motion";
+import { ArrowUpRight, Calendar, User, ImageIcon } from "lucide-react";
 import { SiteNav } from "@/components/efsw/SiteNav";
 import { ScrollProgress } from "@/components/efsw/ScrollProgress";
 import { AnimatedHero } from "@/components/ui/animated-hero";
 import { DeanMessage } from "@/components/efsw/DeanMessage";
+import {
+  ADMIN_CONTENT_KEY,
+  ADMIN_LAYOUT_KEY,
+  AdminContentItem,
+  AdminLayoutConfig,
+  defaultLayoutConfig,
+  getAdminLayout,
+  getPublishedAdminContent,
+} from "@/lib/admin-data";
+import { useSmoothScroll } from "@/hooks/useSmoothScroll";
+import { initScrollAnimations, cleanupScrollAnimations } from "@/lib/scroll-animations";
 
 /** Sections tracked by the side progress indicator. */
 const pageSections = [
   { id: "home", label: "Introduction" },
-  { id: "voices", label: "Featured voices" },
+  { id: "dean", label: "Leadership" },
   { id: "about", label: "About EFSW" },
   { id: "news", label: "Newsroom" },
   { id: "footer", label: "Contact" },
@@ -29,154 +40,165 @@ const cardItem = (i: number) => ({
   },
 } as const);
 
-// Dean profiles for carousel - multiple people
-const deanProfiles = [
-  {
-    name: "Emily Peterson",
-    title: "Senior General Dentist",
-    quote: "Dr. Emily Peterson has over 10 years of experience, specializing in personalized care. She focuses on individualized treatment in a calm environment and emphasizes prevention and oral hygiene.",
-    specializations: ["Cavity Treatment", "Endodontics", "Tooth Restoration"],
-    portrait: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=900&h=1100&q=80",
-    portraitAlt: "Dr. Emily Peterson, Senior General Dentist",
-    textPosition: "both" as const, // Show text on both sides
-  },
-  {
-    name: "Michael Chen",
-    title: "Chief Medical Officer",
-    quote: "With 15 years of experience in healthcare leadership, Dr. Chen focuses on innovation and patient-centered care delivery across multiple disciplines.",
-    specializations: ["Healthcare Leadership", "Medical Innovation", "Patient Care"],
-    portrait: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=900&h=1100&q=80",
-    portraitAlt: "Dr. Michael Chen, Chief Medical Officer",
-    textPosition: "left" as const, // Text on right side only
-  },
-  {
-    name: "Sarah Williams",
-    title: "Dean of Social Work",
-    quote: "Building bridges across communities through evidence-based practice and compassionate leadership in social work education.",
-    specializations: ["Community Development", "Social Policy", "Clinical Practice"],
-    portrait: "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?auto=format&fit=crop&w=900&h=1100&q=80",
-    portraitAlt: "Dr. Sarah Williams, Dean of Social Work",
-    textPosition: "both" as const, // Name/Title/Spec left | Portrait center | Quote right
-  },
-];
-
-const newsItems = [
-  {
-    number: "01",
-    category: "Platform update",
-    title: "A trilingual platform for regional exchange",
-    body: "EFSW connects English, Korean, and Thai resources so professional knowledge can move more freely across Eurasia.",
-    link: "Read the platform brief",
-  },
-  {
-    number: "02",
-    category: "Membership",
-    title: "A network for professionals, students, and institutions",
-    body: "Three membership pathways make room for practitioners, emerging social workers, universities, NGOs, and public partners.",
-    link: "Explore membership",
-  },
-  {
-    number: "03",
-    category: "Resources",
-    title: "Research and practice belong in the same conversation",
-    body: "The resource hub brings research papers, case studies, field manuals, and regional learning into one shared place.",
-    link: "Visit the resource hub",
-  },
-];
-
 export default function HomePage() {
-  useEffect(() => {
-    const revealItems = Array.from(document.querySelectorAll<HTMLElement>(".efsw-reveal"));
-    if (!revealItems.length) return;
+  const [layout, setLayout] = useState<AdminLayoutConfig>(defaultLayoutConfig);
+  const [news, setNews] = useState<AdminContentItem[]>([]);
 
+  // Enable smooth scrolling with Lenis
+  useSmoothScroll();
+
+  // Sync admin data
+  useEffect(() => {
+    const syncData = () => {
+      setLayout(getAdminLayout());
+      setNews(getPublishedAdminContent("news"));
+    };
+
+    syncData();
+
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key === ADMIN_LAYOUT_KEY || event.key === ADMIN_CONTENT_KEY) {
+        syncData();
+      }
+    };
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") syncData();
+    };
+
+    window.addEventListener("storage", handleStorage);
+    window.addEventListener("pageshow", syncData);
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    return () => {
+      window.removeEventListener("storage", handleStorage);
+      window.removeEventListener("pageshow", syncData);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
+  }, []);
+
+  // Initialize GSAP ScrollTrigger animations after content loads
+  useEffect(() => {
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (reducedMotion || !("IntersectionObserver" in window)) {
+
+    if (reducedMotion) {
+      // If user prefers reduced motion, make all elements visible immediately
+      const revealItems = document.querySelectorAll<HTMLElement>(".efsw-reveal");
       revealItems.forEach((item) => item.classList.add("is-visible"));
       return;
     }
 
-    const observer = new IntersectionObserver(
-      (entries) => entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add("is-visible");
-          observer.unobserve(entry.target);
-        }
-      }),
-      { threshold: 0.14, rootMargin: "0px 0px -10%" },
-    );
+    // Small delay to ensure DOM is fully rendered
+    const timer = setTimeout(() => {
+      initScrollAnimations();
+    }, 100);
 
-    revealItems.forEach((item) => observer.observe(item));
-    return () => observer.disconnect();
-  }, []);
+    return () => {
+      clearTimeout(timer);
+      cleanupScrollAnimations();
+    };
+  }, [layout, news]);
+
+  const displayedNews = news.slice(0, 3);
 
   return (
     <>
       <SiteNav />
       <ScrollProgress sections={pageSections} />
       <main className="efsw-home" id="home">
-      <AnimatedHero />
+        {layout.sectionVisibility.hero && (
+          <AnimatedHero
+            headline={layout.heroHeadline}
+            subheadline={layout.heroSubheadline}
+            tagline={layout.heroTagline}
+            ctaText={layout.heroCtaText}
+            ctaLink={layout.heroCtaLink}
+          />
+        )}
 
-      {/* Dean Message - New clean white design with auto-carousel */}
-      <DeanMessage profiles={deanProfiles} autoPlayInterval={3000} />
+        {/* Dean Message - Live sync with Admin Layout configuration */}
+        {layout.sectionVisibility.deanMessage && layout.deanProfiles && layout.deanProfiles.length > 0 && (
+          <div id="dean">
+            <DeanMessage profiles={layout.deanProfiles} autoPlayInterval={3500} />
+          </div>
+        )}
 
-      <section className="efsw-about-bridge efsw-reveal" id="about" aria-labelledby="about-bridge-title">
-        <div className="efsw-section-label">01 / About EFSW</div>
-        <div className="efsw-about-bridge__grid efsw-reveal-group">
-          <h2 id="about-bridge-title">A professional network with a human centre.</h2>
-          <div>
-            <p>We bring social workers, educators, researchers, students, and institutions into one regional conversation about social justice and human wellbeing.</p>
-            <a href="/about" className="efsw-button efsw-button--dark">Read about us <ArrowUpRight size={17} /></a>
-          </div>
-        </div>
-      </section>
+        {layout.sectionVisibility.about && (
+          <section className="efsw-about-bridge efsw-reveal" id="about" aria-labelledby="about-bridge-title">
+            <div className="efsw-section-label">01 / About EFSW</div>
+            <div className="efsw-about-bridge__grid efsw-reveal-group">
+              <h2 id="about-bridge-title">A professional network with a human centre.</h2>
+              <div>
+                <p>We bring social workers, educators, researchers, students, and institutions into one regional conversation about social justice and human wellbeing.</p>
+                <a href="/about" className="efsw-button efsw-button--dark">Read about us <ArrowUpRight size={17} /></a>
+              </div>
+            </div>
+          </section>
+        )}
 
-      <section className="efsw-news efsw-reveal" id="news" aria-labelledby="news-title">
-        <div className="efsw-section-label">02 / Newsroom</div>
-        <div className="efsw-news__head">
-          <h2 id="news-title">What is moving<br /><span>the network forward.</span></h2>
-          <p>Briefings, platform updates, and resources from the work of connecting social workers across Eurasia.</p>
-        </div>
-        <div className="efsw-news__grid efsw-reveal-group">
-          {newsItems.map((item, index) => (
-            <motion.article
-              className="efsw-news-card"
-              key={item.number}
-              variants={cardItem(index)}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, amount: 0.18 }}
-            >
-              <div className="efsw-news-card__top"><span>{item.number}</span><small>{item.category}</small></div>
-              <h3>{item.title}</h3>
-              <p>{item.body}</p>
-              <a href="/news" className="efsw-text-link">{item.link} <ArrowUpRight size={16} /></a>
-            </motion.article>
-          ))}
-        </div>
-      </section>
+        {layout.sectionVisibility.news && (
+          <section className="efsw-news efsw-reveal" id="news" aria-labelledby="news-title">
+            <div className="efsw-section-label">02 / Newsroom</div>
+            <div className="efsw-news__head">
+              <h2 id="news-title">What is moving<br /><span>the network forward.</span></h2>
+              <p>Briefings, platform updates, and resources from the work of connecting social workers across Eurasia.</p>
+            </div>
+            <div className="efsw-home-news-grid efsw-reveal-group">
+              {displayedNews.map((item, index) => (
+                <motion.article
+                  className="efsw-home-news-card"
+                  key={item.id}
+                  variants={cardItem(index)}
+                  initial="hidden"
+                  whileInView="visible"
+                  viewport={{ once: true, amount: 0.18 }}
+                >
+                  {item.coverImage && (
+                    <div className="efsw-home-news-card__media">
+                      <img src={item.coverImage} alt={item.imageCaption || item.title} loading="lazy" />
+                      <span className="efsw-home-news-card__tag">{item.category}</span>
+                    </div>
+                  )}
+                  <div className="efsw-home-news-card__content">
+                    {!item.coverImage && (
+                      <div className="efsw-news-card__top">
+                        <span>0{index + 1}</span>
+                        <small>{item.category}</small>
+                      </div>
+                    )}
+                    <h3>{item.title}</h3>
+                    <p>{item.summary}</p>
+                    <a href="/news" className="efsw-text-link">Read story <ArrowUpRight size={16} /></a>
+                  </div>
+                </motion.article>
+              ))}
+            </div>
+          </section>
+        )}
 
-      <footer className="efsw-footer" id="footer">
-        <div className="efsw-footer__top">
-          <div>
-            <a href="#home" className="efsw-brand" aria-label="Back to EFSW home">
-              <span className="efsw-brand__mark">E</span>
-              <span>Eurasia Forum<br />for Social Workers</span>
-            </a>
-            <p>Connect · Empower · Advocate</p>
+        <footer className="efsw-footer" id="footer">
+          <div className="efsw-footer__top">
+            <div>
+              <a href="#home" className="efsw-brand" aria-label="Back to EFSW home">
+                <span className="efsw-brand__mark">E</span>
+                <span>Eurasia Forum<br />for Social Workers</span>
+              </a>
+              <p>Connect · Empower · Advocate</p>
+            </div>
+            <div className="efsw-footer__links">
+              <a href="/about">About</a>
+              <a href="/news">News</a>
+              <a href="/about#membership">Membership</a>
+              <a href="/admin" className="efsw-footer__admin-link">Admin Console</a>
+            </div>
+            <div className="efsw-footer__contact">
+              <span>Start a conversation</span>
+              <a href="mailto:support@eurasiaforumsw.org">support@eurasiaforumsw.org</a>
+            </div>
           </div>
-          <div className="efsw-footer__links">
-            <a href="/about">About</a>
-            <a href="/news">News</a>
-            <a href="/about#membership">Membership</a>
-          </div>
-          <div className="efsw-footer__contact">
-            <span>Start a conversation</span>
-            <a href="mailto:support@eurasiaforumsw.org">support@eurasiaforumsw.org</a>
-          </div>
-        </div>
-        <div className="efsw-footer__bottom"><span>© 2026 EFSW</span><span>English · 한국어 · ไทย</span><a href="#home">Back to top <ArrowUpRight size={15} /></a></div>
-      </footer>
+          <div className="efsw-footer__bottom"><span>© 2026 EFSW</span><span>English · 한국어 · ไทย</span><a href="#home">Back to top <ArrowUpRight size={15} /></a></div>
+        </footer>
       </main>
     </>
   );
 }
+

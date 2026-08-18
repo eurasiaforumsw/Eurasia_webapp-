@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   motion,
   useReducedMotion,
@@ -9,6 +9,12 @@ import {
   useTransform,
 } from "framer-motion";
 import { ArrowDownRight, ArrowUpRight, Globe2, MoveRight } from "lucide-react";
+import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+
+if (typeof window !== "undefined") {
+  gsap.registerPlugin(ScrollTrigger);
+}
 
 /* ── Motion tokens — mirror the site's spring physics ────────────────────── */
 const dramatic = { type: "spring" as const, stiffness: 280, damping: 20, mass: 1.0 };
@@ -42,11 +48,27 @@ const heroMeta = {
 /* Cycling words that reflect the EFSW mission */
 const CYCLING_WORDS = ["connects", "empowers", "advocates", "transforms", "unites"];
 
-function AnimatedHero() {
+interface AnimatedHeroProps {
+  headline?: string;
+  subheadline?: string;
+  tagline?: string;
+  ctaText?: string;
+  ctaLink?: string;
+}
+
+function AnimatedHero({
+  headline,
+  subheadline = "The Eurasia Forum for Social Workers connects people, practice, and research so communities can move forward with more care.",
+  tagline = "International social work across Eurasia",
+  ctaText = "About EFSW",
+  ctaLink = "/about",
+}: AnimatedHeroProps) {
   const reducedMotion = useReducedMotion();
   const [wordIndex, setWordIndex] = useState(0);
+  const heroRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
 
-  /* Scroll-driven parallax — identical physics to the original page */
+  /* Scroll-driven parallax with Framer Motion (works with Lenis) */
   const { scrollY } = useScroll();
   const rm = reducedMotion ?? false;
 
@@ -68,8 +90,41 @@ function AnimatedHero() {
     return () => clearTimeout(id);
   }, [wordIndex]);
 
+  /* Additional GSAP animations for enhanced effects */
+  useEffect(() => {
+    if (reducedMotion || !heroRef.current) return;
+
+    const ctx = gsap.context(() => {
+      // Fade out hero content as user scrolls down
+      gsap.to(contentRef.current, {
+        opacity: 0.3,
+        scale: 0.95,
+        scrollTrigger: {
+          trigger: heroRef.current,
+          start: "top top",
+          end: "bottom top",
+          scrub: 1,
+        },
+      });
+
+      // Rotate and scale the orbit on scroll
+      gsap.to(".efsw-hero__orbit", {
+        rotation: 25,
+        scale: 1.15,
+        scrollTrigger: {
+          trigger: heroRef.current,
+          start: "top top",
+          end: "bottom top",
+          scrub: 1.5,
+        },
+      });
+    }, heroRef);
+
+    return () => ctx.revert();
+  }, [reducedMotion]);
+
   return (
-    <section className="efsw-hero" aria-labelledby="hero-title">
+    <section className="efsw-hero" aria-labelledby="hero-title" ref={heroRef}>
       {/* Parallax mesh-gradient blobs */}
       <motion.div className="efsw-hero__wash" aria-hidden="true" style={{ y: yBlobs }} />
       <motion.div className="efsw-hero__orbit" aria-hidden="true" style={{ y: yOrbit }} />
@@ -78,6 +133,7 @@ function AnimatedHero() {
       <motion.div
         className="efsw-hero__content"
         id="top"
+        ref={contentRef}
         variants={heroContainer}
         initial="hidden"
         animate="visible"
@@ -86,50 +142,53 @@ function AnimatedHero() {
         {/* Eyebrow */}
         <motion.p className="efsw-kicker" variants={heroItem}>
           <Globe2 size={15} aria-hidden="true" />
-          International social work across Eurasia
+          {tagline}
         </motion.p>
 
         {/* Headline — line 2 cycles through words */}
         <motion.h1 id="hero-title" variants={heroItem}>
-          Social work
-          {/* Animated word slot */}
-          <span className="efsw-hero__word-slot" aria-live="polite">
-            {CYCLING_WORDS.map((word, index) => (
-              <motion.span
-                key={word}
-                className="efsw-hero__word-item"
-                initial={{ opacity: 0, y: "-100%" }}
-                transition={{ type: "spring", stiffness: 50 }}
-                animate={
-                  wordIndex === index
-                    ? { y: 0, opacity: 1 }
-                    : {
-                        y: wordIndex > index ? "-150%" : "150%",
-                        opacity: 0,
-                      }
-                }
-              >
-                {word}.
-              </motion.span>
-            ))}
-          </span>
+          {headline ? headline : (
+            <>
+              Social work
+              {/* Animated word slot */}
+              <span className="efsw-hero__word-slot" aria-live="polite">
+                {CYCLING_WORDS.map((word, index) => (
+                  <motion.span
+                    key={word}
+                    className="efsw-hero__word-item"
+                    initial={{ opacity: 0, y: "-100%" }}
+                    transition={{ type: "spring", stiffness: 50 }}
+                    animate={
+                      wordIndex === index
+                        ? { y: 0, opacity: 1 }
+                        : {
+                            y: wordIndex > index ? "-150%" : "150%",
+                            opacity: 0,
+                          }
+                    }
+                  >
+                    {word}.
+                  </motion.span>
+                ))}
+              </span>
+            </>
+          )}
         </motion.h1>
 
         {/* Sub-headline / lede */}
         <motion.p className="efsw-hero__lede" variants={heroItemSoft}>
-          The Eurasia Forum for Social Workers connects people, practice, and
-          research so communities can move forward with more care.
+          {subheadline}
         </motion.p>
 
         {/* CTAs */}
         <motion.div className="efsw-hero__actions" variants={heroItemSoft}>
           <motion.a
-            href="/about"
+            href={ctaLink}
             className="efsw-button efsw-button--dark"
             whileHover={{ scale: 1.04, transition: snappy }}
             whileTap={{ scale: 0.97, transition: snappy }}
           >
-            About EFSW <ArrowUpRight size={17} aria-hidden="true" />
+            {ctaText} <ArrowUpRight size={17} aria-hidden="true" />
           </motion.a>
           <a href="#voices" className="efsw-text-link">
             Read the voices <MoveRight size={17} aria-hidden="true" />
@@ -154,3 +213,4 @@ function AnimatedHero() {
 }
 
 export { AnimatedHero };
+

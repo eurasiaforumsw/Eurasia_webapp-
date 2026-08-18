@@ -1,0 +1,74 @@
+[     507ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://127.0.0.1:2024/_next/static/chunks/main-app.js?v=1786123387987:0
+[     508ms] [ERROR] Refused to execute script from 'http://127.0.0.1:2024/_next/static/chunks/main-app.js?v=1786123387987' because its MIME type ('text/html') is not executable, and strict MIME type checking is enabled. @ http://127.0.0.1:2024/:0
+[     508ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://127.0.0.1:2024/_next/static/chunks/app-pages-internals.js:0
+[     508ms] [ERROR] Refused to execute script from 'http://127.0.0.1:2024/_next/static/chunks/app-pages-internals.js' because its MIME type ('text/html') is not executable, and strict MIME type checking is enabled. @ http://127.0.0.1:2024/:0
+[   48604ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://127.0.0.1:2024/:0
+[   48750ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ webpack-internal:///./node_modules/react-dom/cjs/react-dom.development.js:29889
+[   48793ms] Error: Cannot find module './534.js'
+Require stack:
+- /Users/rischen/Documents/GitHub/Eurasia_webapp/.next/server/webpack-runtime.js
+- /Users/rischen/Documents/GitHub/Eurasia_webapp/.next/server/app/_not-found/page.js
+- /Users/rischen/Documents/GitHub/Eurasia_webapp/node_modules/next/dist/server/require.js
+- /Users/rischen/Documents/GitHub/Eurasia_webapp/node_modules/next/dist/server/load-components.js
+- /Users/rischen/Documents/GitHub/Eurasia_webapp/node_modules/next/dist/build/utils.js
+- /Users/rischen/Documents/GitHub/Eurasia_webapp/node_modules/next/dist/server/dev/hot-middleware.js
+- /Users/rischen/Documents/GitHub/Eurasia_webapp/node_modules/next/dist/server/dev/hot-reloader-webpack.js
+- /Users/rischen/Documents/GitHub/Eurasia_webapp/node_modules/next/dist/server/lib/router-utils/setup-dev-bundler.js
+- /Users/rischen/Documents/GitHub/Eurasia_webapp/node_modules/next/dist/server/lib/router-server.js
+- /Users/rischen/Documents/GitHub/Eurasia_webapp/node_modules/next/dist/server/lib/start-server.js
+    at Function.<anonymous> (node:internal/modules/cjs/loader:1430:15)
+    at <unknown> (file:///Users/rischen/Documents/GitHub/Eurasia_webapp/node_modules/next/dist/server/require-hook.js:55:36)
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)
+    at Function._load (node:internal/modules/cjs/loader:1216:25)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1527:12)
+    at mod.require (file:///Users/rischen/Documents/GitHub/Eurasia_webapp/node_modules/next/dist/server/require-hook.js:65:28)
+    at require (node:internal/modules/helpers:147:16)
+    at __webpack_require__.f.require (file:///Users/rischen/Documents/GitHub/Eurasia_webapp/.next/server/webpack-runtime.js:198:28)
+    at <unknown> (file:///Users/rischen/Documents/GitHub/Eurasia_webapp/.next/server/webpack-runtime.js:111:40)
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (file:///Users/rischen/Documents/GitHub/Eurasia_webapp/.next/server/webpack-runtime.js:110:67)
+    at Array.map (<anonymous>)
+    at __webpack_require__.X (file:///Users/rischen/Documents/GitHub/Eurasia_webapp/.next/server/webpack-runtime.js:162:22)
+    at <unknown> (file:///Users/rischen/Documents/GitHub/Eurasia_webapp/.next/server/app/page.js:1:18323)
+    at Object.<anonymous> (file:///Users/rischen/Documents/GitHub/Eurasia_webapp/.next/server/app/page.js:1:18364)
+    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+    at Object..js (node:internal/modules/cjs/loader:1913:10)
+    at Module.load (node:internal/modules/cjs/loader:1505:32)
+    at Function._load (node:internal/modules/cjs/loader:1309:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1527:12)
+    at mod.require (file:///Users/rischen/Documents/GitHub/Eurasia_webapp/node_modules/next/dist/server/require-hook.js:65:28)
+    at require (node:internal/modules/helpers:147:16)
+    at requirePage (file:///Users/rischen/Documents/GitHub/Eurasia_webapp/node_modules/next/dist/server/require.js:109:84)
+    at <unknown> (file:///Users/rischen/Documents/GitHub/Eurasia_webapp/node_modules/next/dist/server/load-components.js:103:84)
+    at async loadComponentsImpl (file:///Users/rischen/Documents/GitHub/Eurasia_webapp/node_modules/next/dist/server/load-components.js:103:26)
+    at async DevServer.findPageComponentsImpl (file:///Users/rischen/Documents/GitHub/Eurasia_webapp/node_modules/next/dist/server/next-server.js:714:36)
+    at async DevServer.findPageComponents (file:///Users/rischen/Documents/GitHub/Eurasia_webapp/node_modules/next/dist/server/dev/next-dev-server.js:577:20)
+    at async DevServer.renderPageComponent (file:///Users/rischen/Documents/GitHub/Eurasia_webapp/node_modules/next/dist/server/base-server.js:1910:24)
+    at async DevServer.renderToResponseImpl (file:///Users/rischen/Documents/GitHub/Eurasia_webapp/node_modules/next/dist/server/base-server.js:1962:32)
+    at async DevServer.pipeImpl (file:///Users/rischen/Documents/GitHub/Eurasia_webapp/node_modules/next/dist/server/base-server.js:922:25)
+    at async NextNodeServer.handleCatchallRenderRequest (file:///Users/rischen/Documents/GitHub/Eurasia_webapp/node_modules/next/dist/server/next-server.js:272:17)
+    at async DevServer.handleRequestImpl (file:///Users/rischen/Documents/GitHub/Eurasia_webapp/node_modules/next/dist/server/base-server.js:818:17)
+    at async (file:///Users/rischen/Documents/GitHub/Eurasia_webapp/node_modules/next/dist/server/dev/next-dev-server.js:339:20)
+    at async Span.traceAsyncFn (file:///Users/rischen/Documents/GitHub/Eurasia_webapp/node_modules/next/dist/trace/trace.js:154:20)
+    at async DevServer.handleRequest (file:///Users/rischen/Documents/GitHub/Eurasia_webapp/node_modules/next/dist/server/dev/next-dev-server.js:336:24)
+    at async invokeRender (file:///Users/rischen/Documents/GitHub/Eurasia_webapp/node_modules/next/dist/server/lib/router-server.js:179:21)
+    at async handleRequest (file:///Users/rischen/Documents/GitHub/Eurasia_webapp/node_modules/next/dist/server/lib/router-server.js:359:24)
+    at async requestHandlerImpl (file:///Users/rischen/Documents/GitHub/Eurasia_webapp/node_modules/next/dist/server/lib/router-server.js:383:13)
+    at async Server.requestListener (file:///Users/rischen/Documents/GitHub/Eurasia_webapp/node_modules/next/dist/server/lib/start-server.js:141:13)
+[   48781ms] [LOG] [HMR] connected @ webpack-internal:///./node_modules/next/dist/client/components/react-dev-overlay/pages/websocket.js:38
+[   48815ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://127.0.0.1:2024/favicon.ico:0
+[   53673ms] TypeError: Failed to execute 'getComputedStyle' on 'Window': parameter 1 is not of type 'Element'.
+    at eval (eval at <anonymous> (eval at evaluate (:311:30)), <anonymous>:1:277)
+[   53687ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://127.0.0.1:2024/__nextjs_original-stack-frame?isServer=false&isEdgeServer=false&isAppDirectory=false&errorMessage=TypeError%3A+Failed+to+execute+%27getComputedStyle%27+on+%27Window%27%3A+parameter+1+is+not+of+type+%27Element%27.&file=&methodName=eval&arguments=&lineNumber=311&column=30:0
+[   77636ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///./node_modules/next/dist/client/components/react-dev-overlay/pages/hot-reloader-client.js:221
+[   78333ms] [WARNING] [Fast Refresh] performing full reload because your application had an unrecoverable error @ webpack-internal:///./node_modules/next/dist/client/components/react-dev-overlay/pages/hot-reloader-client.js:349
+[   82484ms] [ERROR] Refused to apply style from 'http://127.0.0.1:2024/_next/static/css/app/layout.css?v=1786123466461' because its MIME type ('text/html') is not a supported stylesheet MIME type, and strict MIME checking is enabled. @ http://127.0.0.1:2024/:0
+[   82486ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://127.0.0.1:2024/_next/static/chunks/app-pages-internals.js:0
+[   82486ms] [ERROR] Refused to execute script from 'http://127.0.0.1:2024/_next/static/chunks/app-pages-internals.js' because its MIME type ('text/html') is not executable, and strict MIME type checking is enabled. @ http://127.0.0.1:2024/:0
+[   82486ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://127.0.0.1:2024/_next/static/chunks/main-app.js?v=1786123466461:0
+[   82486ms] [ERROR] Refused to execute script from 'http://127.0.0.1:2024/_next/static/chunks/main-app.js?v=1786123466461' because its MIME type ('text/html') is not executable, and strict MIME type checking is enabled. @ http://127.0.0.1:2024/:0
+[   82513ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://127.0.0.1:2024/_next/static/chunks/app/page.js:0
+[   82513ms] [ERROR] Refused to execute script from 'http://127.0.0.1:2024/_next/static/chunks/app/page.js' because its MIME type ('text/html') is not executable, and strict MIME type checking is enabled. @ http://127.0.0.1:2024/:0

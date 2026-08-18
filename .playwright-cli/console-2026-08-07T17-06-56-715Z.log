@@ -1,0 +1,24 @@
+[  391577ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom.development.js:38559
+[  484827ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/components/react-dev-overlay/app/hot-reloader-client.js:186
+[  485249ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/components/react-dev-overlay/app/hot-reloader-client.js:186
+[  485272ms] [LOG] [Fast Refresh] done in 24ms @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/components/react-dev-overlay/app/hot-reloader-client.js:43
+[  485755ms] [LOG] [Fast Refresh] done in 507ms @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/components/react-dev-overlay/app/hot-reloader-client.js:43
+[  487575ms] Event
+[  524430ms] [ERROR] Refused to apply style from 'http://127.0.0.1:2024/_next/static/css/app/layout.css?v=1786122940706' because its MIME type ('text/html') is not a supported stylesheet MIME type, and strict MIME checking is enabled. @ http://127.0.0.1:2024/:0
+[  524445ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://127.0.0.1:2024/_next/static/chunks/webpack.js?v=1786122940706:0
+[  524445ms] [ERROR] Refused to execute script from 'http://127.0.0.1:2024/_next/static/chunks/webpack.js?v=1786122940706' because its MIME type ('text/html') is not executable, and strict MIME type checking is enabled. @ http://127.0.0.1:2024/:0
+[  524446ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://127.0.0.1:2024/_next/static/chunks/main-app.js?v=1786122940706:0
+[  524446ms] [ERROR] Refused to execute script from 'http://127.0.0.1:2024/_next/static/chunks/main-app.js?v=1786122940706' because its MIME type ('text/html') is not executable, and strict MIME type checking is enabled. @ http://127.0.0.1:2024/:0
+[  524446ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://127.0.0.1:2024/_next/static/chunks/app/page.js:0
+[  524446ms] [ERROR] Refused to execute script from 'http://127.0.0.1:2024/_next/static/chunks/app/page.js' because its MIME type ('text/html') is not executable, and strict MIME type checking is enabled. @ http://127.0.0.1:2024/:0
+[  524447ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://127.0.0.1:2024/_next/static/chunks/app-pages-internals.js:0
+[  524447ms] [ERROR] Refused to execute script from 'http://127.0.0.1:2024/_next/static/chunks/app-pages-internals.js' because its MIME type ('text/html') is not executable, and strict MIME type checking is enabled. @ http://127.0.0.1:2024/:0
+[  524448ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://127.0.0.1:2024/_next/static/chunks/app/layout.js:0
+[  524448ms] [ERROR] Refused to execute script from 'http://127.0.0.1:2024/_next/static/chunks/app/layout.js' because its MIME type ('text/html') is not executable, and strict MIME type checking is enabled. @ http://127.0.0.1:2024/:0
+[  616614ms] [ERROR] Refused to apply style from 'http://127.0.0.1:2024/_next/static/css/app/layout.css?v=1786123033143' because its MIME type ('text/html') is not a supported stylesheet MIME type, and strict MIME checking is enabled. @ http://127.0.0.1:2024/:0
+[  616647ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://127.0.0.1:2024/_next/static/chunks/app-pages-internals.js:0
+[  616647ms] [ERROR] Refused to execute script from 'http://127.0.0.1:2024/_next/static/chunks/app-pages-internals.js' because its MIME type ('text/html') is not executable, and strict MIME type checking is enabled. @ http://127.0.0.1:2024/:0
+[  616647ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://127.0.0.1:2024/_next/static/chunks/app/page.js:0
+[  616647ms] [ERROR] Refused to execute script from 'http://127.0.0.1:2024/_next/static/chunks/app/page.js' because its MIME type ('text/html') is not executable, and strict MIME type checking is enabled. @ http://127.0.0.1:2024/:0
+[  616647ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://127.0.0.1:2024/_next/static/chunks/main-app.js?v=1786123033143:0
+[  616647ms] [ERROR] Refused to execute script from 'http://127.0.0.1:2024/_next/static/chunks/main-app.js?v=1786123033143' because its MIME type ('text/html') is not executable, and strict MIME type checking is enabled. @ http://127.0.0.1:2024/:0

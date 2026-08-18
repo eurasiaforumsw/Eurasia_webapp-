@@ -54,9 +54,9 @@ export default function AdminLoginPage() {
           </button>
         </form>
         <div className="efsw-admin-demo-hint">
-          <span>Prototype access</span>
+          <span>Demo access</span>
           <code>{ADMIN_DEMO_ACCOUNT.email}</code>
-          <code>{ADMIN_DEMO_ACCOUNT.password}</code>
+          <code>Contact admin for password</code>
         </div>
       </section>
       <a href="/" className="efsw-admin-auth__back"><ArrowLeft size={15} /> กลับหน้าหลัก</a>
