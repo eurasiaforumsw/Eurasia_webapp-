@@ -12,6 +12,8 @@ interface I18nContextType {
   locale: Locale;
   setLocale: (locale: Locale) => void;
   t: (key: string, params?: Record<string, string | number>) => string;
+  /** Reads a list-valued message (e.g. role names) with the same lookup rules as `t`. */
+  tList: (key: string) => string[];
   messages: Messages;
 }
 
@@ -78,8 +80,32 @@ export function I18nProvider({ children, defaultLocale = 'en', messages }: I18nP
     return typeof value === 'string' ? value : key;
   };
 
+  // Resolves a dotted key against the active locale, then English.
+  const lookup = (key: string): unknown => {
+    const keys = key.split('.');
+    for (const source of [messages[locale], messages.en]) {
+      let value: any = source;
+      let found = true;
+      for (const k of keys) {
+        if (value && typeof value === 'object' && k in value) {
+          value = value[k];
+        } else {
+          found = false;
+          break;
+        }
+      }
+      if (found) return value;
+    }
+    return undefined;
+  };
+
+  const tList = (key: string): string[] => {
+    const value = lookup(key);
+    return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
+  };
+
   return (
-    <I18nContext.Provider value={{ locale, setLocale, t, messages: messages[locale] }}>
+    <I18nContext.Provider value={{ locale, setLocale, t, tList, messages: messages[locale] }}>
       {children}
     </I18nContext.Provider>
   );

@@ -59,6 +59,7 @@ export function SiteNav() {
   // click, and keyboard can never disagree about what is on screen.
   const [openKey, setOpenKey] = useState<string | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [mobileExpandedKey, setMobileExpandedKey] = useState<string | null>(null);
   const [scrolled, setScrolled] = useState(false);
   const [hoverCapable, setHoverCapable] = useState(false);
 
@@ -107,6 +108,7 @@ export function SiteNav() {
   useEffect(() => {
     setOpenKey(null);
     setSheetOpen(false);
+    setMobileExpandedKey(null);
   }, [pathname]);
 
   useEffect(() => {
@@ -389,8 +391,6 @@ export function SiteNav() {
               </div>
             </div>
 
-            <span className="efsw-nav__divider" aria-hidden="true" />
-
             <Link className="efsw-nav__login" href="/member/login" aria-label={loginLabel}>
               <LogIn size={15} strokeWidth={1.9} aria-hidden="true" />
               <span className="efsw-nav__login-text">{loginLabel}</span>
@@ -417,7 +417,9 @@ export function SiteNav() {
               aria-label={menuLabel}
               onClick={() => {
                 closeNow();
-                setSheetOpen((open) => !open);
+                const next = !sheetOpen;
+                setMobileExpandedKey(next && pathname.startsWith("/about") ? "about" : null);
+                setSheetOpen(next);
               }}
             >
               {sheetOpen ? <X size={19} aria-hidden="true" /> : <Menu size={19} aria-hidden="true" />}
@@ -443,14 +445,27 @@ export function SiteNav() {
 
           <nav className="efsw-sheet__nav" aria-label="Mobile">
             {NAV_NODES.map((node, index) => (
-              <div className="efsw-sheet__group" key={node.href}>
-                <Link href={node.href} data-active={isActive(node.href)} onClick={() => setSheetOpen(false)}>
-                  <span className="efsw-sheet__index">{String(index + 1).padStart(2, "0")}</span>
-                  <span>{t("navigation." + node.labelKey)}</span>
-                  <ArrowUpRight size={18} aria-hidden="true" />
-                </Link>
+              <div className="efsw-sheet__group" key={node.href} data-expanded={mobileExpandedKey === node.labelKey}>
+                {node.children ? (
+                  <button
+                    type="button"
+                    aria-expanded={mobileExpandedKey === node.labelKey}
+                    aria-controls={`mobile-sub-${node.labelKey}`}
+                    onClick={() => setMobileExpandedKey((current) => current === node.labelKey ? null : node.labelKey)}
+                  >
+                    <span className="efsw-sheet__index">{String(index + 1).padStart(2, "0")}</span>
+                    <span>{t("navigation." + node.labelKey)}</span>
+                    <ChevronDown className="efsw-sheet__expand" size={19} aria-hidden="true" />
+                  </button>
+                ) : (
+                  <Link href={node.href} data-active={isActive(node.href)} onClick={() => setSheetOpen(false)}>
+                    <span className="efsw-sheet__index">{String(index + 1).padStart(2, "0")}</span>
+                    <span>{t("navigation." + node.labelKey)}</span>
+                    <ArrowUpRight size={18} aria-hidden="true" />
+                  </Link>
+                )}
                 {node.children && (
-                  <div className="efsw-sheet__sub">
+                  <div className="efsw-sheet__sub" id={`mobile-sub-${node.labelKey}`}>
                     {node.children.map((child) => (
                       <Link key={child.href} href={child.href} onClick={() => setSheetOpen(false)}>
                         {t("navigation." + child.labelKey)}

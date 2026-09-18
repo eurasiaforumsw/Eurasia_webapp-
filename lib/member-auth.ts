@@ -61,8 +61,8 @@ export const getSessionMember = (): MemberProfile | null => {
 };
 
 export const registerMember = async (input: Omit<MemberProfile, "id" | "joinedAt" | "status"> & { password: string }) => {
-  if (!canUseStorage()) throw new Error("เปิดใช้งาน local storage ไม่ได้ในเบราว์เซอร์นี้");
-  if (readMember()) throw new Error("มีสมาชิกในเครื่องนี้แล้ว กรุณาเข้าสู่ระบบด้วยอีเมลเดิม");
+  if (!canUseStorage()) throw new Error("Browser storage is unavailable.");
+  if (readMember()) throw new Error("A member profile already exists in this browser. Sign in with the same email.");
 
   const { password, ...profileInput } = input;
   const member: StoredMember = {
@@ -81,15 +81,15 @@ export const registerMember = async (input: Omit<MemberProfile, "id" | "joinedAt
 
 export const loginMember = async (email: string, password: string) => {
   const member = readMember();
-  if (!member || member.email !== normalizeEmail(email)) throw new Error("ไม่พบอีเมลสมาชิกนี้");
-  if (member.passwordHash !== await hashPassword(password)) throw new Error("รหัสผ่านไม่ถูกต้อง");
+  if (!member || member.email !== normalizeEmail(email)) throw new Error("No member account was found for this email.");
+  if (member.passwordHash !== await hashPassword(password)) throw new Error("Incorrect password.");
   if (canUseStorage()) window.localStorage.setItem(MEMBER_SESSION_KEY, "active");
   return getMember();
 };
 
 export const updateMember = (updates: Partial<MemberProfile>) => {
   const member = readMember();
-  if (!member) throw new Error("ไม่พบข้อมูลสมาชิก");
+  if (!member) throw new Error("Member profile not found.");
   const next: StoredMember = { ...member, ...updates, email: normalizeEmail(updates.email ?? member.email) };
   if (canUseStorage()) window.localStorage.setItem(MEMBER_STORAGE_KEY, JSON.stringify(next));
   return getMember();

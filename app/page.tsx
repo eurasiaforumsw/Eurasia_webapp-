@@ -16,8 +16,8 @@ import {
   defaultLayoutConfig,
   getAdminLayout,
   getPublishedAdminContent,
+  initialContent,
 } from "@/lib/admin-data";
-import { useSmoothScroll } from "@/hooks/useSmoothScroll";
 import { initScrollAnimations, cleanupScrollAnimations } from "@/lib/scroll-animations";
 
 /** Sections tracked by the side progress indicator. */
@@ -43,9 +43,6 @@ const cardItem = (i: number) => ({
 export default function HomePage() {
   const [layout, setLayout] = useState<AdminLayoutConfig>(defaultLayoutConfig);
   const [news, setNews] = useState<AdminContentItem[]>([]);
-
-  // Enable smooth scrolling with Lenis
-  useSmoothScroll();
 
   // Sync admin data
   useEffect(() => {
@@ -76,29 +73,54 @@ export default function HomePage() {
     };
   }, []);
 
-  // Initialize GSAP ScrollTrigger animations after content loads
+  // Initialize GSAP ScrollTrigger animations and IntersectionObserver
   useEffect(() => {
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const revealItems = document.querySelectorAll<HTMLElement>(".efsw-reveal");
 
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reducedMotion) {
-      // If user prefers reduced motion, make all elements visible immediately
-      const revealItems = document.querySelectorAll<HTMLElement>(".efsw-reveal");
       revealItems.forEach((item) => item.classList.add("is-visible"));
       return;
     }
 
-    // Small delay to ensure DOM is fully rendered
+    // Immediate IntersectionObserver guarantees elements become visible when scrolled to
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("is-visible");
+          }
+        });
+      },
+      { threshold: 0.05, rootMargin: "0px 0px 80px 0px" }
+    );
+    revealItems.forEach((item) => observer.observe(item));
+
+    // Delay for DOM settle before GSAP ScrollTrigger
     const timer = setTimeout(() => {
       initScrollAnimations();
     }, 100);
 
+    // Safety fallback: if anything wasn't revealed within 1.2s, make sure it's visible
+    const fallbackTimer = setTimeout(() => {
+      revealItems.forEach((item) => {
+        if (!item.classList.contains("is-visible")) {
+          item.classList.add("is-visible");
+        }
+      });
+    }, 1200);
+
     return () => {
+      observer.disconnect();
       clearTimeout(timer);
+      clearTimeout(fallbackTimer);
       cleanupScrollAnimations();
     };
   }, [layout, news]);
 
-  const displayedNews = news.slice(0, 3);
+  const fallbackNews = initialContent.filter((item: AdminContentItem) => item.kind === "news");
+  const publishedNews = news.length > 0 ? news : fallbackNews;
+  const displayedNews = publishedNews.slice(0, 3);
 
   return (
     <>
@@ -116,13 +138,13 @@ export default function HomePage() {
         )}
 
         {/* Dean Message - Live sync with Admin Layout configuration */}
-        {layout.sectionVisibility.deanMessage && layout.deanProfiles && layout.deanProfiles.length > 0 && (
+        {(layout.sectionVisibility?.deanMessage !== false) && layout.deanProfiles && layout.deanProfiles.length > 0 && (
           <div id="dean">
             <DeanMessage profiles={layout.deanProfiles} autoPlayInterval={3500} />
           </div>
         )}
 
-        {layout.sectionVisibility.about && (
+        {(layout.sectionVisibility?.about !== false) && (
           <section className="efsw-about-bridge efsw-reveal" id="about" aria-labelledby="about-bridge-title">
             <div className="efsw-section-label">01 / About EFSW</div>
             <div className="efsw-about-bridge__grid efsw-reveal-group">
@@ -135,7 +157,7 @@ export default function HomePage() {
           </section>
         )}
 
-        {layout.sectionVisibility.news && (
+        {(layout.sectionVisibility?.news !== false) && (
           <section className="efsw-news efsw-reveal" id="news" aria-labelledby="news-title">
             <div className="efsw-section-label">02 / Newsroom</div>
             <div className="efsw-news__head">
@@ -143,12 +165,13 @@ export default function HomePage() {
               <p>Briefings, platform updates, and resources from the work of connecting social workers across Eurasia.</p>
             </div>
             <div className="efsw-home-news-grid efsw-reveal-group">
-              {displayedNews.map((item, index) => (
+              {displayedNews.map((item: AdminContentItem, index: number) => (
                 <motion.article
                   className="efsw-home-news-card"
                   key={item.id}
                   variants={cardItem(index)}
-                  initial="hidden"
+                  // Do not hide SSR content while Framer Motion hydrates.
+                  initial={false}
                   whileInView="visible"
                   viewport={{ once: true, amount: 0.18 }}
                 >
@@ -195,10 +218,9 @@ export default function HomePage() {
               <a href="mailto:support@eurasiaforumsw.org">support@eurasiaforumsw.org</a>
             </div>
           </div>
-          <div className="efsw-footer__bottom"><span>© 2026 EFSW</span><span>English · 한국어 · ไทย</span><a href="#home">Back to top <ArrowUpRight size={15} /></a></div>
+          <div className="efsw-footer__bottom"><span>© 2026 EFSW</span><span>English · Korean · Thai</span><a href="#home">Back to top <ArrowUpRight size={15} /></a></div>
         </footer>
       </main>
     </>
   );
 }
-

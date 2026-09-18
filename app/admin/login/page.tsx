@@ -23,7 +23,7 @@ export default function AdminLoginPage() {
       await loginAdmin(email, password);
       window.location.replace("/admin");
     } catch (submissionError) {
-      setError(submissionError instanceof Error ? submissionError.message : "เข้าสู่ระบบไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
+      setError(submissionError instanceof Error ? submissionError.message : "Unable to sign in. Please try again.");
       setSubmitting(false);
     }
   };
@@ -36,20 +36,20 @@ export default function AdminLoginPage() {
       </a>
       <section className="efsw-admin-auth__card" aria-labelledby="admin-login-title">
         <div className="efsw-admin-auth__icon"><LockKeyhole size={20} /></div>
-        <p className="efsw-admin-eyebrow">EFSW operations / ผู้ดูแลระบบ</p>
-        <h1 id="admin-login-title">เข้าสู่พื้นที่<br /><span>ผู้ดูแลระบบ</span></h1>
-        <p className="efsw-admin-auth__lede">จัดการสมาชิก ข่าวประชาสัมพันธ์ เอกสารวิชาการ และการตั้งค่าของเว็บไซต์จากพื้นที่ทำงานเดียว</p>
+        <p className="efsw-admin-eyebrow">EFSW operations / Admin</p>
+        <h1 id="admin-login-title">Enter the<br /><span>control room.</span></h1>
+        <p className="efsw-admin-auth__lede">Manage members, publications, academic resources, and site settings from one workspace.</p>
         {error && <div className="efsw-admin-error" role="alert">{error}</div>}
         <form onSubmit={submit} className="efsw-admin-login-form">
-          <label>อีเมลผู้ดูแล *<input required type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="username" /></label>
+          <label>Admin email *<input required type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="username" /></label>
           <div className="efsw-admin-password">
-            <label>รหัสผ่าน *<input id="admin-password" required type={showPassword ? "text" : "password"} value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" /></label>
-            <button type="button" onClick={() => setShowPassword((value) => !value)} aria-controls="admin-password" aria-pressed={showPassword} aria-label={showPassword ? "ซ่อนรหัสผ่าน" : "แสดงรหัสผ่าน"}>
+            <label>Password *<input id="admin-password" required type={showPassword ? "text" : "password"} value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" /></label>
+            <button type="button" onClick={() => setShowPassword((value) => !value)} aria-controls="admin-password" aria-pressed={showPassword} aria-label={showPassword ? "Hide password" : "Show password"}>
               {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
             </button>
           </div>
           <button type="submit" className="efsw-admin-primary" disabled={submitting}>
-            {submitting ? "กำลังตรวจสอบ…" : "เข้าสู่ระบบผู้ดูแล"}
+            {submitting ? "Signing in..." : "Sign in to admin"}
             <ArrowUpRight size={17} />
           </button>
         </form>
@@ -59,8 +59,8 @@ export default function AdminLoginPage() {
           <code>Contact admin for password</code>
         </div>
       </section>
-      <a href="/" className="efsw-admin-auth__back"><ArrowLeft size={15} /> กลับหน้าหลัก</a>
-      <p className="efsw-admin-prototype-note">Prototype mode: session นี้เก็บไว้ในเบราว์เซอร์เพื่อทดสอบ workflow เท่านั้น</p>
+      <a href="/" className="efsw-admin-auth__back"><ArrowLeft size={15} /> Back to home</a>
+      <p className="efsw-admin-prototype-note">Prototype mode · Local browser session for this preview</p>
     </main>
   );
 }

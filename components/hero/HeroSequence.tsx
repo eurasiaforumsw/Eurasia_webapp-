@@ -103,7 +103,7 @@ export default function HeroSequence() {
             transition={{ duration: 0.8 }}
           >
             <span className="text-teal-vivid text-sm font-semibold uppercase tracking-wider">
-              เวทีนานาชาติเพื่อนักสังคมสงเคราะห์ยูเรเชีย
+              An international forum for social workers across Eurasia
             </span>
           </motion.div>
 

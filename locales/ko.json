@@ -32,7 +32,7 @@
     "logout": "로그아웃",
     "profile": "내 프로필",
     "dashboard": "대시보드",
-    "overview": "개요",
+    "overview": "소개",
     "organization": "조직 구조",
     "menu": "메뉴",
     "language": "언어"
@@ -245,5 +245,234 @@
     "copyright": "© {year} 유라시아 사회복지재단. 모든 권리 보유.",
     "contactEmail": "이메일",
     "contactPhone": "전화"
+  },
+  "newsroom": {
+    "eyebrow": "뉴스룸",
+    "headline": "네트워크를 앞으로",
+    "headlineAccent": "이끄는 이야기들.",
+    "intro": "유라시아 전역의 사회복지사를 연결하는 활동에서 전하는 뉴스와 공지, 소식입니다.",
+    "searchPlaceholder": "기사 또는 주제 검색...",
+    "featured": "주요 기사",
+    "moreFrom": "EFSW의 다른 소식",
+    "storyCount": "{count}개 기사",
+    "storyCountOne": "{count}개 기사",
+    "readStory": "기사 읽기",
+    "linkLabel": "자세한 내용 문의",
+    "emptyTitle": "기사를 찾을 수 없습니다",
+    "emptyBody": "다른 카테고리나 검색어를 사용해 보시거나, 새 기사가 게시된 후 다시 확인해 주세요.",
+    "ctaLabel": "함께하기",
+    "ctaHeadline": "EFSW의 소식을",
+    "ctaHeadlineAccent": "함께 확인하세요.",
+    "ctaBody": "행사, 학술 활동, 새로운 협력 기회에 대한 소식은 저희 팀에 문의해 주세요.",
+    "ctaButton": "EFSW 팀에 문의하기",
+    "all": "전체"
+  },
+  "library": {
+    "eyebrow": "공개 자료실",
+    "headline": "국경을 넘어",
+    "headlineAccent": "전해지는 지식.",
+    "intro": "서로의 현장을 배우고자 하는 사회복지사, 연구자, 학생, 기관을 위한 공동 자료실입니다.",
+    "categoriesLabel": "문서 카테고리",
+    "openCollection": "컬렉션 열기",
+    "browseAria": "{label} 문서 보기",
+    "searchPlaceholder": "문서 또는 보고서 검색...",
+    "linkLabel": "자세한 정보 요청",
+    "emptyTitle": "문서를 찾을 수 없습니다",
+    "emptyBody": "다른 카테고리나 검색어를 사용해 보시거나, EFSW 학술팀에 문의해 주세요.",
+    "ctaLabel": "지식 기여하기",
+    "ctaHeadline": "연구나 현장의",
+    "ctaHeadlineAccent": "이야기가 있으신가요?",
+    "ctaBody": "지역이 함께 더 빠르게 배울 수 있도록 논문, 사례 연구, 실무 노트를 환영합니다.",
+    "ctaButton": "학술팀에 문의하기",
+    "categories": {
+      "research": {
+        "label": "연구",
+        "sublabel": "논문 및 학술 자료",
+        "purpose": "근거 찾기",
+        "description": "EFSW 네트워크의 학술 저술, 현장 연구, 지역 간 분석 자료입니다."
+      },
+      "practice": {
+        "label": "실무",
+        "sublabel": "매뉴얼 및 지침",
+        "purpose": "방법 적용",
+        "description": "공유된 지식을 실제 지역사회 현장에 적용할 수 있도록 돕는 실무 자료입니다."
+      },
+      "briefings": {
+        "label": "정책 브리핑",
+        "sublabel": "정책 및 분석",
+        "purpose": "정책 형성",
+        "description": "정책과 협력에 관한 간결한 관점으로, 전문적 논의에 바로 활용할 수 있습니다."
+      }
+    }
+  },
+  "article": {
+    "backToNews": "뉴스룸으로 돌아가기",
+    "backToDocuments": "문서 목록으로 돌아가기",
+    "minRead": "읽는 시간 {minutes}분",
+    "share": "공유",
+    "shareStory": "이 기사 공유하기",
+    "shareDocument": "이 문서 공유하기",
+    "translate": "번역",
+    "translating": "번역 중…",
+    "machineTranslated": "기계 번역",
+    "showOriginal": "원문",
+    "translateError": "번역할 수 없습니다",
+    "copyLink": "링크 복사",
+    "linkCopied": "복사됨",
+    "linkCopiedStatus": "링크가 복사되었습니다",
+    "shareByEmail": "이메일로 공유",
+    "moreOptions": "다른 공유 방법",
+    "shareOn": "{service}에 공유",
+    "readNext": "다음 기사",
+    "moreDocuments": "다른 문서",
+    "viewDocument": "문서 보기",
+    "ctaLabel": "문의하기",
+    "newsCtaHeadline": "이 기사에 대해 질문이 있으신가요?",
+    "newsCtaBody": "EFSW 편집팀이 배경 설명, 인터뷰, 후속 취재를 도와드립니다.",
+    "documentCtaHeadline": "이 문서의 열람을 요청하세요",
+    "documentCtaBody": "학술팀이 요청에 따라 전문과 관련 자료를 공유해 드립니다.",
+    "ctaButton": "EFSW에 문의하기"
+  },
+  "organization": {
+    "eyebrow": "조직",
+    "headline": "네 개의 기구,",
+    "headlineAccent": "하나의 방향.",
+    "intro": "EFSW는 전략적 운영에서 지역사회 현장 실무까지, 서로 연결된 네 개의 기구로 이루어져 있습니다.",
+    "structureLabel": "조직 구조",
+    "collabEyebrow": "협업 체계",
+    "collabHeadline": "상설 그룹,",
+    "collabHeadlineAccent": "함께하는 일.",
+    "collabLede": "네 개의 기구는 상설 워킹그룹을 통해 실제로 만납니다. 각 그룹은 두 개 이상의 국가에서 구성원을 모으고, 위 구조로 결과를 보고합니다.",
+    "stagesLabel": "협업이 진행되는 과정",
+    "membershipLabel": "참여 대상",
+    "membershipHeadline": "모든 목소리에",
+    "membershipHeadlineAccent": "열려 있습니다.",
+    "ctaLabel": "EFSW와 함께하기",
+    "ctaHeadline": "저희 네트워크는 협력에",
+    "ctaHeadlineAccent": "열려 있습니다.",
+    "ctaBody": "개인 실무자, 학생, 기관 어느 쪽이든 이 네트워크에는 여러분의 일을 위한 자리가 있습니다.",
+    "ctaButton": "팀에 문의하기",
+    "nodes": {
+      "council": {
+        "tag": "리더십",
+        "title": "집행위원회",
+        "body": "전략 방향을 정하고 네트워크의 활동이 사명에 뿌리내리도록 하여, 모든 사업이 우리가 존재하는 이유인 지역사회에 기여하도록 합니다."
+      },
+      "knowledge": {
+        "tag": "지식",
+        "title": "학술·실무 네트워크",
+        "body": "학자, 실무자, 학습자를 연결해 지식이 이론에서 현장으로, 현장에서 다시 학습으로 양방향으로 흐르게 합니다."
+      },
+      "partnerships": {
+        "tag": "파트너십",
+        "title": "지역 파트너십",
+        "body": "지역의 대학, NGO, 정부기관, 파트너와 함께 다리를 놓고 새로운 협력의 길을 엽니다."
+      },
+      "community": {
+        "tag": "커뮤니티",
+        "title": "회원 커뮤니티",
+        "body": "회원들이 협력을 만들고 기회를 나누며 영향력을 확장하는 곳 — 네트워크가 실제로 살아 움직이는 열린 공간입니다."
+      }
+    },
+    "membership": {
+      "professional": {
+        "type": "전문가",
+        "body": "현장의 지식을 나누는 실무자와 사회복지 전문가."
+      },
+      "student": {
+        "type": "학생",
+        "body": "다음 세대의 실무를 만들어 가는 신진 사회복지사와 학습자."
+      },
+      "institutional": {
+        "type": "기관",
+        "body": "대규모로 활동하는 대학, NGO, 정부기관, 협력 기관."
+      }
+    },
+    "workingGroups": {
+      "wg01": {
+        "name": "연구·출판",
+        "focus": "공동 연구, 동료 심사, 공유 인용 자료실을 조율해 연구 결과가 빠르게 현장에 닿도록 합니다.",
+        "composition": [
+          "학자",
+          "현장 연구자",
+          "대학원생"
+        ],
+        "cadence": "매월",
+        "reportsTo": "knowledge"
+      },
+      "wg02": {
+        "name": "현장 실무 교류",
+        "focus": "국경을 넘는 사례 회의와 동료 수퍼비전을 운영해 개별 사례를 전이 가능한 방법으로 만듭니다.",
+        "composition": [
+          "면허 실무자",
+          "수퍼바이저",
+          "NGO 현장 책임자"
+        ],
+        "cadence": "격주",
+        "reportsTo": "community"
+      },
+      "wg03": {
+        "name": "교육과정·훈련",
+        "focus": "협력 프로그램 전반에 공동 교재와 공통 역량 기준을 마련합니다.",
+        "composition": [
+          "교수진",
+          "교육과정 설계자",
+          "훈련 담당자"
+        ],
+        "cadence": "분기별",
+        "reportsTo": "knowledge"
+      },
+      "wg04": {
+        "name": "정책·애드보커시",
+        "focus": "네트워크의 근거를 공공 파트너를 위한 제안서, 브리핑, 입장문으로 옮깁니다.",
+        "composition": [
+          "정책 분석가",
+          "기관 대표",
+          "애드보커시 책임자"
+        ],
+        "cadence": "분기별",
+        "reportsTo": "partnerships"
+      }
+    },
+    "reportsTo": "{group} 소속",
+    "seats": "{count}석",
+    "openToMembers": "회원 참여 가능",
+    "note": "그룹 이름, 주기, 좌석 수는 레이아웃 검토를 위한 임시 값입니다. EFSW가 2026년 주기를 승인하면 확정된 내용으로 대체됩니다.",
+    "reach": {
+      "groups": {
+        "label": "워킹그룹",
+        "note": "상설, 국경 간"
+      },
+      "seats": {
+        "label": "그룹 좌석",
+        "note": "네트워크 전반에 배분"
+      },
+      "languages": {
+        "label": "실무 언어",
+        "note": "영어 · 한국어 · 태국어"
+      },
+      "cycle": {
+        "label": "현재 주기",
+        "note": "매년 검토"
+      }
+    },
+    "stages": {
+      "proposal": {
+        "title": "제안",
+        "body": "회원이나 협력 기관은 누구나 해당 워킹그룹에 제안을 낼 수 있습니다."
+      },
+      "review": {
+        "title": "그룹 검토",
+        "body": "워킹그룹이 범위, 윤리, 역량을 검토한 뒤 책임자와 공동 책임자를 지정합니다."
+      },
+      "joint": {
+        "title": "공동 작업",
+        "body": "국가와 분야를 넘어 팀이 구성되고, 현장에 맞는 언어로 협업합니다."
+      },
+      "practice": {
+        "title": "현장으로 환원",
+        "body": "연구 결과는 자료실에 공개되고 교육과정과 정책 활동에 다시 반영됩니다."
+      }
+    }
   }
 }

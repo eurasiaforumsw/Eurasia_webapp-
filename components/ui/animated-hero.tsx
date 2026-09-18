@@ -135,7 +135,10 @@ function AnimatedHero({
         id="top"
         ref={contentRef}
         variants={heroContainer}
-        initial="hidden"
+        // Keep the server-rendered hero readable while Framer Motion hydrates.
+        // A hidden initial state made the top of the page disappear briefly on
+        // cold loads when hydration or a font request was delayed.
+        initial={false}
         animate="visible"
         style={{ y: yContent }}
       >
@@ -156,7 +159,7 @@ function AnimatedHero({
                   <motion.span
                     key={word}
                     className="efsw-hero__word-item"
-                    initial={{ opacity: 0, y: "-100%" }}
+                    initial={false}
                     transition={{ type: "spring", stiffness: 50 }}
                     animate={
                       wordIndex === index
@@ -200,7 +203,7 @@ function AnimatedHero({
       <motion.div
         className="efsw-hero__meta"
         variants={heroMeta}
-        initial="hidden"
+        initial={false}
         animate="visible"
       >
         <span>Connect · Empower · Advocate</span>
@@ -213,4 +216,3 @@ function AnimatedHero({
 }
 
 export { AnimatedHero };
-

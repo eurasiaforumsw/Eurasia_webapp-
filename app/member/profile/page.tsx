@@ -5,7 +5,7 @@ import { ArrowUpRight, Check, LogOut, Save, UserRound, CreditCard, FileText, Mai
 import { getSessionMember, logoutMember, MemberProfile, updateMember } from "@/lib/member-auth";
 
 const typeLabels = { professional: "Professional member", student: "Student member", institutional: "Institutional member" };
-const statusLabels: Record<MemberProfile["status"], string> = { pending: "รอตรวจสอบ", active: "สมาชิกใช้งานอยู่", suspended: "ระงับการใช้งานชั่วคราว" };
+const statusLabels: Record<MemberProfile["status"], string> = { pending: "Pending review", active: "Active member", suspended: "Temporarily suspended" };
 
 const quickActions = [
   { icon: CreditCard, label: "Membership Card", description: "View digital card", href: "#card" },

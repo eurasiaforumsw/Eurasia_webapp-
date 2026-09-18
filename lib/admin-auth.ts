@@ -126,15 +126,15 @@ export const loginAdmin = async (email: string, password: string): Promise<Admin
   if (!rateLimit.allowed) {
     if (rateLimit.lockedUntil) {
       const minutes = Math.ceil((rateLimit.lockedUntil.getTime() - Date.now()) / 60000);
-      throw new Error(`บัญชีถูกล็อกชั่วคราว กรุณารอ ${minutes} นาที`);
+      throw new Error(`Account temporarily locked. Try again in ${minutes} minute${minutes === 1 ? "" : "s"}.`);
     }
-    throw new Error(`พยายามเข้าสู่ระบบเกินกำหนด (${rateLimit.remainingAttempts} ครั้งที่เหลือ)`);
+    throw new Error(`Too many sign-in attempts (${rateLimit.remainingAttempts} remaining).`);
   }
 
   // Validate credentials
   if (normalizeEmail(email) !== ADMIN_DEMO_ACCOUNT.email) {
     recordLoginAttempt(false);
-    throw new Error("ไม่พบบัญชีผู้ดูแลนี้");
+    throw new Error("Admin account not found.");
   }
 
   // Get password from env (fallback to demo password for development)
@@ -143,11 +143,11 @@ export const loginAdmin = async (email: string, password: string): Promise<Admin
   if (password !== adminPassword) {
     recordLoginAttempt(false);
     const remaining = rateLimit.remainingAttempts - 1;
-    throw new Error(`รหัสผ่านผู้ดูแลไม่ถูกต้อง (เหลือ ${remaining} ครั้ง)`);
+    throw new Error(`Incorrect admin password (${remaining} attempt${remaining === 1 ? "" : "s"} remaining).`);
   }
 
   if (!canUseStorage()) {
-    throw new Error("เปิดใช้งาน local storage ไม่ได้ในเบราว์เซอร์นี้");
+    throw new Error("Browser storage is unavailable.");
   }
 
   // Success
@@ -178,4 +178,3 @@ export const getRemainingAttempts = (): number => {
   const rateLimit = checkRateLimit();
   return rateLimit.remainingAttempts;
 };
-

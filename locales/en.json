@@ -32,7 +32,7 @@
     "logout": "Logout",
     "profile": "My Profile",
     "dashboard": "Dashboard",
-    "overview": "Overview",
+    "overview": "About us",
     "organization": "Organization",
     "menu": "Menu",
     "language": "Language"
@@ -245,5 +245,234 @@
     "copyright": "© {year} Eurasia Foundation for Social Work. All rights reserved.",
     "contactEmail": "Email",
     "contactPhone": "Phone"
+  },
+  "newsroom": {
+    "eyebrow": "Newsroom",
+    "headline": "Stories moving",
+    "headlineAccent": "the network forward.",
+    "intro": "News, announcements, and updates from the work of connecting social workers across Eurasia.",
+    "searchPlaceholder": "Search stories or topics...",
+    "featured": "Featured story",
+    "moreFrom": "More from EFSW",
+    "storyCount": "{count} stories",
+    "storyCountOne": "{count} story",
+    "readStory": "Read story",
+    "linkLabel": "Contact for details",
+    "emptyTitle": "No stories found",
+    "emptyBody": "Try another category or search term, or check back when the next story is published.",
+    "ctaLabel": "Stay connected",
+    "ctaHeadline": "Follow what is",
+    "ctaHeadlineAccent": "happening at EFSW.",
+    "ctaBody": "Reach out to the team for updates on events, academic work, and new opportunities to collaborate.",
+    "ctaButton": "Contact the EFSW team",
+    "all": "All"
+  },
+  "library": {
+    "eyebrow": "Open Library",
+    "headline": "Knowledge that",
+    "headlineAccent": "travels across borders.",
+    "intro": "A shared library for social workers, researchers, students, and institutions who want to learn from one another’s context.",
+    "categoriesLabel": "Document categories",
+    "openCollection": "Open collection",
+    "browseAria": "Browse {label} documents",
+    "searchPlaceholder": "Search documents or reports...",
+    "linkLabel": "Request more information",
+    "emptyTitle": "No documents found",
+    "emptyBody": "Try another category or search term, or contact the EFSW academic team.",
+    "ctaLabel": "Contribute knowledge",
+    "ctaHeadline": "Have research or",
+    "ctaHeadlineAccent": "a story from the field?",
+    "ctaBody": "We welcome papers, case studies, and practice notes that help the region learn faster together.",
+    "ctaButton": "Contact the academic team",
+    "categories": {
+      "research": {
+        "label": "Research",
+        "sublabel": "Papers & Articles",
+        "purpose": "Find evidence",
+        "description": "Academic writing, field studies, and cross-regional analysis from the EFSW network."
+      },
+      "practice": {
+        "label": "Practice",
+        "sublabel": "Manuals & Guides",
+        "purpose": "Apply methods",
+        "description": "Practical resources designed to translate shared knowledge into real community contexts."
+      },
+      "briefings": {
+        "label": "Briefings",
+        "sublabel": "Policy & Analysis",
+        "purpose": "Shape policy",
+        "description": "Concise perspectives on policy and collaboration — ready for professional conversations."
+      }
+    }
+  },
+  "article": {
+    "backToNews": "Back to newsroom",
+    "backToDocuments": "Back to documents",
+    "minRead": "{minutes} min read",
+    "share": "Share",
+    "shareStory": "Share this story",
+    "shareDocument": "Share this document",
+    "translate": "Translate",
+    "translating": "Translating…",
+    "machineTranslated": "Machine translated",
+    "showOriginal": "Original",
+    "translateError": "Translation unavailable",
+    "copyLink": "Copy link",
+    "linkCopied": "Link copied",
+    "linkCopiedStatus": "Link copied to clipboard",
+    "shareByEmail": "Share by email",
+    "moreOptions": "More sharing options",
+    "shareOn": "Share on {service}",
+    "readNext": "Read next",
+    "moreDocuments": "More documents",
+    "viewDocument": "View document",
+    "ctaLabel": "Get in touch",
+    "newsCtaHeadline": "Questions about this story?",
+    "newsCtaBody": "The EFSW editorial team can help with context, interviews, and follow-up.",
+    "documentCtaHeadline": "Request access to this document",
+    "documentCtaBody": "Our academic team can share the full paper and related material on request.",
+    "ctaButton": "Contact EFSW"
+  },
+  "organization": {
+    "eyebrow": "Organization",
+    "headline": "Four bodies.",
+    "headlineAccent": "One direction.",
+    "intro": "EFSW is held together by four interconnected bodies — from strategic governance to active community practice across the region.",
+    "structureLabel": "Organizational structure",
+    "collabEyebrow": "Team collaboration",
+    "collabHeadline": "Standing groups,",
+    "collabHeadlineAccent": "shared work.",
+    "collabLede": "The four bodies meet in practice through standing working groups. Each group draws members from more than one country and reports back into the structure above.",
+    "stagesLabel": "How a collaboration moves",
+    "membershipLabel": "Who can join",
+    "membershipHeadline": "Open to",
+    "membershipHeadlineAccent": "every voice.",
+    "ctaLabel": "Work with EFSW",
+    "ctaHeadline": "Our network is open",
+    "ctaHeadlineAccent": "to collaboration.",
+    "ctaBody": "Whether you're an individual practitioner, a student, or an institution — there's a place in this network for the work you do.",
+    "ctaButton": "Contact the team",
+    "nodes": {
+      "council": {
+        "tag": "Leadership",
+        "title": "Executive Council",
+        "body": "Sets strategic direction and keeps the work of the network anchored to its mission — ensuring every initiative serves the communities we exist for."
+      },
+      "knowledge": {
+        "tag": "Knowledge",
+        "title": "Academic & Practice Network",
+        "body": "Connects academics, practitioners, and learners so knowledge moves in both directions — from theory into field, and from field back into learning."
+      },
+      "partnerships": {
+        "tag": "Partnerships",
+        "title": "Regional Partnerships",
+        "body": "Works alongside universities, NGOs, government bodies, and partners across the region to build bridges and open new pathways for collaboration."
+      },
+      "community": {
+        "tag": "Community",
+        "title": "Member Community",
+        "body": "Where members build collaborations, share opportunities, and scale their impact — the open space where the network actually lives."
+      }
+    },
+    "membership": {
+      "professional": {
+        "type": "Professional",
+        "body": "Practitioners and social work professionals contributing knowledge from the field."
+      },
+      "student": {
+        "type": "Student",
+        "body": "Emerging social workers and academic learners shaping the next generation of practice."
+      },
+      "institutional": {
+        "type": "Institutional",
+        "body": "Universities, NGOs, government bodies, and partner organisations working at scale."
+      }
+    },
+    "workingGroups": {
+      "wg01": {
+        "name": "Research & Publication",
+        "focus": "Coordinates joint studies, peer review, and the shared citation library so findings reach practice quickly.",
+        "composition": [
+          "Academics",
+          "Field researchers",
+          "Postgraduate students"
+        ],
+        "cadence": "Monthly",
+        "reportsTo": "knowledge"
+      },
+      "wg02": {
+        "name": "Field Practice Exchange",
+        "focus": "Runs case clinics and peer supervision across borders, turning individual casework into transferable method.",
+        "composition": [
+          "Licensed practitioners",
+          "Supervisors",
+          "NGO field leads"
+        ],
+        "cadence": "Fortnightly",
+        "reportsTo": "community"
+      },
+      "wg03": {
+        "name": "Curriculum & Training",
+        "focus": "Builds shared teaching material and a common competency baseline across partner programmes.",
+        "composition": [
+          "Faculty",
+          "Curriculum designers",
+          "Training officers"
+        ],
+        "cadence": "Quarterly",
+        "reportsTo": "knowledge"
+      },
+      "wg04": {
+        "name": "Policy & Advocacy",
+        "focus": "Translates the network's evidence into submissions, briefings, and positions for public partners.",
+        "composition": [
+          "Policy analysts",
+          "Institutional delegates",
+          "Advocacy leads"
+        ],
+        "cadence": "Quarterly",
+        "reportsTo": "partnerships"
+      }
+    },
+    "reportsTo": "Reports to {group}",
+    "seats": "{count} seats",
+    "openToMembers": "Open to members",
+    "note": "Group names, cadences, and seat counts are placeholder values for layout review. Confirmed appointments will replace them once EFSW ratifies the 2026 cycle.",
+    "reach": {
+      "groups": {
+        "label": "Working groups",
+        "note": "Standing, cross-border"
+      },
+      "seats": {
+        "label": "Group seats",
+        "note": "Held across the network"
+      },
+      "languages": {
+        "label": "Working languages",
+        "note": "English · Korean · Thai"
+      },
+      "cycle": {
+        "label": "Current cycle",
+        "note": "Reviewed annually"
+      }
+    },
+    "stages": {
+      "proposal": {
+        "title": "Proposal",
+        "body": "Any member or partner institution can open a proposal to the relevant working group."
+      },
+      "review": {
+        "title": "Group review",
+        "body": "The working group tests scope, ethics, and capacity, then assigns a lead and co-lead."
+      },
+      "joint": {
+        "title": "Joint work",
+        "body": "Teams form across countries and disciplines, working in the language that fits the field site."
+      },
+      "practice": {
+        "title": "Return to practice",
+        "body": "Findings publish to the resource hub and feed back into curriculum and policy work."
+      }
+    }
   }
 }

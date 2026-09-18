@@ -29,7 +29,7 @@ function NetworkGlobe() {
       </Sphere>
       <Sphere args={[1.75, 32, 32]}>
         <meshBasicMaterial 
-          color="#0a192f"
+          color="#001723"
           transparent
           opacity={0.8}
         />
@@ -60,8 +60,8 @@ export function Hero3D() {
       <div className="absolute inset-0 z-0">
         <Canvas camera={{ position: [0, 0, 5], fov: 45 }}>
           <ambientLight intensity={0.5} />
-          <directionalLight position={[10, 10, 5]} intensity={2} color="#f26522" />
-          <directionalLight position={[-10, -10, -5]} intensity={1} color="#008080" />
+          <directionalLight position={[10, 10, 5]} intensity={2} color="#4FB06A" />
+          <directionalLight position={[-10, -10, -5]} intensity={1} color="#1A6B8A" />
           <NetworkGlobe />
         </Canvas>
       </div>

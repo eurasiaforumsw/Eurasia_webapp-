@@ -13,39 +13,76 @@ if (typeof window !== "undefined") {
  * Call this after DOM is ready
  */
 export function initScrollAnimations() {
-  // Reveal animations - fade up from bottom
+  // Reveal animations - add .is-visible and animate
   gsap.utils.toArray<HTMLElement>(".efsw-reveal").forEach((element) => {
-    gsap.from(element, {
-      scrollTrigger: {
-        trigger: element,
-        start: "top 85%",
-        end: "top 65%",
-        toggleActions: "play none none reverse",
-      },
-      opacity: 0,
-      y: 40,
-      duration: 0.8,
-      ease: "power3.out",
+    // Check if element is already in viewport on load
+    const rect = element.getBoundingClientRect();
+    if (rect.top < window.innerHeight * 0.9) {
+      element.classList.add("is-visible");
+    }
+
+    ScrollTrigger.create({
+      trigger: element,
+      start: "top 88%",
+      onEnter: () => element.classList.add("is-visible"),
+      onEnterBack: () => element.classList.add("is-visible"),
     });
+
+    gsap.fromTo(
+      element,
+      { opacity: 0, y: 40 },
+      {
+        scrollTrigger: {
+          trigger: element,
+          start: "top 88%",
+          end: "top 65%",
+          toggleActions: "play none none reverse",
+        },
+        opacity: 1,
+        y: 0,
+        duration: 0.8,
+        ease: "power3.out",
+        immediateRender: false,
+      },
+    );
   });
 
-  // Stagger card animations
+  // Stagger card animations - ensure parent is visible
   gsap.utils.toArray<HTMLElement>(".efsw-reveal-group").forEach((group) => {
-    const cards = group.querySelectorAll(".efsw-home-news-card");
-
-    gsap.from(cards, {
-      scrollTrigger: {
-        trigger: group,
-        start: "top 80%",
-        end: "top 50%",
-        toggleActions: "play none none reverse",
+    ScrollTrigger.create({
+      trigger: group,
+      start: "top 85%",
+      onEnter: () => {
+        const parent = group.closest(".efsw-reveal");
+        if (parent) parent.classList.add("is-visible");
       },
-      opacity: 0,
-      y: 30,
-      stagger: 0.15,
-      duration: 0.7,
-      ease: "power2.out",
+      onEnterBack: () => {
+        const parent = group.closest(".efsw-reveal");
+        if (parent) parent.classList.add("is-visible");
+      },
     });
+
+    const cards = group.querySelectorAll(".efsw-home-news-card");
+    if (cards.length > 0) {
+      gsap.fromTo(
+        cards,
+        { opacity: 0, y: 30 },
+        {
+          scrollTrigger: {
+            trigger: group,
+            start: "top 80%",
+            end: "top 50%",
+            toggleActions: "play none none reverse",
+          },
+          opacity: 1,
+          y: 0,
+          stagger: 0.15,
+          duration: 0.7,
+          ease: "power2.out",
+          immediateRender: false,
+        },
+      );
+    }
   });
 
   // Parallax effects for hero elements
@@ -81,70 +118,90 @@ export function initScrollAnimations() {
 
   // Section labels slide in from left
   gsap.utils.toArray<HTMLElement>(".efsw-section-label").forEach((label) => {
-    gsap.from(label, {
-      scrollTrigger: {
-        trigger: label,
-        start: "top 90%",
-        end: "top 70%",
-        toggleActions: "play none none reverse",
+    gsap.fromTo(
+      label,
+      { x: -50, opacity: 0 },
+      {
+        scrollTrigger: {
+          trigger: label,
+          start: "top 90%",
+          end: "top 70%",
+          toggleActions: "play none none reverse",
+        },
+        x: 0,
+        opacity: 1,
+        duration: 0.6,
+        ease: "power2.out",
+        immediateRender: false,
       },
-      x: -50,
-      opacity: 0,
-      duration: 0.6,
-      ease: "power2.out",
-    });
+    );
   });
 
   // About section - split text effect
   const aboutTitle = document.querySelector<HTMLElement>(".efsw-about-bridge h2");
   if (aboutTitle) {
-    gsap.from(aboutTitle, {
-      scrollTrigger: {
-        trigger: aboutTitle,
-        start: "top 85%",
-        end: "top 60%",
-        toggleActions: "play none none reverse",
+    gsap.fromTo(
+      aboutTitle,
+      { opacity: 0, y: 30 },
+      {
+        scrollTrigger: {
+          trigger: aboutTitle,
+          start: "top 85%",
+          end: "top 60%",
+          toggleActions: "play none none reverse",
+        },
+        opacity: 1,
+        y: 0,
+        duration: 1,
+        ease: "power3.out",
+        immediateRender: false,
       },
-      opacity: 0,
-      y: 30,
-      duration: 1,
-      ease: "power3.out",
-    });
+    );
   }
 
   // News section heading
   const newsHeading = document.querySelector<HTMLElement>(".efsw-news__head h2");
   if (newsHeading) {
-    const lines = newsHeading.querySelectorAll("br");
-    gsap.from(newsHeading, {
-      scrollTrigger: {
-        trigger: newsHeading,
-        start: "top 85%",
-        end: "top 60%",
-        toggleActions: "play none none reverse",
+    gsap.fromTo(
+      newsHeading,
+      { opacity: 0, y: 40 },
+      {
+        scrollTrigger: {
+          trigger: newsHeading,
+          start: "top 85%",
+          end: "top 60%",
+          toggleActions: "play none none reverse",
+        },
+        opacity: 1,
+        y: 0,
+        duration: 0.9,
+        ease: "power3.out",
+        immediateRender: false,
       },
-      opacity: 0,
-      y: 40,
-      duration: 0.9,
-      ease: "power3.out",
-    });
+    );
   }
 
-  // Footer fade in
+  // Footer fade in. Use an explicit from/to tween so GSAP does not apply the
+  // hidden start state while the trigger is being created on the first load.
   const footer = document.querySelector<HTMLElement>(".efsw-footer");
   if (footer) {
-    gsap.from(footer, {
-      scrollTrigger: {
-        trigger: footer,
-        start: "top 95%",
-        end: "top 75%",
-        toggleActions: "play none none reverse",
+    gsap.fromTo(
+      footer,
+      { opacity: 0, y: 50 },
+      {
+        scrollTrigger: {
+          trigger: footer,
+          start: "top 95%",
+          end: "top 75%",
+          toggleActions: "play none none reverse",
+        },
+        opacity: 1,
+        y: 0,
+        duration: 1,
+        ease: "power2.out",
+        immediateRender: false,
       },
-      opacity: 0,
-      y: 50,
-      duration: 1,
-      ease: "power2.out",
-    });
+    );
   }
 
   // Refresh ScrollTrigger after all animations are set
@@ -216,5 +273,9 @@ export function horizontalScroll(containerSelector: string, itemsSelector: strin
  * Kill all ScrollTrigger instances (cleanup)
  */
 export function cleanupScrollAnimations() {
-  ScrollTrigger.getAll().forEach((trigger) => trigger.kill());
+  ScrollTrigger.getAll().forEach((trigger) => trigger.kill(true));
+  gsap.set(
+    ".efsw-reveal, .efsw-reveal-group > *, .efsw-section-label, .efsw-about-bridge h2, .efsw-news__head h2, .efsw-home-news-card",
+    { clearProps: "opacity,transform" },
+  );
 }

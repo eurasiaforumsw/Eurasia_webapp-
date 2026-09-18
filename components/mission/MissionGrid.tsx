@@ -35,7 +35,7 @@ export default function MissionGrid() {
       id: "connect",
       letter: "C",
       title: "Connect",
-      titleTh: "เชื่อมโยง",
+      titleTh: "Connect",
       description:
         "Build a robust and secure community for social workers, policymakers, and academics across nations to exchange insights and best practices.",
       color: "from-teal-vivid to-teal-vivid/70",
@@ -49,7 +49,7 @@ export default function MissionGrid() {
       id: "empower",
       letter: "E",
       title: "Empower",
-      titleTh: "เสริมพลัง",
+      titleTh: "Empower",
       description:
         "Strengthen the capacity and professional recognition of social workers through specialized training, resources, and collaborative projects.",
       color: "from-green-growth to-green-growth/70",
@@ -63,7 +63,7 @@ export default function MissionGrid() {
       id: "advocate",
       letter: "A",
       title: "Advocate",
-      titleTh: "เป็นตัวแทน",
+      titleTh: "Advocate",
       description:
         "Champion social justice, human rights, and the welfare of vulnerable groups by amplifying the impact of local and regional social work outcomes on the global stage.",
       color: "from-gold-laurel to-ember-warm",
@@ -83,12 +83,12 @@ export default function MissionGrid() {
           Rationale
         </span>
         <h2 className="text-display text-xl md:text-hero text-text-primary mb-6">
-          ภารกิจหลักของเรา
+          Our mission
         </h2>
         <p className="text-lg text-text-secondary max-w-3xl mx-auto leading-relaxed">
-          ที่ EFSW เราเชื่อว่าการเปลี่ยนแปลงทางสังคมไม่มีพรมแดน ผ่านแพลตฟอร์ม 3 ภาษา
-          เราทำลายอุปสรรคด้านการสื่อสาร เพื่อให้เครื่องมือที่จำเป็น การวิจัยระดับนานาชาติ
-          และโอกาสในการสร้างเครือข่ายมืออาชีพสามารถเข้าถึงได้ทุกคน ทุกที่
+          EFSW believes social change has no borders. Through a multilingual platform,
+          we remove communication barriers so essential tools, international research,
+          and professional networking opportunities are open to everyone, everywhere.
         </p>
       </div>
 
@@ -106,12 +106,12 @@ export default function MissionGrid() {
       <div className="max-w-4xl mx-auto px-lg mt-2xl">
         <div className="glass-card p-xl text-center">
           <h3 className="text-lg font-bold text-text-primary mb-4">
-            สนับสนุนการทำงานในระดับ 3 ภาษา
+            Supporting multilingual practice
           </h3>
           <p className="text-text-secondary leading-relaxed">
-            เว็บไซต์นี้ออกแบบมาเพื่อรองรับนักสังคมสงเคราะห์จาก 3 ภูมิภาค ด้วยการแปลเนื้อหาที่ครบถ้วนเป็นภาษาอังกฤษ เกาหลี และไทย
-            เพื่อให้มั่นใจว่าเครื่องมือ งานวิจัย และโอกาสในการสร้างเครือข่ายระดับนานาชาติสามารถเข้าถึงได้โดยทุกคนในทุกที่
-            ร่วมกันสร้างอนาคตของการพัฒนาสังคมระดับโลก
+            This website supports social workers across three regions with content in English, Korean, and Thai.
+            It keeps tools, research, and international networking opportunities accessible to everyone,
+            everywhere, as we build the future of global social development together.
           </p>
         </div>
       </div>
