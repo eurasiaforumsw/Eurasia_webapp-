@@ -1,0 +1,149 @@
+{
+  "summary": "Audit of EFSW OPERATE surfaces (/admin, /admin/login, /member/register, /member/login, /member/profile) covering forms, tables, states, accessibility, and density. 18 items: 3 high, 9 medium, 6 low.",
+  "items": [
+    {
+      "section": "admin/login",
+      "file": "app/admin/login/page.tsx",
+      "issue": "No field-level error state on inputs; failed login shows only a banner error and leaves both fields unmarked. Label wraps input so htmlFor is impossible and click-target association is implicit.",
+      "fix": "Add aria-invalid to inputs on error, clear error on field change, and switch to explicit label htmlFor + id pairs. Add a short hint under password: 'Demo password available from the EFSW team.'",
+      "severity": "high",
+      "skill_rule": "impeccable/craft-floor: errors name the problem + the recovery; every control has error state"
+    },
+    {
+      "section": "member/register",
+      "file": "app/member/register/page.tsx",
+      "issue": "Step-1 validation errors are generic ('Please complete all required fields') and do not identify which field failed. No field-level error styling on inputs; the banner is the only feedback. Password hint text missing (min 8 chars is only enforced silently).",
+      "fix": "Add per-field error messages with aria-describedby, mark failing inputs with aria-invalid and .efsw-form-field--error, and add hint text under Password: 'At least 8 characters.'",
+      "severity": "high",
+      "skill_rule": "impeccable/craft-floor: errors name the problem + the recovery; labels above inputs with hint text"
+    },
+    {
+      "section": "member/profile",
+      "file": "app/member/profile/page.tsx",
+      "issue": "Loading state is plain text 'Loading profile...' on an empty page. No skeleton or spinner; unauthenticated users see a flash of unstyled content before redirect.",
+      "fix": "Replace with a branded loading state: centered spinner + 'Loading your profile...' in .efsw-auth-page wrapper, matching the admin loading pattern.",
+      "severity": "high",
+      "skill_rule": "impeccable/craft-floor: every control has loading state; no unstyled flash"
+    },
+    {
+      "section": "admin/members",
+      "file": "components/admin/views/AdminMembersView.tsx",
+      "issue": "Table header is not sticky; on scroll the column labels disappear. Pagination only appears when >8 items; no total-count summary when filters yield few results. Row click target is the whole <tr> but keyboard focus is not managed (tr lacks tabindex/role).",
+      "fix": "Make thead sticky with top-0 bg-surface-base z-10. Always show 'N members' result count. Add tabindex='0' and role='button' to rows, with Enter/Space key handler, or convert row click to a proper button in the first cell.",
+      "severity": "medium",
+      "skill_rule": "impeccable/operate: density optimized for scanning; keyboard focus visible"
+    },
+    {
+      "section": "admin/members",
+      "file": "components/admin/views/AdminMembersView.tsx",
+      "issue": "Empty state is a generic 'No members match your filters' with AlertCircle. No guidance on how to clear filters or add a member. No search-clear button.",
+      "fix": "Add a clear-filters action in the empty state: 'Clear search and filters' button. If truly empty (no members at all), show first-run orientation: 'No members yet. Approve pending applications or export a CSV template.'",
+      "severity": "medium",
+      "skill_rule": "impeccable/operate: empty states offer first-run orientation"
+    },
+    {
+      "section": "admin/content",
+      "file": "components/admin/views/AdminContentView.tsx",
+      "issue": "Filter tabs show counts but the grid empty state is a bare 'No content matches your filters.' Card grid has no skeleton loading state; on slow devices the area collapses to zero height during fetch.",
+      "fix": "Add a 3-card skeleton pulse while content is loading. Empty state should include 'Create your first content item' button when filters are default.",
+      "severity": "medium",
+      "skill_rule": "impeccable/operate: loading skeleton vs spinner; empty state orientation"
+    },
+    {
+      "section": "admin/settings",
+      "file": "components/admin/views/AdminSettingsView.tsx",
+      "issue": "Toggle switch has no visible focus ring (relies on outline but has border-2 border-transparent which clips it). Success feedback is temporary text; no aria-live announcement. Form lacks a dirty-state indicator before saving.",
+      "fix": "Add focus-visible ring to toggle. Wrap success message in aria-live='polite'. Show 'Unsaved changes' dot when formData differs from props.settings.",
+      "severity": "medium",
+      "skill_rule": "impeccable/craft-floor: focus ring visible; success state announced"
+    },
+    {
+      "section": "admin/layout",
+      "file": "components/admin/views/AdminLayoutView.tsx",
+      "issue": "Sub-tabs are plain buttons without aria-current or tab styling semantics. Save success message appears inline but disappears after 2.5s with no aria-live. Section visibility toggles are raw checkboxes without switch styling.",
+      "fix": "Add role='tablist' + aria-selected to tab buttons. Add aria-live='polite' to save feedback. Style section toggles as switches consistent with AdminSettingsView.",
+      "severity": "medium",
+      "skill_rule": "impeccable/craft-floor: native expectations; state announcements"
+    },
+    {
+      "section": "admin/activity",
+      "file": "components/admin/views/AdminActivityView.tsx",
+      "issue": "No empty state illustration or guidance when activity log is empty. Filter pills lack counts. No export or date-range filter for audit compliance.",
+      "fix": "Add empty state: 'No activity recorded yet. Actions will appear here as you work.' Add counts to filter pills. Add 'Export log' button for compliance.",
+      "severity": "medium",
+      "skill_rule": "impeccable/operate: empty states; audit trail utility"
+    },
+    {
+      "section": "admin/modals",
+      "file": "components/admin/modals/ContentEditorModal.tsx",
+      "issue": "Image upload shows 'Processing and compressing image...' text but no progress bar or spinner. No error state shown to user if compression fails (only console.error). No image dimension/size hint before upload.",
+      "fix": "Add a small spinner or progress bar during compression. Show inline error if compression fails: 'Image could not be processed. Try a smaller file.' Add hint: 'Recommended: 1200×630px, under 2MB.'",
+      "severity": "medium",
+      "skill_rule": "impeccable/craft-floor: loading and error states; hint text"
+    },
+    {
+      "section": "admin/modals",
+      "file": "components/admin/modals/MemberDetailDrawer.tsx",
+      "issue": "Save note button shows 'Saving...' for a fixed 1s then stops, regardless of actual save completion. No error state if note save fails. Drawer lacks focus trap; tabbing escapes to background.",
+      "fix": "Disable button while isSavingNote and show checkmark on success. Add aria-live for save confirmation. Add focus trap and return focus to the triggering row on close.",
+      "severity": "medium",
+      "skill_rule": "impeccable/craft-floor: real loading state; focus management"
+    },
+    {
+      "section": "member/profile",
+      "file": "app/member/profile/page.tsx",
+      "issue": "Edit form has no cancel button; user must switch tabs to discard changes. No dirty-state warning when leaving the edit tab. Success message auto-dismisses after 2s with no aria-live.",
+      "fix": "Add 'Cancel' button next to 'Save Changes' that resets draft. Warn on tab switch if draft is dirty. Add aria-live='polite' to status messages.",
+      "severity": "medium",
+      "skill_rule": "impeccable/craft-floor: form recovery paths; state announcements"
+    },
+    {
+      "section": "member/register",
+      "file": "app/member/register/page.tsx",
+      "issue": "Step indicator is text-only ('01 Account', '02 Professional') with no progress bar or aria-current. Radio cards for membership type are labels wrapping inputs, but the selected state is CSS-only (.is-selected) with no aria-checked reinforcement.",
+      "fix": "Add role='tablist' or a progress bar to steps. Add aria-current='step' to active step. Ensure radio inputs have aria-checked via native radio behavior and add visible focus ring to the card labels.",
+      "severity": "low",
+      "skill_rule": "impeccable/craft-floor: focus ring visible; native expectations"
+    },
+    {
+      "section": "admin/login",
+      "file": "app/admin/login/page.tsx",
+      "issue": "Demo hint exposes the demo email in plaintext <code> but says 'Contact admin for password' — inconsistent security posture. No dark-mode variant for the admin auth page (uses light admin palette while site is dark-first).",
+      "fix": "Remove demo email from UI or gate behind an environment flag. Align admin auth background with the dark petrol brand surface or add a theme toggle.",
+      "severity": "low",
+      "skill_rule": "impeccable/operate: brand lives in precise details; security posture consistency"
+    },
+    {
+      "section": "admin/shell",
+      "file": "components/admin/AdminSidebar.tsx",
+      "issue": "Sidebar nav buttons use color alone for active state (bg-teal text-white). No aria-current='page' on active view. Mobile backdrop has aria-hidden but no role or aria-label.",
+      "fix": "Add aria-current='page' to active nav button. Add role='presentation' and aria-label='Close navigation' to backdrop.",
+      "severity": "low",
+      "skill_rule": "impeccable/craft-floor: accessibility; native expectations"
+    },
+    {
+      "section": "admin/topbar",
+      "file": "components/admin/AdminTopbar.tsx",
+      "issue": "'Live Sync' badge pulses with animate-pulse but conveys no real sync status. Date format is hardcoded to th-TH regardless of admin locale preference.",
+      "fix": "Remove animate-pulse or replace with a real last-synced timestamp. Use the admin's selected locale from settings for date formatting.",
+      "severity": "low",
+      "skill_rule": "impeccable/operate: copy is concrete claim; density"
+    },
+    {
+      "section": "member/profile",
+      "file": "app/member/profile/page.tsx",
+      "issue": "Quick action links are anchor tags with href='#card' etc. that do not navigate; they scroll nowhere and break native expectations. Avatar in sidebar is a plain div with first initial, no image support.",
+      "fix": "Replace dead anchor links with buttons that switch tabs or link to real sections. Add AvatarUpload component to sidebar for profile photo.",
+      "severity": "low",
+      "skill_rule": "impeccable/operate: native expectations; utility-first"
+    },
+    {
+      "section": "admin/table-density",
+      "file": "components/admin/views/AdminMembersView.tsx",
+      "issue": "Table rows have py-3.5 px-4 with font-size text-xs (0.75rem) but line-height is default; multi-line cells (name+email) feel cramped. No tabular-nums on dates or counts, causing column jitter when filtering.",
+      "fix": "Add font-variant-numeric: tabular-nums to date and count cells. Increase row padding to py-4 and set line-height 1.4 on cell text for better scanability.",
+      "severity": "low",
+      "skill_rule": "impeccable/operate: density optimized for scanning; numbers tabular"
+    }
+  ]
+}

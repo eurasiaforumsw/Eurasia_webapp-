@@ -12,13 +12,13 @@ import koMessages from "@/locales/ko.json";
 const inter = Inter({
   subsets: ["latin", "latin-ext"],
   display: "swap",
-  variable: "--font-axion-body",
+  variable: "--font-inter",
 });
 
 const bric = Bricolage_Grotesque({
   subsets: ["latin"],
   display: "swap",
-  variable: "--font-axion-display",
+  variable: "--font-bricolage",
 });
 
 const messages = {

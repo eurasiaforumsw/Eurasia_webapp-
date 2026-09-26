@@ -185,14 +185,12 @@ export function VoicesGSAP({ voices }: VoicesGSAPProps) {
         <div ref={copyRef} className="efsw-voices__copy" aria-live="polite">
           {isScrollingFast ? (
             <div className="efsw-voices__folded">
-              <p className="efsw-kicker">{activeVoice.label}</p>
               <p className="efsw-voices__attribution">
                 {activeVoice.attribution}
               </p>
             </div>
           ) : (
             <div>
-              <p className="efsw-kicker">{activeVoice.label}</p>
               <h2>"{activeVoice.quote}"</h2>
               <p className="efsw-voices__attribution">
                 {activeVoice.attribution}

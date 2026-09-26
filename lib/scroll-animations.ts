@@ -86,32 +86,33 @@ export function initScrollAnimations() {
   });
 
   // Parallax effects for hero elements
-  const heroWash = document.querySelector<HTMLElement>(".efsw-hero__wash");
-  const heroOrbit = document.querySelector<HTMLElement>(".efsw-hero__orbit");
+  const heroBeams = document.querySelector<HTMLElement>(".efsw-hero__beams");
+  const heroVideo = document.querySelector<HTMLElement>(".efsw-hero__video");
 
-  if (heroWash) {
-    gsap.to(heroWash, {
+  if (heroBeams) {
+    gsap.to(heroBeams, {
       scrollTrigger: {
         trigger: ".efsw-hero",
         start: "top top",
         end: "bottom top",
         scrub: 1.5,
       },
-      y: -250,
+      y: -180,
+      scale: 1.08,
       ease: "none",
     });
   }
 
-  if (heroOrbit) {
-    gsap.to(heroOrbit, {
+  if (heroVideo) {
+    gsap.to(heroVideo, {
       scrollTrigger: {
         trigger: ".efsw-hero",
         start: "top top",
         end: "bottom top",
         scrub: 1.2,
       },
-      y: 120,
-      rotation: 15,
+      y: 80,
+      scale: 1.1,
       ease: "none",
     });
   }

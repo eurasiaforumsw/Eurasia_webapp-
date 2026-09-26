@@ -327,7 +327,6 @@ export default function PublicContentFeed({
               {streamItems.length > 0 && (
                 <div className="efsw-news-stream" key={`stream-${featuredItem?.id ?? "none"}`}>
                   <div className="efsw-news-stream__heading">
-                    <p className="efsw-section-label">{t("newsroom.moreFrom")}</p>
                     <span>{t(streamItems.length === 1 ? "newsroom.storyCountOne" : "newsroom.storyCount", { count: streamItems.length })}</span>
                   </div>
                   {streamItems.map((item, index) => (

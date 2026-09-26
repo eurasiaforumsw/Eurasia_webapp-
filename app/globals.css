@@ -1,6 +1,4 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-@import url('https://db.onlinewebfonts.com/c/6e47ef470dd19698c911332a9b4d1cf4?family=Neue+Haas+Grotesk+Text+Pro');
-@import url('https://db.onlinewebfonts.com/c/dec0d9b4e22ca588dc20e1e2e09a59b5?family=Neue+Haas+Grotesk+Display+Pro+55+Roman');
 @import "../components/efsw/VoicesModern.css";
 @import "../components/efsw/DeanMessage.css";
 
@@ -14,75 +12,19 @@ html, body {
      and un-sticks it after the first screen of scrolling. */
   min-height: 100%;
   margin: 0;
-  font-family: 'Neue Haas Grotesk Display Pro 55 Roman', 'Neue Haas Grotesk Text Pro', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
-}
-
-
-@keyframes fadeRise {
-  0% {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes videoEntrance {
-  0% {
-    opacity: 0;
-    transform: translateY(50px) scale(1.06);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-@keyframes subtleFloat {
-  0%, 100% {
-    transform: translateY(0) scale(1);
-  }
-  50% {
-    transform: translateY(-8px) scale(1.03);
-  }
-}
-
-.animate-fade-rise {
-  animation: fadeRise 0.8s ease-out forwards;
-}
-
-.animate-fade-rise-delay {
-  animation: fadeRise 0.8s ease-out 0.2s forwards;
-  opacity: 0;
-}
-
-.animate-fade-rise-delay-2 {
-  animation: fadeRise 0.8s ease-out 0.4s forwards;
-  opacity: 0;
-}
-
-.animate-video-entrance {
-  animation: videoEntrance 1.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-.animate-subtle-float {
-  animation: subtleFloat 14s ease-in-out infinite alternate;
-}
-
-.font-instrument {
-  font-family: 'Instrument Serif', Georgia, serif;
 }
 
 
 
 @layer base {
   :root {
-    /* Design tokens from DESIGN.md */
-    --font-display: "Bricolage Grotesque", "Noto Sans Thai", system-ui, sans-serif;
-    --font-body: "Inter", "Noto Sans Thai", system-ui, sans-serif;
+    /* Design tokens from DESIGN.md — font vars resolve to next/font-loaded
+       families so weights, subsets and OpenType features match what next/font
+       preloaded; fallbacks mirror the layout's choices. */
+    --font-display: var(--font-bricolage), "Bricolage Grotesque", "Noto Sans Thai", system-ui, sans-serif;
+    --font-body: var(--font-inter), "Inter", "Noto Sans Thai", system-ui, sans-serif;
     --font-mono: "JetBrains Mono", "Courier New", monospace;
 
     /* Easing curves */
@@ -393,8 +335,8 @@ html, body {
   --page-gutter: clamp(1rem, 4vw, 4rem);
   --page-max: 90rem;
 
-  --font-display: var(--font-axion-display), "Avenir Next", "Helvetica Neue", sans-serif;
-  --font-body: var(--font-axion-body), "Noto Sans Thai", sans-serif;
+  --font-display: var(--font-bricolage), "Bricolage Grotesque", "Noto Sans Thai", system-ui, sans-serif;
+  --font-body: var(--font-inter), "Inter", "Noto Sans Thai", system-ui, sans-serif;
   --text-display: clamp(3.35rem, 7vw, 7.5rem);
   --text-display-s: clamp(2.6rem, 5.4vw, 5.5rem);
   --text-section: clamp(2.25rem, 4.5vw, 4.75rem);
@@ -3133,8 +3075,6 @@ body {
   --color-scrim: rgb(16 36 43 / 62%);
   --color-shadow: rgb(16 36 43 / 14%);
   --color-shadow-soft: rgb(16 36 43 / 9%);
-  --font-display: var(--font-axion-display), "Avenir Next", "Helvetica Neue", sans-serif;
-  --font-body: var(--font-axion-body), "Noto Sans Thai", sans-serif;
   --text-display: clamp(2rem, 7vw, 4.25rem);
   --text-display-s: clamp(1.9rem, 5.2vw, 4.25rem);
   --text-section: clamp(1.9rem, 4.2vw, 3.2rem);
@@ -3679,94 +3619,127 @@ body {
   position: relative;
   min-height: 100svh;
   display: grid;
-  grid-template-rows: auto 1fr auto;
+  grid-template-rows: 1fr auto;
   overflow: clip;
   isolation: isolate;
-  /* Soft teal-white base; the mesh blobs paint over it */
-  background: var(--efsw-paper);
-}
-
-/* ── Mesh gradient background ──────────────────────────────────────────────
-   Three layered blobs trace the poster's diagonal sweep:
-   1. Deep teal (#007481) — bottom-left, dominant
-   2. Mint green (#4FB06A) — top-right, softer
-   3. Gold (#EFCF53) — far top-right, warm accent
-   All blobs sit on the near-white paper so white glows through the gaps. */
-/* ── Ambient mesh drift ──────────────────────────────────────────────────
-   The blobs translate and scale imperceptibly slowly — 18–22 s per cycle.
-   Two keyframes with different phase offsets prevent a mechanical repeat.
-   Guarded behind prefers-reduced-motion so no motion runs without consent. */
-@keyframes blobDrift {
-  0%   { transform: translate(0%, 0%) scale(1); }
-  28%  { transform: translate(-1.8%, 1.4%) scale(1.025); }
-  54%  { transform: translate(1.2%, -1.8%) scale(0.98); }
-  78%  { transform: translate(-0.6%, 1.6%) scale(1.015); }
-  100% { transform: translate(0%, 0%) scale(1); }
-}
-
-@keyframes blobDriftB {
-  0%   { transform: translate(0%, 0%) scale(1) rotate(0deg); }
-  33%  { transform: translate(1.5%, -0.8%) scale(1.02) rotate(0.4deg); }
-  66%  { transform: translate(-1.0%, 1.2%) scale(0.985) rotate(-0.3deg); }
-  100% { transform: translate(0%, 0%) scale(1) rotate(0deg); }
-}
-
-.efsw-hero__wash {
-  position: absolute;
-  inset: -5% -5% -10% -5%;
-  z-index: -1;
+  color: var(--efsw-cream);
+  /* Deep petrol base — aurora beams and grid paint over it */
   background:
-    radial-gradient(ellipse 62% 55% at 10% 82%,
-      color-mix(in oklch, var(--efsw-green) 48%, transparent),
+    radial-gradient(ellipse 80% 60% at 70% 110%,
+      color-mix(in oklch, var(--efsw-green) 26%, transparent),
       transparent 62%),
-    radial-gradient(ellipse 50% 44% at 78% 16%,
-      color-mix(in oklch, var(--efsw-mint) 36%, transparent),
-      transparent 60%),
-    radial-gradient(ellipse 35% 32% at 88% 36%,
-      color-mix(in oklch, var(--efsw-sun) 30%, transparent),
-      transparent 55%),
-    radial-gradient(ellipse 28% 28% at 48% 52%,
-      color-mix(in oklch, var(--efsw-green-light) 20%, transparent),
-      transparent 55%);
-  opacity: 0.82;
-  filter: blur(1.5px);
-  /* Promote to compositor layer so blob drift + parallax never trigger Paint */
+    linear-gradient(180deg,
+      oklch(16% 0.045 228) 0%,
+      oklch(20% 0.052 222) 58%,
+      oklch(23% 0.058 210) 100%);
+}
+
+/* ── Background stack: video → aurora beams → gridlines → noise ─────────── */
+.efsw-hero__bg {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: clip;
+}
+
+.efsw-hero__video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.35;
+  filter: saturate(0.85) brightness(0.72);
+}
+
+@keyframes beamFloat {
+  0%   { transform: translate3d(-4%, 2%, 0) rotate(-8deg) scaleY(1); }
+  50%  { transform: translate3d(4%, -3%, 0) rotate(-6deg) scaleY(1.12); }
+  100% { transform: translate3d(-4%, 2%, 0) rotate(-8deg) scaleY(1); }
+}
+
+.efsw-hero__beams {
+  position: absolute;
+  inset: -12% -8%;
   will-change: transform;
 }
 
-/* Two pseudo-elements carry the drift at different speeds for non-periodic feel */
-.efsw-hero__wash::before,
-.efsw-hero__wash::after {
-  content: "";
+.efsw-hero__beam {
   position: absolute;
-  inset: 0;
-  background: inherit;
+  width: 34vmax;
+  height: 130vmax;
+  border-radius: 50%;
+  filter: blur(64px);
+  opacity: 0.55;
+  mix-blend-mode: screen;
+}
+
+.efsw-hero__beam--one {
+  top: -30%;
+  left: 4%;
+  background: linear-gradient(180deg,
+    color-mix(in oklch, var(--efsw-green) 70%, transparent),
+    color-mix(in oklch, var(--efsw-green-light) 34%, transparent) 60%,
+    transparent);
+}
+
+.efsw-hero__beam--two {
+  top: -22%;
+  left: 36%;
+  width: 26vmax;
+  background: linear-gradient(180deg,
+    color-mix(in oklch, var(--efsw-mint) 62%, transparent),
+    transparent 72%);
+  opacity: 0.42;
+}
+
+.efsw-hero__beam--three {
+  top: -34%;
+  right: 6%;
+  width: 30vmax;
+  background: linear-gradient(180deg,
+    color-mix(in oklch, var(--efsw-sun) 38%, transparent),
+    color-mix(in oklch, var(--efsw-mint) 26%, transparent) 55%,
+    transparent);
+  opacity: 0.36;
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .efsw-hero__wash {
-    animation: blobDrift 20s ease-in-out infinite;
-  }
+  .efsw-hero__beam--one   { animation: beamFloat 22s ease-in-out infinite; }
+  .efsw-hero__beam--two   { animation: beamFloat 28s ease-in-out infinite reverse; }
+  .efsw-hero__beam--three { animation: beamFloat 25s ease-in-out 4s infinite; }
 }
 
-.efsw-hero__orbit {
+.efsw-hero__gridlines {
   position: absolute;
-  right: clamp(-8rem, -5vw, -3rem);
-  bottom: clamp(-9rem, -6vw, -3rem);
-  width: clamp(20rem, 43vw, 43rem);
-  aspect-ratio: 1;
-  border: 1px solid color-mix(in oklch, var(--efsw-green) 25%, transparent);
-  border-radius: 50%;
-  opacity: 0.7;
+  inset: 0;
+  background:
+    linear-gradient(color-mix(in oklch, var(--efsw-cream) 7%, transparent) 1px, transparent 1px) 0 0 / 100% clamp(4.5rem, 9vh, 7rem),
+    linear-gradient(90deg, color-mix(in oklch, var(--efsw-cream) 6%, transparent) 1px, transparent 1px) 0 0 / clamp(4.5rem, 9vw, 8rem) 100%;
+  mask-image: radial-gradient(ellipse 90% 75% at 50% 45%, black 30%, transparent 78%);
 }
 
-.efsw-hero__orbit::after {
+.efsw-hero__noise {
+  position: absolute;
+  inset: 0;
+  opacity: 0.4;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.35'/%3E%3C/svg%3E");
+  pointer-events: none;
+}
+
+/* Readability scrim above the beams, below the copy */
+.efsw-hero::after {
   content: "";
   position: absolute;
-  inset: 13%;
-  border: 1px dashed color-mix(in oklch, var(--efsw-green) 25%, transparent);
-  border-radius: 50%;
-  transform: rotate(28deg);
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(180deg,
+    color-mix(in oklch, var(--efsw-ink) 46%, transparent) 0%,
+    transparent 34%,
+    transparent 62%,
+    color-mix(in oklch, var(--efsw-ink) 62%, transparent) 100%);
+  pointer-events: none;
 }
 
 /* ── Site header ─────────────────────────────────────────────────────────── */
@@ -4633,67 +4606,248 @@ body {
 .efsw-hero__content {
   align-self: center;
   width: min(100%, var(--efsw-max));
-  padding: clamp(5rem, 13vh, 9rem) var(--efsw-gutter) clamp(2rem, 7vh, 5rem);
+  margin-inline: auto;
+  padding: clamp(6.5rem, 16vh, 10rem) var(--efsw-gutter) clamp(2.5rem, 6vh, 4rem);
 }
 
-.efsw-kicker,
-.efsw-section-label {
-  display: flex;
+.efsw-hero__kicker {
+  display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  margin: 0 0 1.5rem;
-  color: var(--efsw-ink-soft);
-  font-size: 0.72rem;
-  font-weight: 750;
-  letter-spacing: 0.08em;
-  line-height: 1.3;
-  text-transform: uppercase;
-}
-
-.efsw-kicker svg {
-  color: var(--efsw-green);
-}
-
-.efsw-hero h1,
-.efsw-story h2,
-.efsw-intro h2,
-.efsw-network h2,
-.efsw-join h2 {
-  margin: 0;
-  overflow-wrap: anywhere;
-  font-family: var(--font-display);
-  font-style: normal;
+  gap: 0.6rem;
+  margin: 0 0 1.75rem;
+  padding: 0.45rem 1rem 0.45rem 0.85rem;
+  border: 1px solid color-mix(in oklch, var(--efsw-cream) 22%, transparent);
+  border-radius: 999px;
+  background: color-mix(in oklch, var(--efsw-cream) 7%, transparent);
+  backdrop-filter: blur(0.5rem);
+  color: color-mix(in oklch, var(--efsw-cream) 88%, transparent);
+  font-size: 0.74rem;
   font-weight: 650;
-  letter-spacing: -0.025em;
-  line-height: 0.91;
+  letter-spacing: 0.05em;
+  line-height: 1.3;
+}
+
+.efsw-hero__kicker-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--efsw-green-light);
+  box-shadow: 0 0 0 0 color-mix(in oklch, var(--efsw-green-light) 55%, transparent);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .efsw-hero__kicker-dot {
+    animation: pulseDot 2.4s ease-out infinite;
+  }
+}
+
+@keyframes pulseDot {
+  0%   { box-shadow: 0 0 0 0 color-mix(in oklch, var(--efsw-green-light) 55%, transparent); }
+  70%  { box-shadow: 0 0 0 0.55rem transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
 }
 
 .efsw-hero h1 {
-  max-width: 9.5ch;
-  font-size: clamp(3.4rem, 8.6vw, 8rem);
+  margin: 0;
+  max-width: 12ch;
+  font-family: var(--font-display);
+  font-style: normal;
+  font-weight: 640;
+  letter-spacing: -0.03em;
+  line-height: 0.98;
+  font-size: clamp(2.9rem, 6.4vw, 5.9rem);
+  text-wrap: balance;
 }
 
-.efsw-hero h1 span,
-.efsw-story h2 span,
-.efsw-network h2 span,
-.efsw-join h2 span {
-  color: var(--efsw-green);
+/* Cycling word — gradient italic slot */
+.efsw-hero__word-slot {
+  position: relative;
+  display: block;
+  overflow: clip;
+  height: 1.04em;
+  margin-block: 0.02em;
+}
+
+.efsw-hero__word-item {
+  position: absolute;
+  inset: 0;
+  font-style: italic;
+  background: linear-gradient(92deg,
+    var(--efsw-green-light) 10%,
+    var(--efsw-mint) 55%,
+    var(--efsw-sun) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 .efsw-hero__lede {
-  max-width: 33rem;
-  margin: 2rem 0 0;
-  color: var(--efsw-ink-soft);
-  font-size: clamp(1rem, 1.3vw, 1.2rem);
-  line-height: 1.55;
+  max-width: 34rem;
+  margin: 1.6rem 0 0;
+  color: color-mix(in oklch, var(--efsw-cream) 74%, transparent);
+  font-size: clamp(1.02rem, 1.3vw, 1.2rem);
+  line-height: 1.6;
 }
 
 .efsw-hero__actions {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 1rem 1.5rem;
-  margin-top: 2rem;
+  gap: 0.9rem 1.6rem;
+  margin-top: 2.25rem;
+}
+
+.efsw-hero__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.8rem;
+  min-height: 3.35rem;
+  padding: 0.4rem 0.4rem 0.4rem 1.5rem;
+  border-radius: 999px;
+  background: var(--efsw-cream);
+  color: var(--efsw-ink);
+  font-size: 0.88rem;
+  font-weight: 750;
+  white-space: nowrap;
+  box-shadow: 0 18px 44px -14px color-mix(in oklch, var(--efsw-green-light) 45%, transparent);
+  transition: transform 150ms ease, box-shadow 200ms ease, background-color 150ms ease;
+}
+
+.efsw-hero__cta-icon {
+  display: grid;
+  place-items: center;
+  width: 2.55rem;
+  height: 2.55rem;
+  border-radius: 50%;
+  background: var(--efsw-ink);
+  color: var(--efsw-cream);
+  transition: transform 200ms var(--ease-out);
+}
+
+.efsw-hero__cta:hover,
+.efsw-hero__cta:focus-visible {
+  box-shadow: 0 22px 55px -14px color-mix(in oklch, var(--efsw-green-light) 62%, transparent);
+}
+
+.efsw-hero__cta:hover .efsw-hero__cta-icon,
+.efsw-hero__cta:focus-visible .efsw-hero__cta-icon {
+  transform: rotate(45deg);
+}
+
+.efsw-hero__ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 2.75rem;
+  color: color-mix(in oklch, var(--efsw-cream) 82%, transparent);
+  font-size: 0.85rem;
+  font-weight: 650;
+  border-bottom: 1px solid color-mix(in oklch, var(--efsw-cream) 28%, transparent);
+  transition: color 150ms ease, border-color 150ms ease;
+}
+
+.efsw-hero__ghost:hover,
+.efsw-hero__ghost:focus-visible {
+  color: var(--efsw-green-light);
+  border-color: var(--efsw-green-light);
+}
+
+/* Network facts — glass strip */
+.efsw-hero__stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0;
+  max-width: 46rem;
+  margin: 3rem 0 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid color-mix(in oklch, var(--efsw-cream) 16%, transparent);
+  border-radius: 1.1rem;
+  background: color-mix(in oklch, var(--efsw-cream) 6%, transparent);
+  backdrop-filter: blur(1rem) saturate(140%);
+}
+
+.efsw-hero__stat {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 0.6rem;
+  align-items: center;
+  padding: 1rem 1.15rem;
+}
+
+.efsw-hero__stat + .efsw-hero__stat {
+  border-left: 1px solid color-mix(in oklch, var(--efsw-cream) 12%, transparent);
+}
+
+.efsw-hero__stat svg {
+  grid-row: 1 / -1;
+  color: var(--efsw-green-light);
+}
+
+.efsw-hero__stat strong {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+}
+
+.efsw-hero__stat span {
+  color: color-mix(in oklch, var(--efsw-cream) 62%, transparent);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.efsw-hero__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: min(100%, var(--efsw-max));
+  margin-inline: auto;
+  padding: 0 var(--efsw-gutter) 1.6rem;
+  color: color-mix(in oklch, var(--efsw-cream) 58%, transparent);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.efsw-hero__scrollcue {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  letter-spacing: 0.09em;
+  transition: color 150ms ease;
+}
+
+.efsw-hero__scrollcue:hover,
+.efsw-hero__scrollcue:focus-visible {
+  color: var(--efsw-cream);
+}
+
+.efsw-hero__scrollcue-ring {
+  display: grid;
+  place-items: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  border: 1px solid color-mix(in oklch, var(--efsw-cream) 30%, transparent);
+  border-radius: 50%;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .efsw-hero__scrollcue-ring svg {
+    animation: cueDrop 2s ease-in-out infinite;
+  }
+}
+
+@keyframes cueDrop {
+  0%, 100% { transform: translateY(-1px); opacity: 0.75; }
+  50%      { transform: translateY(2px);  opacity: 1; }
 }
 
 .efsw-button {
@@ -4761,47 +4915,6 @@ body {
 .efsw-text-link:focus-visible {
   border-color: var(--efsw-ink);
   color: var(--efsw-green);
-}
-
-.efsw-hero__meta {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  width: min(100%, var(--efsw-max));
-  padding: 0 var(--efsw-gutter) 1.5rem;
-  color: var(--efsw-ink-soft);
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.efsw-scroll-cue {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  color: var(--efsw-green);
-}
-
-/* ── Animated word cycling in hero headline ──────────────────────────────
-   Container holds exactly one line-height worth of space; individual word
-   spans are absolutely positioned so they can translate in and out without
-   disturbing document flow. */
-.efsw-hero__word-slot {
-  position: relative;
-  display: block;
-  overflow: hidden;
-  /* 0.91em matches the h1 line-height so the slot is one headline-row tall */
-  height: 0.92em;
-  margin-top: 0.04em;
-}
-
-.efsw-hero__word-item {
-  position: absolute;
-  inset: 0;
-  color: var(--efsw-green);
-  font-style: italic;
 }
 
 .efsw-story {
@@ -5013,6 +5126,44 @@ body {
 
 .efsw-intro .efsw-text-link {
   margin-top: 0.75rem;
+}
+
+.efsw-kicker,
+.efsw-section-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 1.5rem;
+  color: var(--efsw-ink-soft);
+  font-size: 0.72rem;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  line-height: 1.3;
+  text-transform: uppercase;
+}
+
+.efsw-kicker svg {
+  color: var(--efsw-green);
+}
+
+/* Shared section display type (hero h1 has its own dark-theme scale) */
+.efsw-story h2,
+.efsw-intro h2,
+.efsw-network h2,
+.efsw-join h2 {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-family: var(--font-display);
+  font-style: normal;
+  font-weight: 650;
+  letter-spacing: -0.025em;
+  line-height: 0.91;
+}
+
+.efsw-story h2 span,
+.efsw-network h2 span,
+.efsw-join h2 span {
+  color: var(--efsw-green);
 }
 
 .efsw-section-label {
@@ -6267,8 +6418,11 @@ body {
 }
 
 @media (max-width: 40rem) {
-  .efsw-hero h1 { font-size: clamp(2.8rem, 13vw, 4.8rem); }
-  .efsw-hero__meta { align-items: flex-start; flex-direction: column; gap: 0.7rem; }
+  .efsw-hero h1 { font-size: clamp(2.5rem, 11.5vw, 4rem); }
+  .efsw-hero__meta { align-items: flex-start; flex-direction: column; gap: 0.85rem; }
+  .efsw-hero__stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .efsw-hero__stat:nth-child(3) { border-left: 0; }
+  .efsw-hero__stat:nth-child(n+3) { border-top: 1px solid color-mix(in oklch, var(--efsw-cream) 12%, transparent); }
   .efsw-story__sticky { padding-block: 4rem; }
   .efsw-story__visual { min-height: 15rem; }
   .efsw-story h2 { font-size: clamp(2rem, 10vw, 3.6rem); }
@@ -8560,6 +8714,22 @@ body {
   background: var(--efsw-gradient-line, var(--efsw-green));
   transform-origin: 0 50%;
   transform: scaleX(0);
+}
+
+/* When JS detects animation-timeline: scroll() support it sets
+   --efsw-article-rail: css on <html>; the span then drives itself
+   off the main thread. Otherwise JS keeps writing scaleX. */
+@supports (animation-timeline: scroll()) {
+  html[style*="--efsw-article-rail"] .efsw-article-progress span {
+    animation: efswArticleProgress linear both;
+    animation-timeline: scroll();
+    animation-range: 0 100%;
+  }
+
+  @keyframes efswArticleProgress {
+    from { transform: scaleX(0); }
+    to   { transform: scaleX(1); }
+  }
 }
 .efsw-article-page {
   position: relative;

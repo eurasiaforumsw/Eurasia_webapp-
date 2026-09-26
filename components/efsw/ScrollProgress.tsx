@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 type Section = { id: string; label: string };
 
@@ -11,7 +11,6 @@ type Section = { id: string; label: string };
 export function ScrollProgress({ sections }: { sections: Section[] }) {
   const [active, setActive] = useState(sections[0]?.id ?? "");
   const [visible, setVisible] = useState(false);
-  const rafRef = useRef<number>(0);
 
   useEffect(() => {
     const io = new IntersectionObserver(
@@ -28,19 +27,25 @@ export function ScrollProgress({ sections }: { sections: Section[] }) {
       if (el) io.observe(el);
     });
 
-    // Show the indicator only after the user starts scrolling
-    const onScroll = () => {
-      cancelAnimationFrame(rafRef.current);
-      rafRef.current = requestAnimationFrame(() => {
-        setVisible(window.scrollY > 200);
-      });
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
+    // Show the indicator only once the hero has left the viewport. A sentinel
+    // element plus IntersectionObserver replaces the scroll listener so the
+    // browser does the work off the main thread (no scroll handler, no rAF).
+    const sentinel = document.createElement("div");
+    sentinel.setAttribute("aria-hidden", "true");
+    sentinel.style.cssText =
+      "position:absolute;top:240px;left:0;width:1px;height:1px;pointer-events:none;";
+    document.body.appendChild(sentinel);
+
+    const revealObserver = new IntersectionObserver(
+      ([entry]) => setVisible(!entry.isIntersecting),
+      { threshold: 0 },
+    );
+    revealObserver.observe(sentinel);
 
     return () => {
       io.disconnect();
-      window.removeEventListener("scroll", onScroll);
-      cancelAnimationFrame(rafRef.current);
+      revealObserver.disconnect();
+      sentinel.remove();
     };
   }, [sections]);
 

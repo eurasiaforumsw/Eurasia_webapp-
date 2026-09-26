@@ -112,17 +112,30 @@ export default function ArticleView({ kind, slug, seed, backHref }: ArticleViewP
   }, [kind, slug]);
 
   // Reading-progress rail across the top of the viewport.
+  // Driven by a scroll-driven CSS animation when the browser supports it
+  // (Chrome 115+), falling back to a rAF-throttled listener elsewhere.
   useEffect(() => {
+    if (typeof CSS !== "undefined" && CSS.supports?.("animation-timeline", "scroll()")) {
+      // Zero-JS path: the browser composites the rail off the main thread.
+      document.documentElement.style.setProperty("--efsw-article-rail", "css");
+      return;
+    }
+    let frame = 0;
     const update = () => {
+      frame = 0;
       const scrollable = document.documentElement.scrollHeight - window.innerHeight;
       setProgress(scrollable > 0 ? Math.min(1, window.scrollY / scrollable) : 0);
     };
+    const request = () => {
+      if (!frame) frame = window.requestAnimationFrame(update);
+    };
     update();
-    window.addEventListener("scroll", update, { passive: true });
-    window.addEventListener("resize", update);
+    window.addEventListener("scroll", request, { passive: true });
+    window.addEventListener("resize", request);
     return () => {
-      window.removeEventListener("scroll", update);
-      window.removeEventListener("resize", update);
+      window.removeEventListener("scroll", request);
+      window.removeEventListener("resize", request);
+      if (frame) window.cancelAnimationFrame(frame);
     };
   }, []);
 
@@ -245,7 +258,6 @@ export default function ArticleView({ kind, slug, seed, backHref }: ArticleViewP
 
               <div className="efsw-article__cta">
                 <div>
-                  <p className="efsw-section-label">{t("article.ctaLabel")}</p>
                   <h2>{t(kind === "news" ? "article.newsCtaHeadline" : "article.documentCtaHeadline")}</h2>
                   <p>{t(kind === "news" ? "article.newsCtaBody" : "article.documentCtaBody")}</p>
                 </div>
@@ -259,7 +271,6 @@ export default function ArticleView({ kind, slug, seed, backHref }: ArticleViewP
           {related.length > 0 && (
             <section className="efsw-article__related" aria-label="More from EFSW">
               <div className="efsw-article__related-head">
-                <p className="efsw-section-label">{t(kind === "news" ? "article.readNext" : "article.moreDocuments")}</p>
                 <Link href={backHref} className="efsw-text-link">
                   {t(kind === "news" ? "article.backToNews" : "article.backToDocuments")} <ArrowUpRight size={15} aria-hidden />
                 </Link>

@@ -134,6 +134,8 @@ export default function HomePage() {
             tagline={layout.heroTagline}
             ctaText={layout.heroCtaText}
             ctaLink={layout.heroCtaLink}
+            bgVideoUrl={layout.heroBgVideoUrl}
+            bgPosterUrl={layout.heroBgPosterUrl}
           />
         )}
 
@@ -146,7 +148,6 @@ export default function HomePage() {
 
         {(layout.sectionVisibility?.about !== false) && (
           <section className="efsw-about-bridge efsw-reveal" id="about" aria-labelledby="about-bridge-title">
-            <div className="efsw-section-label">01 / About EFSW</div>
             <div className="efsw-about-bridge__grid efsw-reveal-group">
               <h2 id="about-bridge-title">A professional network with a human centre.</h2>
               <div>
@@ -159,7 +160,6 @@ export default function HomePage() {
 
         {(layout.sectionVisibility?.news !== false) && (
           <section className="efsw-news efsw-reveal" id="news" aria-labelledby="news-title">
-            <div className="efsw-section-label">02 / Newsroom</div>
             <div className="efsw-news__head">
               <h2 id="news-title">What is moving<br /><span>the network forward.</span></h2>
               <p>Briefings, platform updates, and resources from the work of connecting social workers across Eurasia.</p>

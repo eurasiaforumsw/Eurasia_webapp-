@@ -1,0 +1,207 @@
+{
+  "type_scale": [
+    {
+      "page_role": "hero_wordmark (home AnimatedHero h1 — exempt from 6rem prose cap)",
+      "fontFamily": "var(--font-display)",
+      "weight": 640,
+      "sizeClamp": "clamp(2.9rem, 6.4vw, 5.9rem)",
+      "lineHeight": "0.98",
+      "letterSpacing": "-0.03em",
+      "maxCh": 14
+    },
+    {
+      "page_role": "page_masthead (newsroom/library/org mastheads — the >6rem display peak)",
+      "fontFamily": "var(--font-display)",
+      "weight": 650,
+      "sizeClamp": "clamp(3rem, 6.5vw, 8rem)",
+      "lineHeight": "0.9",
+      "letterSpacing": "-0.03em",
+      "maxCh": 12
+    },
+    {
+      "page_role": "section_heading (story h2, network h2, about-cta h2, content-cta h2)",
+      "fontFamily": "var(--font-display)",
+      "weight": 650,
+      "sizeClamp": "clamp(2.4rem, 5.5vw, 6.5rem)",
+      "lineHeight": "0.92",
+      "letterSpacing": "-0.028em",
+      "maxCh": 18
+    },
+    {
+      "page_role": "feature_heading (news-feature h2, news-page-list h2)",
+      "fontFamily": "var(--font-display)",
+      "weight": 650,
+      "sizeClamp": "clamp(2rem, 4vw, 4.2rem)",
+      "lineHeight": "0.98",
+      "letterSpacing": "-0.025em",
+      "maxCh": 22
+    },
+    {
+      "page_role": "sub_heading (org-list h2, org-history intro h2, org-board head h2)",
+      "fontFamily": "var(--font-display)",
+      "weight": 650,
+      "sizeClamp": "clamp(1.7rem, 3vw, 3.6rem)",
+      "lineHeight": "1.0",
+      "letterSpacing": "-0.02em",
+      "maxCh": 26
+    },
+    {
+      "page_role": "card_title (news-card h3, work-card h3, resource-list h2)",
+      "fontFamily": "var(--font-display)",
+      "weight": 650,
+      "sizeClamp": "clamp(1.35rem, 2.3vw, 2.5rem)",
+      "lineHeight": "1.05",
+      "letterSpacing": "-0.015em",
+      "maxCh": 30
+    },
+    {
+      "page_role": "list_title (news-story h2, board-member h3, history-item h3)",
+      "fontFamily": "var(--font-display)",
+      "weight": 650,
+      "sizeClamp": "clamp(1.05rem, 1.8vw, 1.55rem)",
+      "lineHeight": "1.1",
+      "letterSpacing": "-0.015em",
+      "maxCh": 38
+    },
+    {
+      "page_role": "stat_number (reach-stat strong, collab-stat strong, hero stats)",
+      "fontFamily": "var(--font-display)",
+      "weight": 700,
+      "sizeClamp": "clamp(2rem, 3.4vw, 3.4rem)",
+      "lineHeight": "1.0",
+      "letterSpacing": "-0.03em",
+      "maxCh": 6
+    },
+    {
+      "page_role": "lede (hero lede, article lede, auth-intro copy)",
+      "fontFamily": "var(--font-body)",
+      "weight": 450,
+      "sizeClamp": "clamp(1.02rem, 1.35vw, 1.2rem)",
+      "lineHeight": "1.6",
+      "letterSpacing": "-0.005em",
+      "maxCh": 60
+    },
+    {
+      "page_role": "body (article body p, org-board lede, about-statement grid p)",
+      "fontFamily": "var(--font-body)",
+      "weight": 400,
+      "sizeClamp": "clamp(1rem, 1.15vw, 1.08rem)",
+      "lineHeight": "1.7",
+      "letterSpacing": "0",
+      "maxCh": 68
+    },
+    {
+      "page_role": "body_compact (news-story p, work-card meta p, intro-points p)",
+      "fontFamily": "var(--font-body)",
+      "weight": 400,
+      "sizeClamp": "clamp(0.84rem, 1.1vw, 0.95rem)",
+      "lineHeight": "1.55",
+      "letterSpacing": "0",
+      "maxCh": 42
+    },
+    {
+      "page_role": "caption_meta (news-story meta, board section labels, form labels)",
+      "fontFamily": "var(--font-body)",
+      "weight": 650,
+      "sizeClamp": "clamp(0.65rem, 0.9vw, 0.75rem)",
+      "lineHeight": "1.35",
+      "letterSpacing": "0.08em",
+      "maxCh": 48
+    },
+    {
+      "page_role": "eyebrow_kicker (hero kicker, news-feature eyebrow, admin eyebrow)",
+      "fontFamily": "var(--font-body)",
+      "weight": 750,
+      "sizeClamp": "clamp(0.68rem, 0.95vw, 0.78rem)",
+      "lineHeight": "1.3",
+      "letterSpacing": "0.1em",
+      "maxCh": 60
+    },
+    {
+      "page_role": "tabular_data (admin bar-row strong, clock readout, stat deltas)",
+      "fontFamily": "var(--font-body)",
+      "weight": 600,
+      "sizeClamp": "clamp(0.72rem, 1vw, 0.85rem)",
+      "lineHeight": "1.3",
+      "letterSpacing": "0.01em",
+      "maxCh": 12
+    }
+  ],
+  "motion_vocabulary": [
+    {
+      "surface_role": "hero (home AnimatedHero)",
+      "motion": "Line-masked rise: each headline line clips inside an overflow-hidden wrapper and translates from y:110% to y:0 with opacity 1 throughout (no fade); lede/actions/stats follow with a soft y:16px + unblur (filter: blur(6px) → 0). Word-slot keeps its existing y-cycle. Exit: content parallaxes out via existing scrollY springs (stiffness 55/80) — no opacity wipe of the whole hero.",
+      "duration_ms": 900,
+      "easing": "cubic-bezier(0.19, 1, 0.22, 1) (--ease-expo); word cycle spring stiffness 120 damping 22",
+      "stagger_ms": 85
+    },
+    {
+      "surface_role": "story / statement band (efsw-story, about-statement)",
+      "motion": "Editorial column reveal: the h2 rises 24px AND unblurs (blur 8px→0), body copy fades in place (opacity 0→1, no y). Long-form pull quotes get a 1px left-rule that scaleY(0)→scaleY(1) from top origin over the same window.",
+      "duration_ms": 1000,
+      "easing": "cubic-bezier(0.16, 1, 0.3, 1) (--ease-out)",
+      "stagger_ms": 120
+    },
+    {
+      "surface_role": "voices (VoicesModern / VoicesGSAP testimonial fold)",
+      "motion": "Fold-open: folded panel rotates from rotateX(-8deg) + opacity 0.4 to flat, driven by ScrollTrigger scrub (smoothing 0.6), NOT a one-shot spring; attribution text slides 12px right in sync. Mobile items: simple staggered y:14px rise, 40ms apart.",
+      "duration_ms": 700,
+      "easing": "scrub-linked linear with power2.inOut interpolation; entrance portion cubic-bezier(0.16,1,0.3,1)",
+      "stagger_ms": 40
+    },
+    {
+      "surface_role": "cards / grids (news cards, work cards, membership cards, board grid)",
+      "motion": "Grid stagger only: each card translateY(28px)→0 + opacity 0→1, 60ms apart, duration 500ms. No per-card scale, no blur. Hover: existing translateY(-0.35rem) on feature, translateX(0.3rem) on stream rows is kept; image scale 1.045 kept. REMOVE the 150ms/0.7s power2 'efsw-reveal-group' tween and let the stagger be the only entrance.",
+      "duration_ms": 500,
+      "easing": "cubic-bezier(0.16, 1, 0.3, 1) (--ease-out)",
+      "stagger_ms": 60
+    },
+    {
+      "surface_role": "nav (SiteNav / desktop-nav links, mobile sheet)",
+      "motion": "Underline sweep only: scaleX(0)→scaleX(1), transform-origin right→left on hover, 220ms. Active pill: background-color crossfade 220ms, NO transform. Mobile sheet keeps its translateY(100%)→0 at 500ms --ease-out; links inside stagger 30ms with y:10px rise. Header shows/hides on scroll via transform translateY only (spring stiffness 300 damping 30), never opacity.",
+      "duration_ms": 220,
+      "easing": "cubic-bezier(0.16, 1, 0.3, 1) (--ease-out)",
+      "stagger_ms": 30
+    },
+    {
+      "surface_role": "form feedback (member form, auth, admin drawers, toasts)",
+      "motion": "Micro-confirmations only: invalid field → border-color to --efsw-danger 180ms + 4px translateX shake keyframe (2 cycles, 180ms total) on the label; success → button content crossfades to check icon (opacity, 200ms) and toast slides up translateY(0.5rem)→0 260ms. Drawer keeps efswAdminDrawerIn (translateX 1.5rem→0, 360ms). No full-form fades.",
+      "duration_ms": 200,
+      "easing": "cubic-bezier(0.16, 1, 0.3, 1) (--ease-out)",
+      "stagger_ms": 0
+    },
+    {
+      "surface_role": "footer / CTA band (efsw-footer, content-cta, join band)",
+      "motion": "Single slow rise: translateY(50px)→0 + opacity, 1000ms, one per viewport entry — no stagger, no per-child animation. The big CTA h2 (up to clamp 6.5rem) may add a letter-spacing settle: -0.035em → -0.03em over the same 1000ms for a 'lock-in' feel.",
+      "duration_ms": 1000,
+      "easing": "cubic-bezier(0.19, 1, 0.22, 1) (--ease-expo)",
+      "stagger_ms": 0
+    }
+  ],
+  "peak_moments": [
+    {
+      "name": "DeanMessage — Portrait Kerning Wobble",
+      "description": "On DeanMessage portrait scroll-in, the paired h2/name text runs a one-shot letter-spacing wobble: -0.06em → -0.02em → -0.03em over 700ms with --ease-back cubic-bezier(0.6,-0.28,0.735,0.045), while the portrait itself does clip-path inset(8% 8% 8% 8% round 50%) → inset(0 0 0 0 round 50%) over 900ms --ease-out. Fires once per portrait via ScrollTrigger once:true; scrub=false. This is the page's single 'authored' moment — everything else on the section stays still."
+    },
+    {
+      "name": "Newsroom Masthead — Scroll-Driven Beam Sweep",
+      "description": "efsw-newsroom-masthead h1 sits under a 1px gradient beam (--efsw-gradient-line: mint→teal→sun) whose background-position-x is scrubbed from 0% to 100% across the masthead's own 60vh scroll range (ScrollTrigger scrub 0.5, smoothing in the 0.3–0.8 budget). The h1 letters stay static — only the beam and a matching 0.04em letter-spacing tightening on the last 20% of scrub move. Ties directly into the existing aurora-beam visual language of the hero."
+    },
+    {
+      "name": "About Reach Stats — Counter Draw-In",
+      "description": "efsw-reach-stat strong values (clamp 3rem–7rem, weight 700, tabular-nums) count from 0 to their final integer over 1200ms with --ease-expo-out, triggered once at 75% viewport entry; the paired rule line beneath each stat scaleX(0)→scaleX(1) 800ms --ease-out 150ms later. Values render with font-variant-numeric: tabular-nums throughout so digits don't jitter during the count. Reduced-motion: snap to final value, no tween."
+    }
+  ],
+  "patterns_to_delete": [
+    "The universal heroContainer/heroItem spring-up (opacity 0, y:34, stiffness 280 damping 20) reused verbatim on non-hero sections — it is the single authored moment for the hero ONLY.",
+    "GSAP .efsw-reveal blanket tween (opacity 0, y:40, 800ms power3.out) applied to every section — replace with the surface-specific vocabulary; today the footer, labels, about h2, news h2 and every band all share the identical move.",
+    ".efsw-reveal-group card stagger at 150ms / 0.7s power2.out — redundant second system layered on top of .efsw-reveal; keep ONE card stagger at 60ms.",
+    "@keyframes fadeRise + .animate-fade-rise / -delay / -delay-2 (0.8s ease-out, translateY 20px) — a third duplicate of the same spring-up; delete the class trio and migrate remaining users to the vocabulary.",
+    "@keyframes subtleFloat (14s infinite alternate translateY -8px scale 1.03) — ambient float fights Lenis scroll smoothing and reads as noise on dark petrol; remove or demote to a 1-iteration entrance.",
+    "Duplicate CSS variable definitions: :root declares --font-display/--font-body/--ease-out/--dur-short twice (line ~84 and again in the Axion block ~396-409), and body font-family is overridden by the Axion block — consolidate to one :root so Bricolage/Inter tokens are unambiguous.",
+    "Unused/legacy font imports: Neue Haas Grotesk Display/Text Pro (lines 2-3) and the .font-instrument Instrument Serif utility — the live system is Bricolage + Inter; drop the dead fonts to cut render-blocking requests.",
+    "heroItemSoft's near-duplicate (opacity 0, y:20) of heroItem — merge into one token with a distance parameter instead of two near-identical variants.",
+    "The per-section custom ScrollTrigger blocks in lib/scroll-animations.ts (about-title, news-heading, footer each hard-coded opacity+y at slightly different durations 0.9–1s power2/power3) — this is the 'scattered' source; collapse into the surface vocabulary above.",
+    "GSAP horizontalScroll / pinSection / createParallaxLayers helper exports with no production callers (verify with a grep; delete if unused) — dead motion API surface invites future misuse."
+  ]
+}

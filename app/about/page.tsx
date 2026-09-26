@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { ArrowUpRight, Globe2, UsersRound } from "lucide-react";
+import { ArrowUpRight, UsersRound } from "lucide-react";
 import { SiteNav } from "@/components/efsw/SiteNav";
 import { OrganizationHistory } from "@/components/efsw/OrganizationHistory";
 
@@ -32,7 +32,6 @@ export default function AboutPage() {
       <SiteNav />
       <main className="efsw-about-page">
       <section className="efsw-about-hero" id="about-top" aria-labelledby="about-title">
-        <div className="efsw-section-label" data-reveal="fade"><Globe2 size={15} /> About EFSW</div>
         <div className="efsw-about-hero__grid" data-reveal-group>
           <h1 id="about-title" data-reveal="clip" data-reveal-slow>
             A regional network<br /><span>with a human centre.</span>
@@ -53,7 +52,6 @@ export default function AboutPage() {
       </nav>
 
       <section className="efsw-about-statement" id="direction" aria-labelledby="vision-title">
-        <div className="efsw-section-label" data-reveal="fade">Our direction</div>
         <div className="efsw-about-statement__grid" data-reveal-group>
           <h2 id="vision-title" data-reveal="clip" data-reveal-slow>Social change has no borders.</h2>
           <div data-reveal="slide">
@@ -82,7 +80,6 @@ export default function AboutPage() {
       <OrganizationHistory />
 
       <section className="efsw-principles" id="principles" aria-labelledby="principles-title">
-        <div className="efsw-section-label" data-reveal="fade">The three commitments</div>
         <h2 id="principles-title" data-reveal="clip" data-reveal-slow>What we practice<br /><span>together.</span></h2>
         <div className="efsw-principles__grid" data-reveal-group>
           {principles.map((principle) => (
@@ -97,7 +94,6 @@ export default function AboutPage() {
 
       <section className="efsw-about-cta" id="membership" aria-labelledby="about-cta-title">
         <div data-reveal-group>
-          <p className="efsw-section-label" data-reveal="fade">Join the network</p>
           <h2 id="about-cta-title" data-reveal="clip" data-reveal-slow>Bring your work<br /><span>into the conversation.</span></h2>
           <p data-reveal="slide">Join a network that opens space for knowledge, experience, and collaboration to travel across borders.</p>
           <a href="mailto:support@eurasiaforumsw.org" className="efsw-button efsw-button--light" data-reveal="slide">Contact the EFSW team <ArrowUpRight size={17} /></a>

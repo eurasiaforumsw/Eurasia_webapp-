@@ -135,7 +135,7 @@ export default function BoomerangVideoBg({ src, className }: Props) {
       <video
         ref={videoRef}
         src={src}
-        className="w-full h-full object-cover animate-video-entrance transition-all duration-1000"
+        className="w-full h-full object-cover transition-all duration-1000"
         style={{ display: framesReady ? 'none' : 'block' }}
         muted
         playsInline
@@ -144,7 +144,7 @@ export default function BoomerangVideoBg({ src, className }: Props) {
       />
       <canvas
         ref={displayCanvasRef}
-        className="w-full h-full object-cover animate-video-entrance animate-subtle-float transition-all duration-1000"
+        className="w-full h-full object-cover transition-all duration-1000"
         style={{ display: framesReady ? 'block' : 'none' }}
       />
     </div>

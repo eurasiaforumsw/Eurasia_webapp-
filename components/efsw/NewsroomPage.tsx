@@ -45,7 +45,6 @@ export default function NewsroomPage({ initialItems }: { initialItems: PublicCon
 
         {/* ── CTA ── */}
         <section className="efsw-content-cta" id="news-cta" data-reveal-group>
-          <p className="efsw-section-label" data-reveal="fade">{t("newsroom.ctaLabel")}</p>
           <h2 data-reveal="clip" data-reveal-slow>
             {t("newsroom.ctaHeadline")}<br /><span>{t("newsroom.ctaHeadlineAccent")}</span>
           </h2>

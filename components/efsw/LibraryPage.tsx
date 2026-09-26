@@ -24,9 +24,6 @@ export default function LibraryPage({ initialItems }: { initialItems: PublicCont
         {/* ── Hero ── */}
         <header className="efsw-library-hero" id="resources-intro">
           <div className="efsw-library-hero__text">
-            <p className="efsw-section-label" data-reveal="fade">
-              <FileText size={14} aria-hidden /> {t("library.eyebrow")}
-            </p>
             <h1 data-reveal="clip" data-reveal-slow>
               {t("library.headline")}<br /><span>{t("library.headlineAccent")}</span>
             </h1>
@@ -70,7 +67,7 @@ export default function LibraryPage({ initialItems }: { initialItems: PublicCont
 
         {/* ── Contribute CTA ── */}
         <section className="efsw-content-cta" id="contribute" data-reveal-group>
-          <p className="efsw-section-label" data-reveal="fade">{t("library.ctaLabel")}</p>
+
           <h2 data-reveal="clip" data-reveal-slow>
             {t("library.ctaHeadline")}<br /><span>{t("library.ctaHeadlineAccent")}</span>
           </h2>

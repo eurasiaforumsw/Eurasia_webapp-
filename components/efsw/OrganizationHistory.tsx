@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowUpRight, Clock3 } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import { AdminHistoryItem, defaultLayoutConfig, getAdminLayout } from "@/lib/admin-data";
 
 const ordered = (items: AdminHistoryItem[]) => [...items].sort((a, b) => a.year - b.year);
@@ -26,7 +26,6 @@ export function OrganizationHistory() {
     <section className="efsw-org-history" id="history" aria-labelledby="history-title">
       <div className="efsw-org-history__inner">
         <div className="efsw-org-history__intro" data-reveal="fade">
-          <p className="efsw-section-label"><Clock3 size={14} aria-hidden /> Our story</p>
           <h2 id="history-title">{sectionTitle}</h2>
           <p>{sectionIntro}</p>
         </div>

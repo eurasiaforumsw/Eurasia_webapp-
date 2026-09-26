@@ -51,9 +51,6 @@ export default function OrganizationPage() {
         {/* ── Masthead ── */}
         <header className="efsw-org-masthead" id="org-top">
           <div className="efsw-org-masthead__inner">
-            <p className="efsw-section-label" data-reveal="fade">
-              <Network size={14} aria-hidden /> {t("organization.eyebrow")}
-            </p>
             <h1 data-reveal="clip" data-reveal-slow>
               {t("organization.headline")}<br /><span>{t("organization.headlineAccent")}</span>
             </h1>
@@ -108,9 +105,6 @@ export default function OrganizationPage() {
 
             <div className="efsw-org-collab__head">
               <div>
-                <p className="efsw-section-label" data-reveal="fade">
-                  <Handshake size={14} aria-hidden /> {t("organization.collabEyebrow")}
-                </p>
                 <h2 id="collab-title" data-reveal="clip" data-reveal-slow>
                   {t("organization.collabHeadline")}<br /><span>{t("organization.collabHeadlineAccent")}</span>
                 </h2>
@@ -165,7 +159,7 @@ export default function OrganizationPage() {
 
             {/* How collaboration moves */}
             <div className="efsw-org-collab__flow">
-              <p className="efsw-section-label" data-reveal="fade">{t("organization.stagesLabel")}</p>
+
               <ol className="efsw-collab-flow" data-reveal-group>
                 {COLLAB_STAGES.map(({ step, key }) => (
                   <li key={step} className="efsw-collab-step" data-reveal="slide">
@@ -184,7 +178,7 @@ export default function OrganizationPage() {
         {/* ── Membership ── */}
         <section className="efsw-org-membership" id="membership" aria-labelledby="membership-title">
           <div className="efsw-org-membership__inner">
-            <p className="efsw-section-label" data-reveal="fade">{t("organization.membershipLabel")}</p>
+
             <h2 id="membership-title" data-reveal="clip" data-reveal-slow>
               {t("organization.membershipHeadline")}<br /><span>{t("organization.membershipHeadlineAccent")}</span>
             </h2>
@@ -201,7 +195,7 @@ export default function OrganizationPage() {
 
         {/* ── CTA ── */}
         <section className="efsw-content-cta" id="org-cta" data-reveal-group>
-          <p className="efsw-section-label" data-reveal="fade">{t("organization.ctaLabel")}</p>
+
           <h2 data-reveal="clip" data-reveal-slow>
             {t("organization.ctaHeadline")}<br /><span>{t("organization.ctaHeadlineAccent")}</span>
           </h2>

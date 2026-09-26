@@ -56,7 +56,6 @@ export function ExecutiveBoard() {
       <div className="efsw-org-board__inner">
         <div className="efsw-org-board__head">
           <div>
-            <p className="efsw-section-label" data-reveal="fade">Executive board</p>
             <h2 id="board-title" data-reveal="clip" data-reveal-slow>
               The people<br /><span>behind the forum.</span>
             </h2>

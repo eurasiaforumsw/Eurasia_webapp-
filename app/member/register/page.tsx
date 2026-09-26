@@ -77,7 +77,6 @@ export default function MemberRegisterPage() {
         {complete ? (
           <div className="efsw-auth-success">
             <div className="efsw-auth-card__icon"><Check size={21} /></div>
-            <p className="efsw-section-label">Application received</p>
             <h1>Welcome to<br /><span>the EFSW network.</span></h1>
             <p>Your profile was created in this browser and is now pending review by the team.</p>
             <div className="efsw-auth-card__actions"><a href="/member/profile" className="efsw-button efsw-button--dark">Open profile <ArrowUpRight size={17} /></a><a href="/" className="efsw-text-link"><ArrowLeft size={16} /> Back to home</a></div>
@@ -85,7 +84,6 @@ export default function MemberRegisterPage() {
         ) : (
           <>
             <div className="efsw-auth-card__icon"><UserPlus size={21} /></div>
-            <p className="efsw-section-label">Join the network</p>
             <h1 id="register-title">Create your<br /><span>EFSW profile.</span></h1>
             <p>Build a member profile and connect with social work professionals across the region.</p>
             <div className="efsw-form-steps" aria-label={`Step ${step} of 2`}><span className="is-active">01 Account</span><i /><span className={step === 2 ? "is-active" : ""}>02 Professional</span></div>
