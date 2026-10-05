@@ -46,24 +46,23 @@ export const AdminActivityView = memo(function AdminActivityView({
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div style={{ display: "grid", gap: "1rem" }}>
       {/* Control bar */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="relative flex-1 max-w-md">
-          <Search
-            size={17}
-            className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted"
-          />
+      <div
+        className="efsw-admin-toolbar"
+        style={{ justifyContent: "space-between" }}
+      >
+        <div className="efsw-admin-search">
+          <Search size={15} />
           <input
             type="text"
             placeholder="Search activity or details..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full rounded-xl border border-surface-subtle bg-surface-raised py-2.5 pl-10 pr-4 text-xs font-medium text-text-primary placeholder:text-text-muted focus:border-teal focus:outline-none"
           />
         </div>
 
-        <div className="flex items-center gap-1.5 rounded-xl border border-surface-subtle bg-surface-raised p-1 text-xs">
+        <div className="efsw-admin-segmented">
           {(
             [
               { id: "all", label: "All" },
@@ -73,12 +72,9 @@ export const AdminActivityView = memo(function AdminActivityView({
           ).map((tab) => (
             <button
               key={tab.id}
+              type="button"
               onClick={() => setToneFilter(tab.id)}
-              className={`rounded-lg px-3 py-1.5 font-bold transition-all ${
-                toneFilter === tab.id
-                  ? "bg-teal text-white shadow-sm"
-                  : "text-text-muted hover:text-text-primary"
-              }`}
+              className={toneFilter === tab.id ? "is-active" : ""}
             >
               {tab.label}
             </button>
@@ -86,62 +82,56 @@ export const AdminActivityView = memo(function AdminActivityView({
         </div>
       </div>
 
-      {/* Activity Timeline List */}
-      <div className="overflow-hidden rounded-2xl border border-surface-subtle bg-surface-raised shadow-sm">
-        <div className="p-4 border-b border-surface-subtle bg-surface-base/50 flex items-center justify-between text-xs text-text-muted font-semibold">
-          <span>Recent activity ({filtered.length} entries)</span>
-          <span>Security audit log</span>
-        </div>
+      {/* Activity timeline list */}
+      <section className="efsw-admin-panel">
+        <header className="efsw-admin-panel__head">
+          <div>
+            <span className="efsw-admin-eyebrow">Audit log</span>
+            <h2>Recent activity</h2>
+          </div>
+          <span className="efsw-admin-status">
+            <i aria-hidden /> {filtered.length} entries
+          </span>
+        </header>
 
-        <div className="divide-y divide-surface-subtle">
+        <div className="efsw-admin-activity-list" style={{ margin: "0 1.35rem", borderTop: "1px solid var(--admin-line)" }}>
           {filtered.length === 0 ? (
-            <div className="py-12 text-center text-xs text-text-muted">
-              No activity matches your filters.
+            <div className="efsw-admin-empty">
+              <Activity size={20} />
+              <h2>No activity matches your filters</h2>
+              <p>Try a broader search term or switch the tone filter back to All.</p>
             </div>
           ) : (
             filtered.map((item) => {
-              const isSuccess = item.tone === "success";
-              const isWarning = item.tone === "warning";
+              const tone =
+                item.tone === "success"
+                  ? "is-success"
+                  : item.tone === "warning"
+                  ? "is-warning"
+                  : "";
 
               return (
-                <div key={item.id} className="flex items-start gap-4 p-4 hover:bg-surface-base/30 transition-colors">
-                  <div
-                    className={`mt-1 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl ${
-                      isSuccess
-                        ? "bg-emerald-500/15 text-emerald-400"
-                        : isWarning
-                        ? "bg-amber-500/15 text-amber-400"
-                        : "bg-surface-subtle text-text-muted"
-                    }`}
-                  >
-                    {isSuccess ? (
-                      <CheckCircle2 size={16} />
-                    ) : isWarning ? (
-                      <AlertCircle size={16} />
+                <article key={item.id}>
+                  <div className={`efsw-admin-activity-icon ${tone}`}>
+                    {item.tone === "success" ? (
+                      <CheckCircle2 size={13} />
+                    ) : item.tone === "warning" ? (
+                      <AlertCircle size={13} />
                     ) : (
-                      <Clock size={16} />
+                      <Clock size={13} />
                     )}
                   </div>
-
-                  <div className="flex-1 min-w-0">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
-                      <div className="text-xs font-bold text-text-primary">
-                        {item.action}
-                      </div>
-                      <div className="text-[11px] text-text-muted font-medium">
-                        {formatTime(item.at)}
-                      </div>
-                    </div>
-                    <div className="text-xs text-text-secondary mt-1 break-words">
-                      {item.detail}
-                    </div>
-                  </div>
-                </div>
+                  <span>
+                    <strong>{item.action}</strong>
+                    <p>{item.detail}</p>
+                  </span>
+                  <time dateTime={item.at}>{formatTime(item.at)}</time>
+                </article>
               );
             })
           )}
         </div>
-      </div>
+      </section>
     </div>
   );
 });

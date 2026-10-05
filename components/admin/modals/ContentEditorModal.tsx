@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, DragEvent, FormEvent, memo, useState } from "react";
+import { ChangeEvent, DragEvent, FormEvent, memo, useEffect, useMemo, useState } from "react";
 import {
   X,
   UploadCloud,
@@ -9,10 +9,30 @@ import {
   Trash2,
   FileText,
   Newspaper,
-  CheckCircle2,
+  Sparkles,
+  BookOpen,
+  Globe2,
+  Tag,
+  Users,
+  AlertTriangle,
+  Info,
 } from "lucide-react";
-import { AdminContentCategory, AdminContentItem, AdminContentKind, AdminContentStatus } from "@/lib/admin-data";
-import { compressImageFile } from "@/lib/image-utils";
+import {
+  AdminContentCategory,
+  AdminContentItem,
+  AdminContentKind,
+  AdminContentStatus,
+  ContentLocale,
+  isContentExpired,
+} from "@/lib/admin-data";
+import { uploadImageToR2 } from "@/lib/admin-data";
+import { useToast } from "@/components/ui/toast";
+import {
+  EFSW_MEMBERSHIP_LABELS,
+  EFSW_MEMBERSHIP_TYPES,
+  EFSW_TARGET_GROUPS,
+} from "@/lib/target-groups";
+import { RichTextEditor } from "@/components/admin/RichTextEditor";
 
 interface ContentEditorModalProps {
   initialItem: AdminContentItem | null;
@@ -22,6 +42,32 @@ interface ContentEditorModalProps {
   onDelete?: (id: string) => void;
   contentCategories?: AdminContentCategory[];
 }
+
+const LOCALES: { id: ContentLocale; label: string }[] = [
+  { id: "en", label: "English" },
+  { id: "th", label: "Thai" },
+  { id: "ko", label: "Korean" },
+];
+
+const STATUS_LABELS: Record<AdminContentStatus, string> = {
+  draft: "Draft",
+  published: "Published",
+  archived: "Archived",
+};
+
+const KIND_ICON: Record<AdminContentKind, typeof Newspaper> = {
+  news: Newspaper,
+  document: FileText,
+  event: Sparkles,
+  academic: BookOpen,
+};
+
+const KIND_LABELS: Record<AdminContentKind, string> = {
+  news: "News article",
+  document: "Document",
+  event: "Event",
+  academic: "Academic Document",
+};
 
 const BLANK_ITEM: AdminContentItem = {
   id: "",
@@ -34,10 +80,26 @@ const BLANK_ITEM: AdminContentItem = {
   imageCaption: "",
   author: "EFSW Editorial Board",
   tags: [],
-  status: "published",
+  status: "draft",
   locale: "en",
   updatedAt: "",
 };
+
+function isoToLocalInput(iso?: string): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  // Strip seconds + timezone offset so the <input type="datetime-local"> accepts it
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function localInputToIso(value: string): string | undefined {
+  if (!value) return undefined;
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return undefined;
+  return d.toISOString();
+}
 
 export const ContentEditorModal = memo(function ContentEditorModal({
   initialItem,
@@ -47,28 +109,68 @@ export const ContentEditorModal = memo(function ContentEditorModal({
   onDelete,
   contentCategories = [],
 }: ContentEditorModalProps) {
-  if (!isOpen) return null;
-
   const [formData, setFormData] = useState<AdminContentItem>(initialItem || BLANK_ITEM);
   const [tagsInput, setTagsInput] = useState(
-    initialItem?.tags ? initialItem.tags.join(", ") : ""
+    initialItem?.tags ? initialItem.tags.join(", ") : "",
   );
   const [isCompressing, setIsCompressing] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [coverImageStatus, setCoverImageStatus] = useState<"empty" | "uploading" | "remote" | "local">(
+    initialItem?.coverImage?.startsWith("data:") ? "local" : initialItem?.coverImage ? "remote" : "empty",
+  );
+  const [coverImageError, setCoverImageError] = useState<string | null>(null);
+  const [audienceMode, setAudienceMode] = useState<"all" | "members-only">(
+    initialItem?.targetMembershipTypes?.length || initialItem?.targetGroups?.length ? "members-only" : "all",
+  );
+  const { addToast } = useToast();
+
+  useEffect(() => {
+    if (isOpen) {
+      const next = initialItem || BLANK_ITEM;
+      setFormData(next);
+      setTagsInput(next.tags ? next.tags.join(", ") : "");
+      setAudienceMode(
+        next.targetMembershipTypes?.length || next.targetGroups?.length ? "members-only" : "all",
+      );
+      if (!next.coverImage) {
+        setCoverImageStatus("empty");
+      } else if (next.coverImage.startsWith("data:")) {
+        setCoverImageStatus("local");
+      } else if (next.coverImage.startsWith("http")) {
+        setCoverImageStatus("remote");
+      }
+      setCoverImageError(null);
+    }
+  }, [initialItem, isOpen]);
 
   const handleImageUpload = async (file: File) => {
-    if (!file.type.startsWith("image/")) return;
+    if (!file.type.startsWith("image/")) {
+      setCoverImageError("Please upload an image file (JPG, PNG, or WebP).");
+      return;
+    }
+    if (file.size > 12 * 1024 * 1024) {
+      setCoverImageError("Cover images must be 12 MB or smaller.");
+      return;
+    }
+    setCoverImageError(null);
     setIsCompressing(true);
+    setCoverImageStatus("uploading");
     try {
-      const compressed = await compressImageFile(file, {
-        maxWidth: 1200,
-        maxHeight: 1200,
-        quality: 0.82,
-        outputFormat: "image/webp",
+      const { url } = await uploadImageToR2(file);
+      setFormData((prev) => ({ ...prev, coverImage: url }));
+      setCoverImageStatus(url.startsWith("data:") ? "local" : "remote");
+      addToast({
+        type: "success",
+        title: "Cover image saved",
+        description: url.startsWith("data:")
+          ? "Image compressed and attached locally (no R2 connection)."
+          : "Image uploaded to the EFSW media library in R2.",
       });
-      setFormData((prev) => ({ ...prev, coverImage: compressed }));
     } catch (err) {
-      console.error("Image compression error:", err);
+      const message = err instanceof Error ? err.message : "Could not upload the image.";
+      setCoverImageError(message);
+      setCoverImageStatus("empty");
+      addToast({ type: "error", title: "Upload failed", description: message });
     } finally {
       setIsCompressing(false);
     }
@@ -86,8 +188,51 @@ export const ContentEditorModal = memo(function ContentEditorModal({
     if (file) handleImageUpload(file);
   };
 
+  const handleRemoveImage = () => {
+    setFormData((prev) => ({ ...prev, coverImage: "" }));
+    setCoverImageStatus("empty");
+    setCoverImageError(null);
+  };
+
+  const toggleMembershipType = (type: (typeof EFSW_MEMBERSHIP_TYPES)[number]) => {
+    setFormData((prev) => {
+      const current = prev.targetMembershipTypes ?? [];
+      const next = current.includes(type)
+        ? current.filter((t) => t !== type)
+        : [...current, type];
+      return { ...prev, targetMembershipTypes: next };
+    });
+  };
+
+  const toggleTargetGroup = (group: string) => {
+    setFormData((prev) => {
+      const current = prev.targetGroups ?? [];
+      const next = current.includes(group)
+        ? current.filter((g) => g !== group)
+        : [...current, group];
+      return { ...prev, targetGroups: next };
+    });
+  };
+
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
+    if (!formData.title.trim()) {
+      addToast({ type: "error", title: "Title required", description: "Please enter a title before saving." });
+      return;
+    }
+
+    // Guard rail: publishAt must come before expiresAt
+    const publishAt = formData.publishAt;
+    const expiresAt = formData.expiresAt;
+    if (publishAt && expiresAt && Date.parse(publishAt) >= Date.parse(expiresAt)) {
+      addToast({
+        type: "error",
+        title: "Display window is invalid",
+        description: "“Show from” must be earlier than “hide after”.",
+      });
+      return;
+    }
+
     const tags = tagsInput
       .split(",")
       .map((t) => t.trim())
@@ -97,286 +242,1004 @@ export const ContentEditorModal = memo(function ContentEditorModal({
       ...formData,
       id: formData.id || `content-${Date.now().toString(36)}`,
       tags,
+      targetMembershipTypes: audienceMode === "all" ? [] : (formData.targetMembershipTypes ?? []),
+      targetGroups: audienceMode === "all" ? [] : (formData.targetGroups ?? []),
       updatedAt: new Date().toISOString(),
     };
 
     onSave(updated);
+    addToast({
+      type: "success",
+      title: formData.id ? "Content updated" : "Content created",
+      description: `${KIND_LABELS[updated.kind]} saved to the library.`,
+    });
   };
 
-  return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity"
-        onClick={onClose}
-      />
+  const handleDelete = () => {
+    if (!formData.id || !onDelete) return;
+    onDelete(formData.id);
+    addToast({
+      type: "success",
+      title: "Content deleted",
+      description: "The content has been removed from the library.",
+    });
+  };
 
-      <div className="flex min-h-full items-center justify-center p-4">
-        <div className="relative w-full max-w-3xl rounded-3xl border border-surface-subtle bg-surface-deep p-6 shadow-2xl overflow-hidden">
-          {/* Header */}
-          <div className="flex items-center justify-between border-b border-surface-subtle pb-4">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal/15 text-teal-light">
-                {formData.kind === "news" ? <Newspaper size={20} /> : <FileText size={20} />}
+  // ── Sidebar state helpers ──
+  const isExpired = useMemo(() => isContentExpired(formData), [formData]);
+  const wordCount = useMemo(
+    () => (formData.body || "").trim().split(/\s+/).filter(Boolean).length,
+    [formData.body],
+  );
+  const tagCount = useMemo(
+    () => tagsInput.split(",").map((t) => t.trim()).filter(Boolean).length,
+    [tagsInput],
+  );
+  const audienceSize =
+    (audienceMode === "all" ? 0 : formData.targetMembershipTypes?.length ?? 0) +
+    (audienceMode === "all" ? 0 : formData.targetGroups?.length ?? 0);
+
+  if (!isOpen) return null;
+
+  const KindIcon = KIND_ICON[formData.kind];
+  const isEditing = Boolean(formData.id);
+
+  return (
+    <div className="efsw-admin-modal-layer">
+      <div className="efsw-admin-editor" role="dialog" aria-label={isEditing ? "Edit content" : "Create content"}>
+        <header>
+          <div>
+            <span className="efsw-admin-eyebrow">
+              {isEditing ? "Edit content" : "Create content"}
+            </span>
+            <h2>{formData.title || "Untitled content"}</h2>
+          </div>
+          <button
+            type="button"
+            className="efsw-admin-icon-button"
+            onClick={onClose}
+            aria-label="Close editor"
+          >
+            <X size={16} />
+          </button>
+        </header>
+
+        <div
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "0.55rem",
+            marginTop: "1.1rem",
+            color: "var(--admin-muted)",
+            fontSize: "0.74rem",
+          }}
+        >
+          <KindIcon size={14} />
+          <span>{KIND_LABELS[formData.kind]}</span>
+          <span aria-hidden>·</span>
+          <span style={{ textTransform: "uppercase", fontWeight: 800, letterSpacing: "0.06em" }}>
+            {formData.locale}
+          </span>
+          {isExpired && (
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "0.3rem",
+                color: "var(--admin-warning)",
+                fontWeight: 700,
+              }}
+            >
+              <AlertTriangle size={13} /> Expired
+            </span>
+          )}
+        </div>
+
+        <form onSubmit={handleSubmit}>
+          {/* ── Identification: kind + category + status + locale ── */}
+          <fieldset
+            style={{
+              display: "grid",
+              gap: "0.9rem",
+              margin: "1.6rem 0 0",
+              padding: 0,
+              border: 0,
+            }}
+          >
+            <legend
+              style={{
+                margin: 0,
+                padding: 0,
+                fontFamily: "var(--font-display)",
+                fontSize: "1.1rem",
+                fontWeight: 650,
+              }}
+            >
+              Identification
+            </legend>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(11rem, 1fr))",
+                gap: "0.7rem",
+              }}
+            >
+              <div style={{ display: "grid", gap: "0.35rem" }}>
+                <label style={{ color: "var(--admin-muted)", fontSize: "0.72rem", fontWeight: 750 }}>
+                  Content type
+                </label>
+                <div className="efsw-admin-segmented" style={{ alignSelf: "start" }}>
+                  {(["news", "document", "event"] as AdminContentKind[]).map((kind) => {
+                    const Icon = KIND_ICON[kind];
+                    return (
+                      <button
+                        key={kind}
+                        type="button"
+                        onClick={() => setFormData((prev) => ({ ...prev, kind }))}
+                        className={formData.kind === kind ? "is-active" : ""}
+                      >
+                        <Icon size={13} />
+                        <span style={{ textTransform: "capitalize" }}>{kind}</span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-              <div>
-                <h2 className="text-base font-bold font-display text-text-primary">
-                  {formData.id ? "Edit content" : "Create content"}
-                </h2>
-                <p className="text-xs text-text-muted">
-                  Publish news and academic resources to EFSW.
-                </p>
+
+              <div style={{ display: "grid", gap: "0.35rem" }}>
+                <label style={{ color: "var(--admin-muted)", fontSize: "0.72rem", fontWeight: 750 }}>
+                  Locale
+                </label>
+                <div className="efsw-admin-segmented">
+                  {LOCALES.map((locale) => (
+                    <button
+                      key={locale.id}
+                      type="button"
+                      onClick={() => setFormData((prev) => ({ ...prev, locale: locale.id }))}
+                      className={formData.locale === locale.id ? "is-active" : ""}
+                    >
+                      {locale.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ display: "grid", gap: "0.35rem" }}>
+                <label style={{ color: "var(--admin-muted)", fontSize: "0.72rem", fontWeight: 750 }}>
+                  Status
+                </label>
+                <div className="efsw-admin-segmented">
+                  {(["draft", "published", "archived"] as AdminContentStatus[]).map((status) => (
+                    <button
+                      key={status}
+                      type="button"
+                      onClick={() => setFormData((prev) => ({ ...prev, status }))}
+                      className={formData.status === status ? "is-active" : ""}
+                    >
+                      {STATUS_LABELS[status]}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 
-            <button
-              onClick={onClose}
-              className="flex h-8 w-8 items-center justify-center rounded-lg border border-surface-subtle text-text-muted hover:bg-surface-raised hover:text-text-primary"
-            >
-              <X size={18} />
-            </button>
-          </div>
-
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="mt-6 space-y-5">
-            {/* Kind & Status & Locale selection */}
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-              <div>
-                <label className="block text-xs font-bold text-text-secondary mb-1.5">
-                Content type
-                </label>
-                <select
-                  value={formData.kind}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      kind: e.target.value as AdminContentKind,
-                    }))
-                  }
-                  className="w-full rounded-xl border border-surface-subtle bg-surface-base px-3.5 py-2.5 text-xs text-text-primary focus:border-teal focus:outline-none"
-                >
-                  <option value="news">News</option>
-                  <option value="document">Document</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-text-secondary mb-1.5">
+            <div className="efsw-admin-form-grid">
+              <label>
                 Category
-                </label>
                 <input
                   type="text"
-                  list={formData.kind === "news" ? "newsroom-category-options" : undefined}
+                  list={`category-options-${formData.kind}`}
                   value={formData.category}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, category: e.target.value }))
-                  }
-                  placeholder="e.g. Platform, Research, Policy"
-                  className="w-full rounded-xl border border-surface-subtle bg-surface-base px-3.5 py-2.5 text-xs text-text-primary focus:border-teal focus:outline-none"
+                  onChange={(e) => setFormData((prev) => ({ ...prev, category: e.target.value }))}
+                  placeholder="e.g. Platform update"
                   required
                 />
-                {formData.kind === "news" && (
-                  <datalist id="newsroom-category-options">
-                    {contentCategories
-                      .filter((category) => category.kind === "news" && category.enabled)
-                      .sort((a, b) => a.order - b.order)
-                      .map((category) => <option key={category.id} value={category.label} />)}
-                  </datalist>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-text-secondary mb-1.5">
-                Status
-                </label>
-                <select
-                  value={formData.status}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      status: e.target.value as AdminContentStatus,
-                    }))
-                  }
-                  className="w-full rounded-xl border border-surface-subtle bg-surface-base px-3.5 py-2.5 text-xs text-text-primary focus:border-teal focus:outline-none"
-                >
-                  <option value="published">Published</option>
-                  <option value="draft">Draft</option>
-                  <option value="archived">Archived</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Title */}
-            <div>
-              <label className="block text-xs font-bold text-text-secondary mb-1.5">
-                Title
-              </label>
-              <input
-                type="text"
-                value={formData.title}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, title: e.target.value }))
-                }
-                placeholder="Write a clear, engaging title..."
-                className="w-full rounded-xl border border-surface-subtle bg-surface-base px-4 py-2.5 text-xs font-medium text-text-primary focus:border-teal focus:outline-none"
-                required
-              />
-            </div>
-
-            {/* Summary */}
-            <div>
-              <label className="block text-xs font-bold text-text-secondary mb-1.5">
-                Summary
-              </label>
-              <textarea
-                rows={2}
-                value={formData.summary}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, summary: e.target.value }))
-                }
-                placeholder="Summarise the key points in one or two paragraphs..."
-                className="w-full rounded-xl border border-surface-subtle bg-surface-base p-3.5 text-xs text-text-primary focus:border-teal focus:outline-none"
-                required
-              />
-            </div>
-
-            {/* Full Body */}
-            <div>
-              <label className="block text-xs font-bold text-text-secondary mb-1.5">
-                Full body
-              </label>
-              <textarea
-                rows={5}
-                value={formData.body || ""}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, body: e.target.value }))
-                }
-                placeholder="Article details, captions, or supporting information..."
-                className="w-full rounded-xl border border-surface-subtle bg-surface-base p-3.5 text-xs text-text-primary focus:border-teal focus:outline-none"
-              />
-            </div>
-
-            {/* Image Uploader with Auto Compression */}
-            <div>
-              <label className="block text-xs font-bold text-text-secondary mb-1.5">
-                Cover image (auto-compressed)
+                <datalist id={`category-options-${formData.kind}`}>
+                  {contentCategories
+                    .filter((category) => category.kind === formData.kind && category.enabled)
+                    .sort((a, b) => a.order - b.order)
+                    .map((category) => (
+                      <option key={category.id} value={category.label} />
+                    ))}
+                </datalist>
               </label>
 
-              <div
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  setIsDragOver(true);
-                }}
-                onDragLeave={() => setIsDragOver(false)}
-                onDrop={handleDrop}
-                className={`relative flex flex-col items-center justify-center rounded-2xl border-2 border-dashed p-6 transition-all ${
-                  isDragOver
-                    ? "border-teal bg-teal/10"
-                    : "border-surface-subtle bg-surface-base/50 hover:border-teal/50"
-                }`}
-              >
-                {formData.coverImage ? (
-                  <div className="relative aspect-video w-full max-w-sm overflow-hidden rounded-xl border border-surface-subtle">
-                    <img
-                      src={formData.coverImage}
-                      alt="Cover Preview"
-                      className="h-full w-full object-cover"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setFormData((prev) => ({ ...prev, coverImage: "" }))}
-                      className="absolute top-2 right-2 rounded-lg bg-black/70 p-1.5 text-white hover:bg-red-600 transition-colors"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center text-center">
-                    <UploadCloud size={32} className="text-teal mb-2" />
-                    <p className="text-xs font-bold text-text-primary">
-                      {isCompressing ? "Processing and compressing image..." : "Drop an image here or click to upload"}
-                    </p>
-                    <p className="text-[11px] text-text-muted mt-1">
-                      Images are resized and compressed to high-quality WebP automatically.
-                    </p>
-                  </div>
-                )}
-
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileChange}
-                  className="absolute inset-0 opacity-0 cursor-pointer"
-                  disabled={isCompressing}
-                />
-              </div>
-            </div>
-
-            {/* Author, Tags, Locale */}
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div>
-                <label className="block text-xs font-bold text-text-secondary mb-1.5">
-                  Author / organisation
-                </label>
+              <label>
+                Author / organisation
                 <input
                   type="text"
                   value={formData.author || ""}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, author: e.target.value }))
-                  }
-                  className="w-full rounded-xl border border-surface-subtle bg-surface-base px-3.5 py-2.5 text-xs text-text-primary focus:border-teal focus:outline-none"
+                  onChange={(e) => setFormData((prev) => ({ ...prev, author: e.target.value }))}
+                  placeholder="EFSW Editorial Board"
                 />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-text-secondary mb-1.5">
-                  Search tags (comma-separated)
-                </label>
-                <input
-                  type="text"
-                  value={tagsInput}
-                  onChange={(e) => setTagsInput(e.target.value)}
-                  placeholder="Platform, Exchange, Welfare"
-                  className="w-full rounded-xl border border-surface-subtle bg-surface-base px-3.5 py-2.5 text-xs text-text-primary focus:border-teal focus:outline-none"
-                />
-              </div>
+              </label>
             </div>
+          </fieldset>
 
-            {/* Modal Actions */}
-            <div className="flex items-center justify-between border-t border-surface-subtle pt-5">
-              {formData.id && onDelete ? (
-                <button
-                  type="button"
-                  onClick={() => onDelete(formData.id)}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-xs font-bold text-red-400 hover:bg-red-500 hover:text-white transition-all"
+          {/* ── Event-only scheduling ─────────────────────────── */}
+          {formData.kind === "event" && (
+            <fieldset
+              style={{
+                display: "grid",
+                gap: "0.85rem",
+                margin: "1.6rem 0 0",
+                padding: "1rem 1.1rem",
+                border: "1px solid var(--admin-line)",
+                background: "var(--admin-surface-deep)",
+              }}
+            >
+              <legend
+                style={{
+                  padding: "0 0.5rem",
+                  background: "var(--admin-surface)",
+                  color: "var(--admin-ink)",
+                  fontFamily: "var(--font-display)",
+                  fontSize: "1rem",
+                  fontWeight: 650,
+                }}
+              >
+                Event logistics
+              </legend>
+              <div className="efsw-admin-form-grid">
+                <label>
+                  Starts at
+                  <input
+                    type="datetime-local"
+                    value={isoToLocalInput(formData.startsAt)}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        startsAt: localInputToIso(e.target.value),
+                      }))
+                    }
+                  />
+                </label>
+                <label>
+                  Ends at
+                  <input
+                    type="datetime-local"
+                    value={isoToLocalInput(formData.endsAt)}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        endsAt: localInputToIso(e.target.value),
+                      }))
+                    }
+                  />
+                </label>
+                <label>
+                  Venue / location
+                  <input
+                    type="text"
+                    value={formData.venue || ""}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, venue: e.target.value }))}
+                    placeholder="BITEC Bangkok, Online (Zoom)…"
+                  />
+                </label>
+                <label>
+                  Format
+                  <select
+                    value={formData.format || ""}
+                    onChange={(e) =>
+                      setFormData((prev) => ({ ...prev, format: e.target.value || undefined }))
+                    }
+                  >
+                    <option value="">Select format…</option>
+                    {["In-person", "Online", "Hybrid", "Webinar", "Workshop", "Summit", "Conference", "Meetup"].map(
+                      (fmt) => (
+                        <option key={fmt} value={fmt}>
+                          {fmt}
+                        </option>
+                      ),
+                    )}
+                  </select>
+                </label>
+              </div>
+              <label>
+                Registration URL
+                <input
+                  type="url"
+                  value={formData.registrationUrl || ""}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, registrationUrl: e.target.value }))
+                  }
+                  placeholder="/member/register or https://…"
+                />
+              </label>
+
+              {/* Hero Slider Settings */}
+              <div style={{
+                marginTop: "1rem",
+                paddingTop: "1rem",
+                borderTop: "1px solid var(--admin-line)"
+              }}>
+                <label
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.75rem",
+                    cursor: "pointer",
+                    padding: "0.75rem",
+                    background: "var(--admin-surface)",
+                    borderRadius: "0.5rem",
+                    border: "2px solid var(--admin-line)",
+                  }}
                 >
-                  <Trash2 size={14} />
-                  <span>Delete content</span>
-                </button>
+                  <input
+                    type="checkbox"
+                    checked={formData.showInHeroSlider || false}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        showInHeroSlider: e.target.checked,
+                        sliderDuration: e.target.checked && !prev.sliderDuration ? 6000 : prev.sliderDuration,
+                        sliderOrder: e.target.checked && !prev.sliderOrder ? 0 : prev.sliderOrder,
+                      }))
+                    }
+                    style={{ width: "1.25rem", height: "1.25rem", cursor: "pointer" }}
+                  />
+                  <div>
+                    <div style={{ fontWeight: 600, color: "var(--admin-ink)" }}>
+                      Show in homepage hero slider
+                    </div>
+                    <div style={{ fontSize: "0.875rem", color: "var(--admin-muted)" }}>
+                      Feature this event in the homepage carousel
+                    </div>
+                  </div>
+                </label>
+
+                {formData.showInHeroSlider && (
+                  <div style={{
+                    display: "grid",
+                    gap: "0.75rem",
+                    marginTop: "1rem",
+                    padding: "1rem",
+                    background: "var(--admin-surface-deep)",
+                    borderRadius: "0.5rem",
+                  }}>
+                    <label>
+                      Slider duration (milliseconds)
+                      <input
+                        type="number"
+                        min="3000"
+                        max="15000"
+                        step="1000"
+                        value={formData.sliderDuration || 6000}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            sliderDuration: parseInt(e.target.value) || 6000
+                          }))
+                        }
+                        placeholder="6000"
+                      />
+                      <small style={{ display: "block", marginTop: "0.25rem", color: "var(--admin-muted)" }}>
+                        How long to show this slide (3000-15000ms, default: 6000ms / 6 seconds)
+                      </small>
+                    </label>
+
+                    <label>
+                      Display order
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={formData.sliderOrder || 0}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            sliderOrder: parseInt(e.target.value) || 0
+                          }))
+                        }
+                        placeholder="0"
+                      />
+                      <small style={{ display: "block", marginTop: "0.25rem", color: "var(--admin-muted)" }}>
+                        Lower numbers appear first (0 = first, 1 = second, etc.)
+                      </small>
+                    </label>
+                  </div>
+                )}
+              </div>
+            </fieldset>
+          )}
+
+          {/* ── Title + summary + body ─────────────────────────── */}
+          <fieldset
+            style={{
+              display: "grid",
+              gap: "0.85rem",
+              margin: "1.6rem 0 0",
+              padding: 0,
+              border: 0,
+            }}
+          >
+            <legend
+              style={{
+                margin: 0,
+                padding: 0,
+                fontFamily: "var(--font-display)",
+                fontSize: "1.1rem",
+                fontWeight: 650,
+              }}
+            >
+              Content
+            </legend>
+
+            <label>
+              Title
+              <input
+                type="text"
+                value={formData.title}
+                onChange={(e) => setFormData((prev) => ({ ...prev, title: e.target.value }))}
+                placeholder="A clear, engaging headline…"
+                required
+              />
+            </label>
+
+            <label>
+              Summary
+              <textarea
+                rows={2}
+                value={formData.summary}
+                onChange={(e) => setFormData((prev) => ({ ...prev, summary: e.target.value }))}
+                placeholder="One or two sentences that frame the story."
+                required
+                style={{ resize: "vertical" }}
+              />
+            </label>
+
+            <label>
+              <span
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}
+              >
+                Body
+                <small style={{ color: "var(--admin-muted)", fontSize: "0.66rem", fontWeight: 700 }}>
+                  {wordCount} {wordCount === 1 ? "word" : "words"}
+                </small>
+              </span>
+              <RichTextEditor
+                value={formData.body || ""}
+                onChange={(body) => setFormData((prev) => ({ ...prev, body }))}
+                placeholder="Write your content here... Use the toolbar to format text, add images, links, and more."
+                minHeight="400px"
+              />
+            </label>
+          </fieldset>
+
+          {/* ── Cover image (R2) ──────────────────────────────── */}
+          <fieldset
+            style={{
+              display: "grid",
+              gap: "0.7rem",
+              margin: "1.6rem 0 0",
+              padding: 0,
+              border: 0,
+            }}
+          >
+            <legend
+              style={{
+                margin: 0,
+                padding: 0,
+                fontFamily: "var(--font-display)",
+                fontSize: "1.1rem",
+                fontWeight: 650,
+              }}
+            >
+              Cover image
+            </legend>
+
+            <div
+              onDragOver={(e) => {
+                e.preventDefault();
+                setIsDragOver(true);
+              }}
+              onDragLeave={() => setIsDragOver(false)}
+              onDrop={handleDrop}
+              style={{
+                position: "relative",
+                display: "grid",
+                placeItems: "center",
+                minHeight: "12rem",
+                padding: formData.coverImage ? "0" : "1.5rem",
+                border: isDragOver ? "1px dashed var(--admin-green)" : "1px dashed var(--admin-line)",
+                background: isDragOver ? "var(--admin-green-soft)" : "var(--admin-surface-deep)",
+                transition: "border-color 200ms var(--ease-out), background 200ms var(--ease-out)",
+                overflow: "hidden",
+              }}
+            >
+              {formData.coverImage ? (
+                <>
+                  <img
+                    src={formData.coverImage}
+                    alt="Cover preview"
+                    style={{
+                      display: "block",
+                      width: "100%",
+                      maxHeight: "16rem",
+                      objectFit: "cover",
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleRemoveImage}
+                    className="efsw-admin-icon-button"
+                    style={{
+                      position: "absolute",
+                      top: "0.6rem",
+                      right: "0.6rem",
+                      background: "var(--admin-surface)",
+                      color: "var(--admin-danger)",
+                      borderColor: "var(--admin-danger)",
+                    }}
+                    aria-label="Remove cover image"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </>
               ) : (
-                <div />
+                <div
+                  style={{
+                    display: "grid",
+                    gap: "0.45rem",
+                    placeItems: "center",
+                    textAlign: "center",
+                    color: "var(--admin-muted)",
+                  }}
+                >
+                  <UploadCloud size={26} />
+                  <strong style={{ color: "var(--admin-ink)", fontSize: "0.85rem" }}>
+                    {isCompressing ? "Compressing and uploading…" : "Drop an image here or click to upload"}
+                  </strong>
+                  <small style={{ fontSize: "0.7rem" }}>
+                    Auto-compressed to WebP and stored in Cloudflare R2.
+                  </small>
+                </div>
               )}
 
-              <div className="flex items-center gap-3">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                disabled={isCompressing}
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  opacity: 0,
+                  cursor: isCompressing ? "not-allowed" : "pointer",
+                }}
+                aria-label="Choose cover image"
+              />
+            </div>
+
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "0.45rem",
+                color:
+                  coverImageStatus === "remote"
+                    ? "var(--admin-green)"
+                    : coverImageStatus === "local"
+                    ? "var(--admin-warning)"
+                    : "var(--admin-muted)",
+                fontSize: "0.7rem",
+                fontWeight: 700,
+              }}
+            >
+              {coverImageStatus === "remote" ? (
+                <>
+                  <Globe2 size={12} /> Stored in R2 — file appears on the live site immediately
+                </>
+              ) : coverImageStatus === "local" ? (
+                <>
+                  <Info size={12} /> Stored locally (data URL) — not yet pushed to R2
+                </>
+              ) : (
+                <>
+                  <ImageIcon size={12} /> No cover image selected
+                </>
+              )}
+            </div>
+
+            {coverImageError && (
+              <div
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "0.4rem",
+                  color: "var(--admin-danger)",
+                  fontSize: "0.7rem",
+                  fontWeight: 750,
+                }}
+                role="alert"
+              >
+                <AlertTriangle size={12} /> {coverImageError}
+              </div>
+            )}
+
+            <label>
+              Caption / alt text
+              <input
+                type="text"
+                value={formData.imageCaption || ""}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, imageCaption: e.target.value }))
+                }
+                placeholder="A short description of the image"
+              />
+            </label>
+          </fieldset>
+
+          {/* ── Display window + Audience ──────────────────────── */}
+          <fieldset
+            style={{
+              display: "grid",
+              gap: "1rem",
+              margin: "1.6rem 0 0",
+              padding: 0,
+              border: 0,
+            }}
+          >
+            <legend
+              style={{
+                margin: 0,
+                padding: 0,
+                fontFamily: "var(--font-display)",
+                fontSize: "1.1rem",
+                fontWeight: 650,
+              }}
+            >
+              Display window & audience
+            </legend>
+
+            <div className="efsw-admin-form-grid">
+              <label>
+                Show from (optional)
+                <input
+                  type="datetime-local"
+                  value={isoToLocalInput(formData.publishAt)}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      publishAt: localInputToIso(e.target.value),
+                    }))
+                  }
+                />
+              </label>
+              <label>
+                Hide after (optional)
+                <input
+                  type="datetime-local"
+                  value={isoToLocalInput(formData.expiresAt)}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      expiresAt: localInputToIso(e.target.value),
+                    }))
+                  }
+                />
+              </label>
+            </div>
+
+            <p
+              style={{
+                margin: 0,
+                color: "var(--admin-muted)",
+                fontSize: "0.7rem",
+                lineHeight: 1.5,
+              }}
+            >
+              Leave either field empty to leave that side of the window open.
+              Once “Hide after” passes, the item is automatically excluded from the public feed.
+            </p>
+
+            {/* Audience mode switch */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: "0.85rem",
+                padding: "0.85rem 1rem",
+                border: "1px solid var(--admin-line)",
+                background: "var(--admin-surface)",
+              }}
+            >
+              <span style={{ display: "inline-flex", alignItems: "center", gap: "0.45rem", color: "var(--admin-muted)", fontSize: "0.72rem", fontWeight: 750 }}>
+                <Users size={13} />
+                Audience targeting
+              </span>
+              <div className="efsw-admin-segmented">
                 <button
                   type="button"
-                  onClick={onClose}
-                  className="rounded-xl border border-surface-subtle bg-surface-base px-4 py-2.5 text-xs font-bold text-text-muted hover:text-text-primary transition-colors"
+                  className={audienceMode === "all" ? "is-active" : ""}
+                  onClick={() => setAudienceMode("all")}
                 >
-                  Cancel
+                  Open to all
                 </button>
                 <button
-                  type="submit"
-                  disabled={isCompressing}
-                  className="inline-flex items-center gap-2 rounded-xl bg-teal px-5 py-2.5 text-xs font-bold text-white shadow-md shadow-teal/20 hover:bg-teal-vivid disabled:opacity-50 transition-all"
+                  type="button"
+                  className={audienceMode === "members-only" ? "is-active" : ""}
+                  onClick={() => setAudienceMode("members-only")}
                 >
-                  <Save size={15} />
-                  <span>Save content</span>
+                  Members only
                 </button>
               </div>
             </div>
-          </form>
-        </div>
+
+            {audienceMode === "members-only" && (
+              <>
+                <div>
+                  <span
+                    style={{
+                      display: "block",
+                      color: "var(--admin-muted)",
+                      fontSize: "0.72rem",
+                      fontWeight: 750,
+                      marginBottom: "0.45rem",
+                    }}
+                  >
+                    Membership tiers
+                  </span>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
+                    {EFSW_MEMBERSHIP_TYPES.map((type) => {
+                      const selected = formData.targetMembershipTypes?.includes(type);
+                      return (
+                        <button
+                          key={type}
+                          type="button"
+                          onClick={() => toggleMembershipType(type)}
+                          aria-pressed={selected}
+                          className="efsw-admin-icon-button"
+                          style={{
+                            width: "auto",
+                            height: "2.5rem",
+                            padding: "0 0.85rem",
+                            borderRadius: "999px",
+                            border: selected ? "1px solid var(--admin-green)" : "1px solid var(--admin-line)",
+                            background: selected ? "var(--admin-green)" : "transparent",
+                            color: selected ? "var(--admin-surface)" : "var(--admin-ink)",
+                            fontSize: "0.72rem",
+                            fontWeight: 750,
+                          }}
+                        >
+                          {EFSW_MEMBERSHIP_LABELS[type]}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div>
+                  <span
+                    style={{
+                      display: "block",
+                      color: "var(--admin-muted)",
+                      fontSize: "0.72rem",
+                      fontWeight: 750,
+                      marginBottom: "0.45rem",
+                    }}
+                  >
+                    Target group hashtags
+                  </span>
+                  <p
+                    style={{
+                      margin: "0 0 0.5rem",
+                      color: "var(--admin-muted)",
+                      fontSize: "0.7rem",
+                    }}
+                  >
+                    Members will only see this content if their profile lists one of the
+                    selected groups.
+                  </p>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem" }}>
+                    {EFSW_TARGET_GROUPS.map((group) => {
+                      const selected = formData.targetGroups?.includes(group);
+                      return (
+                        <button
+                          key={group}
+                          type="button"
+                          onClick={() => toggleTargetGroup(group)}
+                          aria-pressed={selected}
+                          className="efsw-admin-icon-button"
+                          style={{
+                            width: "auto",
+                            height: "2.4rem",
+                            padding: "0 0.8rem",
+                            borderRadius: "999px",
+                            border: selected ? "1px solid var(--admin-green)" : "1px solid var(--admin-line)",
+                            background: selected ? "var(--admin-green-soft)" : "transparent",
+                            color: selected ? "var(--admin-green)" : "var(--admin-ink)",
+                            fontSize: "0.7rem",
+                            fontWeight: 750,
+                          }}
+                        >
+                          {group}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </>
+            )}
+          </fieldset>
+
+          {/* ── SEO & Metadata ────────────────────────────────── */}
+          <fieldset
+            style={{
+              display: "grid",
+              gap: "0.85rem",
+              margin: "1.6rem 0 0",
+              padding: "1rem 1.1rem",
+              border: "1px solid var(--admin-line)",
+              background: "var(--admin-surface-deep)",
+              borderRadius: "0.5rem",
+            }}
+          >
+            <legend
+              style={{
+                padding: "0 0.5rem",
+                fontFamily: "var(--font-display)",
+                fontSize: "1rem",
+                fontWeight: 650,
+                color: "var(--admin-muted)",
+              }}
+            >
+              SEO & Metadata
+            </legend>
+
+            <label>
+              SEO Title
+              <input
+                type="text"
+                value={formData.seoTitle || ""}
+                onChange={(e) => setFormData((prev) => ({ ...prev, seoTitle: e.target.value }))}
+                placeholder={formData.title || "Leave empty to use content title"}
+              />
+              <small style={{ display: "block", marginTop: "0.25rem", color: "var(--admin-muted)" }}>
+                Custom title for search engines (50-60 characters recommended)
+              </small>
+            </label>
+
+            <label>
+              Meta Description
+              <textarea
+                rows={2}
+                value={formData.seoDescription || ""}
+                onChange={(e) => setFormData((prev) => ({ ...prev, seoDescription: e.target.value }))}
+                placeholder={formData.summary || "Brief description for search results"}
+                style={{ resize: "vertical" }}
+              />
+              <small style={{ display: "block", marginTop: "0.25rem", color: "var(--admin-muted)" }}>
+                Brief description for search results (150-160 characters recommended)
+              </small>
+            </label>
+
+            <label>
+              Keywords (comma-separated)
+              <input
+                type="text"
+                value={formData.seoKeywords?.join(", ") || ""}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    seoKeywords: e.target.value.split(",").map(k => k.trim()).filter(Boolean)
+                  }))
+                }
+                placeholder="social work, community, asia"
+              />
+              <small style={{ display: "block", marginTop: "0.25rem", color: "var(--admin-muted)" }}>
+                Relevant keywords for SEO (5-10 keywords recommended)
+              </small>
+            </label>
+
+            <label>
+              Open Graph Image URL
+              <input
+                type="url"
+                value={formData.ogImage || ""}
+                onChange={(e) => setFormData((prev) => ({ ...prev, ogImage: e.target.value }))}
+                placeholder={formData.coverImage || "https://example.com/og-image.jpg"}
+              />
+              <small style={{ display: "block", marginTop: "0.25rem", color: "var(--admin-muted)" }}>
+                Image for social media sharing (defaults to cover image)
+              </small>
+            </label>
+
+            <label>
+              Canonical URL
+              <input
+                type="url"
+                value={formData.canonicalUrl || ""}
+                onChange={(e) => setFormData((prev) => ({ ...prev, canonicalUrl: e.target.value }))}
+                placeholder="https://eurasiaforumsw.org/..."
+              />
+              <small style={{ display: "block", marginTop: "0.25rem", color: "var(--admin-muted)" }}>
+                Preferred URL for search engines (optional)
+              </small>
+            </label>
+          </fieldset>
+
+          {/* ── Tags ──────────────────────────────────────────── */}
+          <fieldset
+            style={{
+              display: "grid",
+              gap: "0.7rem",
+              margin: "1.6rem 0 0",
+              padding: 0,
+              border: 0,
+            }}
+          >
+            <legend
+              style={{
+                margin: 0,
+                padding: 0,
+                fontFamily: "var(--font-display)",
+                fontSize: "1.1rem",
+                fontWeight: 650,
+              }}
+            >
+              Tags
+            </legend>
+            <label>
+              <span
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}
+              >
+                Search tags (comma-separated)
+                <small
+                  style={{
+                    color: "var(--admin-muted)",
+                    fontSize: "0.66rem",
+                    fontWeight: 700,
+                  }}
+                >
+                  <Tag size={10} /> {tagCount} {tagCount === 1 ? "tag" : "tags"}
+                </small>
+              </span>
+              <input
+                type="text"
+                value={tagsInput}
+                onChange={(e) => setTagsInput(e.target.value)}
+                placeholder="Platform, Regional exchange, Welfare"
+              />
+            </label>
+          </fieldset>
+
+          {/* ── Footer actions ──────────────────────────────────── */}
+          <div
+            className="efsw-admin-editor__footer"
+            style={{ marginTop: "1.5rem" }}
+          >
+            {formData.id && onDelete ? (
+              <button
+                type="button"
+                onClick={handleDelete}
+                className="efsw-admin-text-action"
+                style={{ color: "var(--admin-danger)", marginRight: "auto" }}
+              >
+                <Trash2 size={13} /> Delete
+              </button>
+            ) : (
+              <span style={{ marginRight: "auto" }} />
+            )}
+
+            <button type="button" onClick={onClose} className="efsw-admin-text-action">
+              Cancel
+            </button>
+            <button type="submit" className="efsw-admin-text-action" style={{ color: "var(--admin-green)", fontSize: "0.78rem" }}>
+              <Save size={14} /> {isEditing ? "Update content" : "Create content"}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

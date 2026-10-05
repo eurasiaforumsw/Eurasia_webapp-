@@ -8,9 +8,11 @@ import {
   Calendar,
   Clock,
   Image as ImageIcon,
+  MapPin,
   Tag,
   User,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import ShareBar from "@/components/efsw/ShareBar";
 import TranslateControl from "@/components/efsw/TranslateControl";
 import { SiteNav } from "@/components/efsw/SiteNav";
@@ -23,11 +25,13 @@ import {
   type AdminContentItem,
   type AdminContentKind,
 } from "@/lib/admin-data";
+import { getSessionMember, type MemberProfile } from "@/lib/member-auth";
+import { EngagementRow, RecordView } from "@/components/efsw/EngagementRow";
 
 export type ArticleSeed = Pick<
   AdminContentItem,
   "id" | "category" | "title" | "summary" | "body"
-> & Partial<Pick<AdminContentItem, "coverImage" | "imageCaption" | "author" | "tags" | "updatedAt">>;
+> & Partial<Pick<AdminContentItem, "coverImage" | "imageCaption" | "author" | "tags" | "updatedAt" | "startsAt" | "endsAt" | "venue" | "format" | "registrationUrl">>;
 
 type ArticleViewProps = {
   kind: AdminContentKind;
@@ -41,6 +45,29 @@ const formatDate = (value?: string) => {
   if (!value) return "";
   try {
     return new Intl.DateTimeFormat("en-US", { month: "long", day: "numeric", year: "numeric" }).format(new Date(value));
+  } catch {
+    return "";
+  }
+};
+
+const formatDateRange = (startsAt?: string, endsAt?: string) => {
+  if (!startsAt) return "";
+  try {
+    const start = new Date(startsAt);
+    const end = endsAt ? new Date(endsAt) : null;
+    const sameDay = end && start.toDateString() === end.toDateString();
+    const startStr = new Intl.DateTimeFormat("en-US", { month: "long", day: "numeric", year: "numeric" }).format(start);
+    if (!end) return startStr;
+    if (sameDay) {
+      const timeStart = new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit" }).format(start);
+      const timeEnd = new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit" }).format(end);
+      return `${startStr} · ${timeStart} – ${timeEnd}`;
+    }
+    const sameMonth = start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear();
+    const endStr = sameMonth
+      ? new Intl.DateTimeFormat("en-US", { day: "numeric", year: "numeric" }).format(end)
+      : new Intl.DateTimeFormat("en-US", { month: "long", day: "numeric", year: "numeric" }).format(end);
+    return `${startStr} – ${endStr}`;
   } catch {
     return "";
   }
@@ -92,6 +119,19 @@ export default function ArticleView({ kind, slug, seed, backHref }: ArticleViewP
   const [article, setArticle] = useState<ArticleSeed>(seed);
   const [related, setRelated] = useState<AdminContentItem[]>([]);
   const [progress, setProgress] = useState(0);
+  const [member, setMember] = useState<MemberProfile | null>(null);
+
+  // Track the current member so engagement actions know who to credit.
+  useEffect(() => {
+    setMember(getSessionMember());
+    const refresh = () => setMember(getSessionMember());
+    window.addEventListener("storage", refresh);
+    window.addEventListener("efsw:member-session-changed", refresh);
+    return () => {
+      window.removeEventListener("storage", refresh);
+      window.removeEventListener("efsw:member-session-changed", refresh);
+    };
+  }, []);
 
   // Published content lives in localStorage, so the admin's copy replaces the
   // build-time seed once mounted. Refreshes on cross-tab edits.
@@ -172,7 +212,7 @@ export default function ArticleView({ kind, slug, seed, backHref }: ArticleViewP
           <header className="efsw-article__head">
             <Link href={backHref} className="efsw-article__back">
               <ArrowLeft size={15} strokeWidth={2} aria-hidden />
-              {t(kind === "news" ? "article.backToNews" : "article.backToDocuments")}
+              {t(kind === "news" ? "article.backToNews" : kind === "event" ? "article.backToEvents" : "article.backToDocuments")}
             </Link>
 
             <p className="efsw-article__eyebrow">{shown.category}</p>
@@ -180,11 +220,26 @@ export default function ArticleView({ kind, slug, seed, backHref }: ArticleViewP
             <p className="efsw-article__lede">{shown.summary}</p>
 
             <div className="efsw-article__meta">
-              {publishedLabel && (
+              {publishedLabel && kind !== "event" && (
                 <span>
                   <Calendar size={14} strokeWidth={1.9} aria-hidden />
                   <time dateTime={article.updatedAt}>{publishedLabel}</time>
                 </span>
+              )}
+              {kind === "event" && article.startsAt && (
+                <span>
+                  <Calendar size={14} strokeWidth={1.9} aria-hidden />
+                  <time dateTime={article.startsAt}>{formatDateRange(article.startsAt, article.endsAt)}</time>
+                </span>
+              )}
+              {kind === "event" && article.venue && (
+                <span>
+                  <MapPin size={14} strokeWidth={1.9} aria-hidden />
+                  {article.venue}
+                </span>
+              )}
+              {kind === "event" && article.format && (
+                <span className="efsw-event-format">{article.format}</span>
               )}
               {article.author && (
                 <span>
@@ -197,6 +252,26 @@ export default function ArticleView({ kind, slug, seed, backHref }: ArticleViewP
                 {t("article.minRead", { minutes })}
               </span>
             </div>
+
+            {/* Engagement row — heart / like / view sits inside the article
+               header so the read-time meta and the social proof share the
+               same horizontal band. The view counter auto-increments via
+               RecordView on first mount; members can toggle the heart and
+               thumbs-up, anonymous visitors see the buttons disabled. */}
+            <RecordView contentId={article.id} />
+            <div className="efsw-article__engagement">
+              <EngagementRow contentId={article.id} memberId={member?.id ?? null} />
+            </div>
+
+            {kind === "event" && article.registrationUrl && (
+              <div className="efsw-article__register">
+                <Button variant="default" size="lg" magnetic asChild>
+                  <a href={article.registrationUrl}>
+                    {t("events.rsvp")} <ArrowUpRight size={14} aria-hidden />
+                  </a>
+                </Button>
+              </div>
+            )}
 
             <TranslateControl
               target={translation.target}
@@ -213,7 +288,6 @@ export default function ArticleView({ kind, slug, seed, backHref }: ArticleViewP
             ) : (
               <div className="efsw-article__hero-placeholder">
                 <ImageIcon size={34} strokeWidth={1.4} aria-hidden />
-                <span>EFSW</span>
               </div>
             )}
             {article.imageCaption && <figcaption>{article.imageCaption}</figcaption>}
@@ -223,6 +297,9 @@ export default function ArticleView({ kind, slug, seed, backHref }: ArticleViewP
             {/* Desktop rail: stays with the reader while scrolling the body. */}
             <aside className="efsw-article__rail">
               <ShareBar title={shown.title} summary={shown.summary} heading={t("article.share")} variant="inline" path={`${backHref}/${slug}`} />
+              <div className="efsw-article__rail-engagement">
+                <EngagementRow contentId={article.id} memberId={member?.id ?? null} />
+              </div>
             </aside>
 
             <div className="efsw-article__body" lang={translation.target ?? "en"}>

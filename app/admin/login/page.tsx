@@ -1,8 +1,23 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { ArrowLeft, ArrowUpRight, Eye, EyeOff, LockKeyhole } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowUpRight,
+  Eye,
+  EyeOff,
+  LockKeyhole,
+  AlertCircle,
+  CheckCircle2,
+  Database,
+  LayoutGrid,
+  Mail,
+  Sparkles,
+  Copy,
+  ShieldCheck,
+} from "lucide-react";
 import { ADMIN_DEMO_ACCOUNT, getAdminSession, loginAdmin } from "@/lib/admin-auth";
+import { useToast } from "@/components/ui/toast";
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState("");
@@ -10,6 +25,8 @@ export default function AdminLoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [copied, setCopied] = useState<"" | "email" | "password">("");
+  const { addToast } = useToast();
 
   useEffect(() => {
     if (getAdminSession()) window.location.replace("/admin");
@@ -21,46 +38,199 @@ export default function AdminLoginPage() {
     setSubmitting(true);
     try {
       await loginAdmin(email, password);
+      addToast({
+        type: "success",
+        title: "Welcome back!",
+        description: "You've successfully signed in to the admin console.",
+      });
       window.location.replace("/admin");
     } catch (submissionError) {
-      setError(submissionError instanceof Error ? submissionError.message : "Unable to sign in. Please try again.");
+      const errorMessage = submissionError instanceof Error
+        ? submissionError.message
+        : "Unable to sign in. Please try again.";
+      setError(errorMessage);
+      addToast({
+        type: "error",
+        title: "Sign in failed",
+        description: errorMessage,
+      });
       setSubmitting(false);
     }
   };
 
+  const copyDemo = async (kind: "email" | "password") => {
+    const value = kind === "email" ? ADMIN_DEMO_ACCOUNT.email : "EFSW-demo-admin-2024";
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(kind);
+      addToast({
+        type: "success",
+        title: `${kind === "email" ? "Email" : "Password"} copied`,
+        description: "Paste it into the sign-in form.",
+      });
+      setTimeout(() => setCopied(""), 1600);
+    } catch {
+      // ignore — clipboard may be unavailable
+    }
+  };
+
+  const fillDemo = () => {
+    setEmail(ADMIN_DEMO_ACCOUNT.email);
+    setPassword("EFSW-demo-admin-2024");
+    setError("");
+  };
+
   return (
-    <main className="efsw-admin-auth">
-      <a href="/" className="efsw-brand" aria-label="EFSW home">
-        <span className="efsw-brand__mark">E</span>
+    <main className="efsw-signin efsw-signin--admin">
+      <a href="/" className="efsw-signin__brand" aria-label="EFSW home">
+        <span className="efsw-brand__mark">
+          <img src="/efsw-logo-lg.png" alt="EFSW" />
+        </span>
         <span>Eurasia Forum<br />for Social Workers</span>
       </a>
-      <section className="efsw-admin-auth__card" aria-labelledby="admin-login-title">
-        <div className="efsw-admin-auth__icon"><LockKeyhole size={20} /></div>
-        <p className="efsw-admin-eyebrow">EFSW operations / Admin</p>
-        <h1 id="admin-login-title">Enter the<br /><span>control room.</span></h1>
-        <p className="efsw-admin-auth__lede">Manage members, publications, academic resources, and site settings from one workspace.</p>
-        {error && <div className="efsw-admin-error" role="alert">{error}</div>}
-        <form onSubmit={submit} className="efsw-admin-login-form">
-          <label>Admin email *<input required type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="username" /></label>
-          <div className="efsw-admin-password">
-            <label>Password *<input id="admin-password" required type={showPassword ? "text" : "password"} value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" /></label>
-            <button type="button" onClick={() => setShowPassword((value) => !value)} aria-controls="admin-password" aria-pressed={showPassword} aria-label={showPassword ? "Hide password" : "Show password"}>
-              {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
-            </button>
+
+      <div className="efsw-signin__shell">
+        {/* ── Left: editorial intro ── */}
+        <aside className="efsw-signin__intro" aria-label="EFSW admin console">
+          <p className="efsw-signin__eyebrow">Operations console · Admin only</p>
+          <h1>
+            Control room.<br />
+            <em>One workspace.</em>
+          </h1>
+          <p className="efsw-signin__intro-copy">
+            Manage members, publications, events, broadcasts, and site settings
+            from one unified console.
+          </p>
+          <div className="efsw-signin__intro-rule" />
+          <div className="efsw-signin__intro-meta">
+            <span>EFSW</span>
+            <div><p>Secure admin access</p></div>
           </div>
-          <button type="submit" className="efsw-admin-primary" disabled={submitting}>
-            {submitting ? "Signing in..." : "Sign in to admin"}
-            <ArrowUpRight size={17} />
-          </button>
-        </form>
-        <div className="efsw-admin-demo-hint">
-          <span>Demo access</span>
-          <code>{ADMIN_DEMO_ACCOUNT.email}</code>
-          <code>Contact admin for password</code>
-        </div>
-      </section>
-      <a href="/" className="efsw-admin-auth__back"><ArrowLeft size={15} /> Back to home</a>
-      <p className="efsw-admin-prototype-note">Prototype mode · Local browser session for this preview</p>
+          <ul className="efsw-signin__features">
+            <li>
+              <Database size={14} />
+              Members, content &amp; broadcasts in one place
+            </li>
+            <li>
+              <LayoutGrid size={14} />
+              Layout, hero, and section visibility controls
+            </li>
+            <li>
+              <Mail size={14} />
+              Email campaigns to targeted member groups
+            </li>
+          </ul>
+        </aside>
+
+        {/* ── Right: form card ── */}
+        <section className="efsw-signin__card" aria-labelledby="admin-login-title">
+          <div className="efsw-signin__card-inner">
+            <div className="efsw-signin__card-topline">
+              <div className="efsw-signin__card-icon"><LockKeyhole size={20} /></div>
+              <span>Administrator access</span>
+            </div>
+            <h2 id="admin-login-title">
+              Enter the<br /><em>control room.</em>
+            </h2>
+            <p className="efsw-signin__card-lede">
+              Manage members, publications, academic resources, and site settings from one workspace.
+            </p>
+
+            {error && (
+              <div className="efsw-signin__error" role="alert">
+                <AlertCircle size={15} />
+                {error}
+              </div>
+            )}
+
+            <form onSubmit={submit} className="efsw-signin__form">
+              <div className="efsw-signin__field">
+                <label htmlFor="admin-email">Admin email</label>
+                <input
+                  id="admin-email"
+                  required
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  autoComplete="username"
+                  placeholder="admin@efsw.local"
+                />
+              </div>
+
+              <div className="efsw-signin__field efsw-signin__field--pw">
+                <label htmlFor="admin-password">Password</label>
+                <input
+                  id="admin-password"
+                  required
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="current-password"
+                  placeholder="Your password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+
+              <button type="submit" className="efsw-signin__submit" disabled={submitting}>
+                {submitting ? "Signing in…" : "Sign in to admin"}
+                <ArrowUpRight size={16} />
+              </button>
+            </form>
+
+            <div className="efsw-signin__card-divider">
+              <ShieldCheck size={13} /> Demo access
+            </div>
+
+            <div className="efsw-signin__demo">
+              <div className="efsw-signin__demo-row">
+                <span className="efsw-signin__demo-label">Email</span>
+                <code>{ADMIN_DEMO_ACCOUNT.email}</code>
+                <button
+                  type="button"
+                  className="efsw-signin__demo-copy"
+                  onClick={() => copyDemo("email")}
+                  aria-label="Copy demo email"
+                >
+                  {copied === "email" ? <CheckCircle2 size={12} /> : <Copy size={12} />}
+                </button>
+              </div>
+              <div className="efsw-signin__demo-row">
+                <span className="efsw-signin__demo-label">Password</span>
+                <code>EFSW-demo-admin-2024</code>
+                <button
+                  type="button"
+                  className="efsw-signin__demo-copy"
+                  onClick={() => copyDemo("password")}
+                  aria-label="Copy demo password"
+                >
+                  {copied === "password" ? <CheckCircle2 size={12} /> : <Copy size={12} />}
+                </button>
+              </div>
+              <button
+                type="button"
+                className="efsw-signin__demo-fill"
+                onClick={fillDemo}
+              >
+                <Sparkles size={13} /> Fill the form with demo credentials
+              </button>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <a href="/" className="efsw-signin__back">
+        <ArrowLeft size={14} /> Back to home
+      </a>
+
+      <p className="efsw-signin__note">
+        Prototype mode · Admin session stored locally
+      </p>
     </main>
   );
 }

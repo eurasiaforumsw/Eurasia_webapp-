@@ -1,0 +1,194 @@
+- generic [active] [ref=f10e1]:
+  - banner [ref=f10e2]:
+    - generic [ref=f10e3]:
+      - link "Eurasia Forum for Social Workers — home" [ref=f10e4] [cursor=pointer]:
+        - /url: /
+        - generic [ref=f10e6]:
+          - generic [ref=f10e7]: Eurasia Forum
+          - generic [ref=f10e8]: of Social Workers
+      - navigation "Primary" [ref=f10e9]:
+        - link "Home" [ref=f10e10] [cursor=pointer]:
+          - /url: /
+        - link "About" [ref=f10e12] [cursor=pointer]:
+          - /url: /about
+        - link "Events" [ref=f10e15] [cursor=pointer]:
+          - /url: /events
+        - link "News" [ref=f10e16] [cursor=pointer]:
+          - /url: /news
+        - link "Academic Documents" [ref=f10e17] [cursor=pointer]:
+          - /url: /academic-documents
+      - generic [ref=f10e18]:
+        - 'button "Language: English" [ref=f10e20] [cursor=pointer]':
+          - generic [ref=f10e26]: EN
+        - link "Login" [ref=f10e29] [cursor=pointer]:
+          - /url: /member/login
+        - link "Register" [ref=f10e34] [cursor=pointer]:
+          - /url: /member/register
+  - generic:
+    - dialog "Menu":
+      - paragraph: Menu
+      - navigation "Mobile":
+        - generic:
+          - link "01 Home":
+            - /url: /
+            - generic: "01"
+            - generic: Home
+        - generic:
+          - button "02 About":
+            - generic: "02"
+            - generic: About
+          - generic:
+            - link "About us":
+              - /url: /about
+            - link "Organization":
+              - /url: /about/organization
+            - link "Executive Board":
+              - /url: /about/executive-board
+        - generic:
+          - link "03 Events":
+            - /url: /events
+            - generic: "03"
+            - generic: Events
+        - generic:
+          - link "04 News":
+            - /url: /news
+            - generic: "04"
+            - generic: News
+        - generic:
+          - link "05 Academic Documents":
+            - /url: /academic-documents
+            - generic: "05"
+            - generic: Academic Documents
+      - group "Language":
+        - button "English" [pressed]
+        - button "ไทย"
+        - button "한국어"
+      - generic:
+        - link "Login":
+          - /url: /member/login
+        - link "Register":
+          - /url: /member/register
+  - main [ref=f10e44]:
+    - generic [ref=f10e46]:
+      - generic [ref=f10e47]:
+        - paragraph [ref=f10e48]: Organization
+        - generic [ref=f10e49]: EFSW / 01
+      - generic [ref=f10e50]:
+        - heading "Four bodies. One direction." [level=1] [ref=f10e51]: Four bodies.One direction.
+        - generic [ref=f10e52]:
+          - paragraph [ref=f10e53]: EFSW is held together by four interconnected bodies — from strategic governance to active community practice across the region.
+          - link "Organizational structure" [ref=f10e54] [cursor=pointer]:
+            - /url: "#structure"
+      - generic "Organizational structure" [ref=f10e58]:
+        - generic [ref=f10e59]:
+          - generic [ref=f10e60]: "01"
+          - text: Leadership
+        - generic [ref=f10e61]:
+          - generic [ref=f10e62]: "02"
+          - text: Knowledge
+        - generic [ref=f10e63]:
+          - generic [ref=f10e64]: "03"
+          - text: Partnerships
+        - generic [ref=f10e65]:
+          - generic [ref=f10e66]: "04"
+          - text: Community
+    - navigation "Organization" [ref=f10e67]:
+      - generic [ref=f10e68]:
+        - generic [ref=f10e69]: Organization
+        - generic [ref=f10e70]:
+          - link "01 Organizational structure" [ref=f10e71] [cursor=pointer]:
+            - /url: "#structure"
+            - generic [ref=f10e72]: "01"
+            - text: Organizational structure
+          - link "02 The network, counted." [ref=f10e73] [cursor=pointer]:
+            - /url: "#network"
+            - generic [ref=f10e74]: "02"
+            - text: The network, counted.
+          - link "03 Who can join" [ref=f10e75] [cursor=pointer]:
+            - /url: "#membership"
+            - generic [ref=f10e76]: "03"
+            - text: Who can join
+    - region [ref=f10e77]:
+      - generic [ref=f10e78]:
+        - generic [ref=f10e79]:
+          - generic [ref=f10e80]:
+            - paragraph [ref=f10e81]:
+              - text: "01"
+              - generic [ref=f10e82]: Organizational structure
+            - heading "How EFSW is organised" [level=2] [ref=f10e83]
+          - paragraph [ref=f10e84]: An executive council sets direction; three bodies carry the work into knowledge, partnerships, and the member community.
+        - article [ref=f10e85]:
+          - generic [ref=f10e86]:
+            - generic [ref=f10e87]: Leadership
+            - generic [ref=f10e88]: "01"
+          - generic [ref=f10e89]:
+            - heading "Executive Council" [level=3] [ref=f10e90]
+            - paragraph [ref=f10e91]: Sets strategic direction and keeps the work of the network anchored to its mission — ensuring every initiative serves the communities we exist for.
+        - generic [ref=f10e99]:
+          - article [ref=f10e100]:
+            - generic [ref=f10e101]:
+              - generic [ref=f10e102]: Knowledge
+              - generic [ref=f10e103]: "02"
+            - heading "Academic & Practice Network" [level=3] [ref=f10e106]
+            - paragraph [ref=f10e107]: Connects academics, practitioners, and learners so knowledge moves in both directions — from theory into field, and from field back into learning.
+          - article [ref=f10e108]:
+            - generic [ref=f10e109]:
+              - generic [ref=f10e110]: Partnerships
+              - generic [ref=f10e111]: "03"
+            - heading "Regional Partnerships" [level=3] [ref=f10e115]
+            - paragraph [ref=f10e116]: Works alongside universities, NGOs, government bodies, and partners across the region to build bridges and open new pathways for collaboration.
+          - article [ref=f10e117]:
+            - generic [ref=f10e118]:
+              - generic [ref=f10e119]: Community
+              - generic [ref=f10e120]: "04"
+            - heading "Member Community" [level=3] [ref=f10e126]
+            - paragraph [ref=f10e127]: Where members build collaborations, share opportunities, and scale their impact — the open space where the network actually lives.
+    - region [ref=f10e128]:
+      - generic [ref=f10e133]:
+        - generic [ref=f10e134]:
+          - paragraph [ref=f10e135]:
+            - text: "02"
+            - generic [ref=f10e136]: The network, counted.
+          - heading "The network, counted." [level=2] [ref=f10e137]
+          - paragraph [ref=f10e138]: Live figures from the EFSW member register and knowledge library, refreshed every few minutes.
+          - paragraph [ref=f10e139]: Loading figures…
+        - generic [ref=f10e141]:
+          - generic [ref=f10e142]:
+            - strong [ref=f10e143]: –
+            - generic [ref=f10e144]: Active members
+          - generic [ref=f10e145]:
+            - strong [ref=f10e146]: –
+            - generic [ref=f10e147]: Countries
+          - generic [ref=f10e148]:
+            - strong [ref=f10e149]: –
+            - generic [ref=f10e150]: Academic documents
+            - link "Browse the library" [ref=f10e151] [cursor=pointer]:
+              - /url: /academic-documents
+    - region [ref=f10e155]:
+      - generic [ref=f10e156]:
+        - paragraph [ref=f10e157]: Who can join
+        - heading "Open to every voice." [level=2] [ref=f10e158]: Open toevery voice.
+        - generic [ref=f10e159]:
+          - generic [ref=f10e160]:
+            - strong [ref=f10e162]: Professional
+            - paragraph [ref=f10e163]: Practitioners and social work professionals contributing knowledge from the field.
+            - link "Apply as Professional" [ref=f10e164] [cursor=pointer]:
+              - /url: /member/register?type=professional
+          - generic [ref=f10e168]:
+            - strong [ref=f10e170]: Student
+            - paragraph [ref=f10e171]: Emerging social workers and academic learners shaping the next generation of practice.
+            - link "Apply as Student" [ref=f10e172] [cursor=pointer]:
+              - /url: /member/register?type=student
+          - generic [ref=f10e176]:
+            - strong [ref=f10e178]: Institutional
+            - paragraph [ref=f10e179]: Universities, NGOs, government bodies, and partner organisations working at scale.
+            - link "Apply as Institutional" [ref=f10e180] [cursor=pointer]:
+              - /url: /member/register?type=institutional
+        - generic [ref=f10e184]:
+          - paragraph [ref=f10e185]: Whether you're an individual practitioner, a student, or an institution — there's a place in this network for the work you do.
+          - link "Contact the team" [ref=f10e186] [cursor=pointer]:
+            - /url: mailto:support@eurasiaforumsw.org
+    - generic [ref=f10e190]:
+      - generic [ref=f10e191]: © 2026 EFSW
+      - link "Eurasia Forum for Social Workers" [ref=f10e192] [cursor=pointer]:
+        - /url: /

@@ -76,100 +76,117 @@ export const BoardMemberEditorModal = memo(function BoardMemberEditorModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="fixed inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
-      <div className="flex min-h-full items-center justify-center p-4">
-        <div className="relative w-full max-w-xl overflow-hidden rounded-3xl border border-surface-subtle bg-surface-deep p-6 shadow-2xl">
-          <div className="flex items-center justify-between border-b border-surface-subtle pb-4">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal/15 text-teal-light">
-                <UserRound size={20} />
-              </div>
-              <div>
-                <h2 className="text-base font-bold font-display text-text-primary">
-                  {formData.id ? "Edit board member" : "Add board member"}
-                </h2>
-                <p className="text-xs text-text-muted">Name, title, country, and portrait shown on the Organization page.</p>
-              </div>
+    <div className="efsw-admin-modal-layer efsw-admin-modal-layer--center">
+      <div className="efsw-admin-modal-scrim" onClick={onClose} />
+
+      <div className="efsw-admin-modal-card" role="dialog" aria-modal="true" aria-label={formData.id ? "Edit board member" : "Add board member"}>
+        {/* ── Head ── */}
+        <div className="efsw-admin-modal-card__head">
+          <div className="efsw-admin-modal-card__lead">
+            <div className="efsw-admin-modal-card__icon">
+              <UserRound size={20} />
             </div>
-            <button type="button" onClick={onClose} aria-label="Close" className="flex h-8 w-8 items-center justify-center rounded-lg border border-surface-subtle text-text-muted hover:bg-surface-raised hover:text-text-primary">
-              <X size={18} />
-            </button>
+            <div>
+              <h2 className="efsw-admin-modal-card__title">
+                {formData.id ? "Edit board member" : "Add board member"}
+              </h2>
+              <p className="efsw-admin-modal-card__lede">
+                Name, title, country, and portrait shown on the Organization page.
+              </p>
+            </div>
           </div>
+          <button type="button" onClick={onClose} aria-label="Close" className="efsw-admin-icon-button">
+            <X size={16} />
+          </button>
+        </div>
 
-          <form onSubmit={handleSubmit} className="mt-6 space-y-5">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <label className="text-xs font-bold text-text-secondary">
-                Full name
-                <input
-                  type="text"
-                  required
-                  value={formData.name}
-                  onChange={(event) => setFormData((prev) => ({ ...prev, name: event.target.value }))}
-                  placeholder="e.g. Mr. Sug Pyo Kim"
-                  className="mt-1.5 w-full rounded-xl border border-surface-subtle bg-surface-base px-3.5 py-2.5 text-xs font-normal text-text-primary focus:border-teal focus:outline-none"
-                />
-              </label>
-              <label className="text-xs font-bold text-text-secondary">
-                Title
-                <input
-                  type="text"
-                  required
-                  value={formData.title}
-                  onChange={(event) => setFormData((prev) => ({ ...prev, title: event.target.value }))}
-                  placeholder="e.g. President"
-                  className="mt-1.5 w-full rounded-xl border border-surface-subtle bg-surface-base px-3.5 py-2.5 text-xs font-normal text-text-primary focus:border-teal focus:outline-none"
-                />
-              </label>
-            </div>
-
-            <label className="block text-xs font-bold text-text-secondary">
-              Country
+        {/* ── Form ── */}
+        <form onSubmit={handleSubmit} className="efsw-admin-modal-form">
+          <div className="efsw-admin-modal-grid">
+            <label>
+              Full name
               <input
                 type="text"
                 required
-                value={formData.country}
-                onChange={(event) => setFormData((prev) => ({ ...prev, country: event.target.value }))}
-                placeholder="e.g. Thailand"
-                className="mt-1.5 w-full rounded-xl border border-surface-subtle bg-surface-base px-3.5 py-2.5 text-xs font-normal text-text-primary focus:border-teal focus:outline-none"
+                value={formData.name}
+                onChange={(event) => setFormData((prev) => ({ ...prev, name: event.target.value }))}
+                placeholder="e.g. Mr. Sug Pyo Kim"
               />
             </label>
+            <label>
+              Title
+              <input
+                type="text"
+                required
+                value={formData.title}
+                onChange={(event) => setFormData((prev) => ({ ...prev, title: event.target.value }))}
+                placeholder="e.g. President"
+              />
+            </label>
+          </div>
 
-            <div>
-              <label className="mb-1.5 block text-xs font-bold text-text-secondary">Portrait</label>
-              <div
-                onDragOver={(event) => { event.preventDefault(); setIsDragOver(true); }}
-                onDragLeave={() => setIsDragOver(false)}
-                onDrop={handleDrop}
-                className={`relative flex min-h-44 items-center justify-center overflow-hidden rounded-2xl border-2 border-dashed p-5 transition-colors ${isDragOver ? "border-teal bg-teal/10" : "border-surface-subtle bg-surface-base/50 hover:border-teal/50"}`}
-              >
-                {formData.image ? (
-                  <div className="relative h-44 w-32 overflow-hidden rounded-xl border border-surface-subtle">
-                    <img src={formData.image} alt={formData.name || "Board member portrait"} className="h-full w-full object-cover" />
-                    <button type="button" onClick={() => setFormData((prev) => ({ ...prev, image: "" }))} aria-label="Remove portrait" className="absolute right-2 top-2 rounded-lg bg-black/70 p-1.5 text-white hover:bg-red-600">
-                      <Trash2 size={13} />
-                    </button>
-                  </div>
-                ) : (
-                  <div className="text-center">
-                    <UploadCloud size={30} className="mx-auto mb-2 text-teal" />
-                    <p className="text-xs font-bold text-text-primary">{isCompressing ? "Processing image..." : "Drop an image here or click to upload"}</p>
-                    <p className="mt-1 text-[11px] text-text-muted">Portrait orientation, 3:4 ratio recommended.</p>
-                  </div>
-                )}
-                <input type="file" accept="image/*" onChange={handleFileChange} disabled={isCompressing} className="absolute inset-0 cursor-pointer opacity-0" aria-label="Upload portrait" />
-              </div>
+          <label>
+            Country
+            <input
+              type="text"
+              required
+              value={formData.country}
+              onChange={(event) => setFormData((prev) => ({ ...prev, country: event.target.value }))}
+              placeholder="e.g. Thailand"
+            />
+          </label>
+
+          <label>
+            Biography
+            <textarea
+              rows={3}
+              value={formData.bio ?? ""}
+              onChange={(event) => setFormData((prev) => ({ ...prev, bio: event.target.value.trim() || undefined }))}
+              placeholder="Shown inside the card's expandable section. Leave empty to hide the disclosure button."
+            />
+          </label>
+
+          {/* ── Portrait ── */}
+          <div>
+            <label style={{ margin: 0 }}>Portrait</label>
+            <div
+              onDragOver={(event) => { event.preventDefault(); setIsDragOver(true); }}
+              onDragLeave={() => setIsDragOver(false)}
+              onDrop={handleDrop}
+              className={`efsw-admin-modal-dropzone ${isDragOver ? "is-dragover" : ""}`}
+            >
+              {formData.image ? (
+                <div className="efsw-admin-modal-preview">
+                  <img src={formData.image} alt={formData.name || "Board member portrait"} />
+                  <button type="button" onClick={() => setFormData((prev) => ({ ...prev, image: "" }))} aria-label="Remove portrait">
+                    <Trash2 size={13} />
+                  </button>
+                </div>
+              ) : (
+                <div className="efsw-admin-modal-dropzone__hint">
+                  <UploadCloud size={28} />
+                  <strong>{isCompressing ? "Processing image..." : "Drop an image here or click to upload"}</strong>
+                  <small>Portrait orientation, 3:4 ratio recommended.</small>
+                </div>
+              )}
+              <input type="file" accept="image/*" onChange={handleFileChange} disabled={isCompressing} aria-label="Upload portrait" />
             </div>
+          </div>
 
-            <div className="flex items-center justify-end gap-3 border-t border-surface-subtle pt-5">
-              <button type="button" onClick={onClose} className="rounded-xl border border-surface-subtle bg-surface-base px-4 py-2.5 text-xs font-bold text-text-muted hover:text-text-primary">Cancel</button>
-              <button type="submit" disabled={isCompressing} className="inline-flex items-center gap-2 rounded-xl bg-teal px-5 py-2.5 text-xs font-bold text-white shadow-md shadow-teal/20 hover:bg-teal-vivid disabled:opacity-50">
+          {/* ── Actions ── */}
+          <div className="efsw-admin-modal-actions efsw-admin-modal-actions--split">
+            <span />
+            <div className="efsw-admin-modal-actions__end">
+              <button type="button" onClick={onClose} className="efsw-admin-outline-action">
+                Cancel
+              </button>
+              <button type="submit" disabled={isCompressing} className="efsw-admin-primary">
                 <Save size={15} />
                 <span>Save member</span>
               </button>
             </div>
-          </form>
-        </div>
+          </div>
+        </form>
       </div>
     </div>
   );

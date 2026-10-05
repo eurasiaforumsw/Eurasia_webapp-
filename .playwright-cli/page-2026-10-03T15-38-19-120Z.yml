@@ -1,0 +1,173 @@
+- generic [ref=f1e1]:
+  - alert [ref=f1e193]
+  - banner [ref=f1e194]:
+    - generic [ref=f1e195]:
+      - link "Eurasia Forum for Social Workers — home" [ref=f1e196] [cursor=pointer]:
+        - /url: /
+        - generic [ref=f1e198]:
+          - generic [ref=f1e199]: Eurasia Forum
+          - generic [ref=f1e200]: of Social Workers
+      - button "เมนู" [expanded] [ref=f1e423] [cursor=pointer]
+  - dialog "เมนู" [ref=f1e424]:
+    - paragraph [ref=f1e356]: เมนู
+    - navigation "Mobile" [ref=f1e357]:
+      - link "01 หน้าแรก" [ref=f1e425] [cursor=pointer]:
+        - /url: /
+        - generic [ref=f1e360]: "01"
+        - generic [ref=f1e361]: หน้าแรก
+      - generic [ref=f1e365]:
+        - button "02 เกี่ยวกับเรา" [expanded] [ref=f1e426] [cursor=pointer]:
+          - generic [ref=f1e367]: "02"
+          - generic [ref=f1e368]: เกี่ยวกับเรา
+        - generic [ref=f1e371]:
+          - link "เกี่ยวกับเรา" [ref=f1e427] [cursor=pointer]:
+            - /url: /about
+          - link "โครงสร้างองค์กร" [ref=f1e428] [cursor=pointer]:
+            - /url: /about/organization
+          - link "คณะกรรมการบริหาร" [ref=f1e429] [cursor=pointer]:
+            - /url: /about/executive-board
+      - link "03 กิจกรรม" [ref=f1e430] [cursor=pointer]:
+        - /url: /events
+        - generic [ref=f1e386]: "03"
+        - generic [ref=f1e387]: กิจกรรม
+      - link "04 ข่าวสาร" [ref=f1e431] [cursor=pointer]:
+        - /url: /news
+        - generic [ref=f1e393]: "04"
+        - generic [ref=f1e394]: ข่าวสาร
+      - link "05 เอกสารวิชาการ" [ref=f1e432] [cursor=pointer]:
+        - /url: /academic-documents
+        - generic [ref=f1e400]: "05"
+        - generic [ref=f1e401]: เอกสารวิชาการ
+    - group "ภาษา" [ref=f1e433]:
+      - button "English" [ref=f1e406] [cursor=pointer]
+      - button "ไทย" [active] [pressed] [ref=f1e407] [cursor=pointer]
+      - button "한국어" [ref=f1e408] [cursor=pointer]
+    - generic [ref=f1e409]:
+      - link "เข้าสู่ระบบ" [ref=f1e434] [cursor=pointer]:
+        - /url: /member/login
+      - link "สมัครสมาชิก" [ref=f1e435] [cursor=pointer]:
+        - /url: /member/register
+  - main [ref=f1e205]:
+    - generic [ref=f1e207]:
+      - generic [ref=f1e208]:
+        - paragraph [ref=f1e209]: โครงสร้างองค์กร
+        - generic [ref=f1e210]: EFSW / 01
+      - generic [ref=f1e211]:
+        - heading "สี่องค์คณะ หนึ่งทิศทาง" [level=1] [ref=f1e436]: สี่องค์คณะหนึ่งทิศทาง
+        - generic [ref=f1e213]:
+          - paragraph [ref=f1e214]: EFSW ยึดโยงกันด้วยองค์คณะสี่ส่วนที่เชื่อมต่อกัน ตั้งแต่การกำกับทิศทางเชิงยุทธศาสตร์ ไปจนถึงการปฏิบัติงานร่วมกับชุมชนทั่วภูมิภาค
+          - link "โครงสร้างองค์กร" [ref=f1e437] [cursor=pointer]:
+            - /url: "#structure"
+      - generic "โครงสร้างองค์กร" [ref=f1e438]:
+        - generic [ref=f1e220]:
+          - generic [ref=f1e221]: "01"
+          - text: การนำองค์กร
+        - generic [ref=f1e222]:
+          - generic [ref=f1e223]: "02"
+          - text: องค์ความรู้
+        - generic [ref=f1e224]:
+          - generic [ref=f1e225]: "03"
+          - text: ความร่วมมือ
+        - generic [ref=f1e226]:
+          - generic [ref=f1e227]: "04"
+          - text: ชุมชนสมาชิก
+    - navigation "โครงสร้างองค์กร" [ref=f1e439]:
+      - generic [ref=f1e229]:
+        - generic [ref=f1e230]: โครงสร้างองค์กร
+        - generic [ref=f1e231]:
+          - link "01 โครงสร้างองค์กร" [ref=f1e440] [cursor=pointer]:
+            - /url: "#structure"
+            - generic [ref=f1e233]: "01"
+            - text: โครงสร้างองค์กร
+          - link "02 เครือข่ายในตัวเลข" [ref=f1e441] [cursor=pointer]:
+            - /url: "#network"
+            - generic [ref=f1e235]: "02"
+            - text: เครือข่ายในตัวเลข
+          - link "03 ใครเข้าร่วมได้" [ref=f1e442] [cursor=pointer]:
+            - /url: "#membership"
+            - generic [ref=f1e237]: "03"
+            - text: ใครเข้าร่วมได้
+    - region [ref=f1e443]:
+      - generic [ref=f1e239]:
+        - generic [ref=f1e240]:
+          - generic [ref=f1e241]:
+            - paragraph [ref=f1e242]:
+              - text: "01"
+              - generic [ref=f1e243]: โครงสร้างองค์กร
+            - heading "โครงสร้างของ EFSW" [level=2] [ref=f1e444]
+          - paragraph [ref=f1e245]: คณะกรรมการบริหารกำหนดทิศทาง และอีกสามองค์คณะนำงานไปสู่ด้านองค์ความรู้ ความร่วมมือ และชุมชนสมาชิก
+        - article [ref=f1e246]:
+          - generic [ref=f1e247]:
+            - generic [ref=f1e248]: การนำองค์กร
+            - generic [ref=f1e249]: "01"
+          - generic [ref=f1e250]:
+            - heading "คณะกรรมการบริหาร" [level=3] [ref=f1e445]
+            - paragraph [ref=f1e252]: กำหนดทิศทางเชิงยุทธศาสตร์และยึดงานของเครือข่ายไว้กับพันธกิจ เพื่อให้ทุกความริเริ่มตอบโจทย์ชุมชนที่เราดำรงอยู่เพื่อพวกเขา
+        - generic [ref=f1e257]:
+          - article [ref=f1e258]:
+            - generic [ref=f1e259]:
+              - generic [ref=f1e260]: องค์ความรู้
+              - generic [ref=f1e261]: "02"
+            - heading "เครือข่ายวิชาการและการปฏิบัติ" [level=3] [ref=f1e446]
+            - paragraph [ref=f1e265]: เชื่อมนักวิชาการ ผู้ปฏิบัติงาน และผู้เรียน ให้ความรู้เคลื่อนไปทั้งสองทาง จากทฤษฎีสู่ภาคสนาม และจากภาคสนามกลับสู่การเรียนรู้
+          - article [ref=f1e266]:
+            - generic [ref=f1e267]:
+              - generic [ref=f1e268]: ความร่วมมือ
+              - generic [ref=f1e269]: "03"
+            - heading "ภาคีระดับภูมิภาค" [level=3] [ref=f1e447]
+            - paragraph [ref=f1e274]: ทำงานร่วมกับมหาวิทยาลัย องค์กรพัฒนาเอกชน หน่วยงานรัฐ และภาคีทั่วภูมิภาค เพื่อสร้างสะพานและเปิดเส้นทางความร่วมมือใหม่
+          - article [ref=f1e275]:
+            - generic [ref=f1e276]:
+              - generic [ref=f1e277]: ชุมชนสมาชิก
+              - generic [ref=f1e278]: "04"
+            - heading "ชุมชนสมาชิก" [level=3] [ref=f1e448]
+            - paragraph [ref=f1e285]: พื้นที่ที่สมาชิกสร้างความร่วมมือ แบ่งปันโอกาส และขยายผลกระทบของงาน เป็นพื้นที่เปิดที่เครือข่ายมีชีวิตอยู่จริง
+    - region [ref=f1e449]:
+      - generic [ref=f1e291]:
+        - generic [ref=f1e292]:
+          - paragraph [ref=f1e293]:
+            - text: "02"
+            - generic [ref=f1e294]: เครือข่ายในตัวเลข
+          - heading "เครือข่ายในตัวเลข" [level=2] [ref=f1e450]
+          - paragraph [ref=f1e296]: ตัวเลขจริงจากทะเบียนสมาชิกและคลังความรู้ของ EFSW อัปเดตทุกไม่กี่นาที
+          - paragraph [ref=f1e297]: ข้อมูลตัวอย่างจากเบราว์เซอร์นี้ — เชื่อมต่อฐานข้อมูลเพื่อแสดงตัวเลขจริง
+        - generic [ref=f1e299]:
+          - generic [ref=f1e300]:
+            - strong [ref=f1e301]: "0"
+            - generic [ref=f1e302]: สมาชิกที่ใช้งาน
+          - generic [ref=f1e303]:
+            - strong [ref=f1e304]: "0"
+            - generic [ref=f1e305]: ประเทศ
+          - generic [ref=f1e306]:
+            - strong [ref=f1e307]: "3"
+            - generic [ref=f1e308]: เอกสารวิชาการ
+            - link "ดูคลังเอกสาร" [ref=f1e451] [cursor=pointer]:
+              - /url: /academic-documents
+    - region [ref=f1e452]:
+      - generic [ref=f1e314]:
+        - paragraph [ref=f1e315]: ใครเข้าร่วมได้
+        - heading "เปิดรับ ทุกเสียง" [level=2] [ref=f1e453]: เปิดรับทุกเสียง
+        - generic [ref=f1e317]:
+          - generic [ref=f1e318]:
+            - strong [ref=f1e320]: ผู้ประกอบวิชาชีพ
+            - paragraph [ref=f1e321]: ผู้ปฏิบัติงานและนักวิชาชีพสังคมสงเคราะห์ที่นำความรู้จากภาคสนามมาร่วมแบ่งปัน
+            - link "สมัครแบบผู้ประกอบวิชาชีพ" [ref=f1e454] [cursor=pointer]:
+              - /url: /member/register?type=professional
+          - generic [ref=f1e326]:
+            - strong [ref=f1e328]: นักศึกษา
+            - paragraph [ref=f1e329]: นักสังคมสงเคราะห์รุ่นใหม่และผู้เรียนสายวิชาการที่กำลังก่อรูปการปฏิบัติงานรุ่นต่อไป
+            - link "สมัครแบบนักศึกษา" [ref=f1e455] [cursor=pointer]:
+              - /url: /member/register?type=student
+          - generic [ref=f1e334]:
+            - strong [ref=f1e336]: องค์กรสถาบัน
+            - paragraph [ref=f1e337]: มหาวิทยาลัย องค์กรพัฒนาเอกชน หน่วยงานรัฐ และองค์กรภาคีที่ทำงานในระดับกว้าง
+            - link "สมัครแบบองค์กรสถาบัน" [ref=f1e456] [cursor=pointer]:
+              - /url: /member/register?type=institutional
+        - generic [ref=f1e342]:
+          - paragraph [ref=f1e343]: ไม่ว่าคุณจะเป็นผู้ปฏิบัติงานรายบุคคล นักศึกษา หรือองค์กร ก็มีที่สำหรับงานของคุณในเครือข่ายนี้
+          - link "ติดต่อทีมงาน" [ref=f1e457] [cursor=pointer]:
+            - /url: mailto:support@eurasiaforumsw.org
+    - generic [ref=f1e348]:
+      - generic [ref=f1e349]: © 2026 EFSW
+      - link "Eurasia Forum for Social Workers" [ref=f1e350] [cursor=pointer]:
+        - /url: /

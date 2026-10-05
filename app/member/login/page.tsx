@@ -1,22 +1,76 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { ArrowLeft, ArrowUpRight, CheckCircle2, Eye, EyeOff, LogIn } from "lucide-react";
-import { getSessionMember, loginMember } from "@/lib/member-auth";
+import {
+  ArrowLeft,
+  ArrowUpRight,
+  CheckCircle2,
+  Eye,
+  EyeOff,
+  LogIn,
+  Globe2,
+  ShieldCheck,
+  Users,
+  AlertCircle,
+} from "lucide-react";
+import { getSessionMember, isRemoteMemberStoreEnabled, loginMember } from "@/lib/member-auth";
 
 export default function MemberLoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [remember, setRemember] = useState(true);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
 
+  // Field-level validation errors
+  const [emailError, setEmailError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+
   useEffect(() => { setLoggedIn(Boolean(getSessionMember())); }, []);
+
+  // Email validation
+  const validateEmail = (value: string) => {
+    if (!value.trim()) {
+      setEmailError("Email is required");
+      return false;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(value)) {
+      setEmailError("Please enter a valid email address");
+      return false;
+    }
+    setEmailError("");
+    return true;
+  };
+
+  // Password validation
+  const validatePassword = (value: string) => {
+    if (!value) {
+      setPasswordError("Password is required");
+      return false;
+    }
+    if (value.length < 8) {
+      setPasswordError("Password must be at least 8 characters");
+      return false;
+    }
+    setPasswordError("");
+    return true;
+  };
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError("");
+
+    // Validate all fields before submit
+    const isEmailValid = validateEmail(email);
+    const isPasswordValid = validatePassword(password);
+
+    if (!isEmailValid || !isPasswordValid) {
+      return;
+    }
+
     setSubmitting(true);
     try {
       await loginMember(email, password);
@@ -28,65 +82,182 @@ export default function MemberLoginPage() {
   };
 
   return (
-    <main className="efsw-auth-page efsw-auth-page--login">
-      <a href="/" className="efsw-auth-brand" aria-label="EFSW home">
-        <span className="efsw-brand__mark">E</span>
+    <main className="efsw-signin">
+      <a href="/" className="efsw-signin__brand" aria-label="EFSW home">
+        <span className="efsw-brand__mark">
+          <img src="/efsw-logo-lg.png" alt="EFSW" />
+        </span>
         <span>Eurasia Forum<br />for Social Workers</span>
       </a>
 
-      <div className="efsw-auth-shell">
-        <aside className="efsw-auth-intro" aria-label="EFSW member network">
-          <p className="efsw-auth-kicker">EFSW member network</p>
-          <h1>Work that moves<br /><span>across borders.</span></h1>
-          <p className="efsw-auth-intro__copy">
-            A shared space for social work professionals, educators, students, and partners across Eurasia.
+      <div className="efsw-signin__shell">
+        {/* ── Left: editorial intro ── */}
+        <aside className="efsw-signin__intro" aria-label="EFSW member network">
+          <p className="efsw-signin__eyebrow">Member network · Since 2014</p>
+          <h1>
+            One region.<br />
+            <em>Shared purpose.</em>
+          </h1>
+          <p className="efsw-signin__intro-copy">
+            A professional home for social workers, educators, students, and partners
+            across Eurasia to connect, learn, and act together.
           </p>
-          <div className="efsw-auth-intro__line" />
-          <div className="efsw-auth-intro__meta">
+          <div className="efsw-signin__intro-rule" />
+          <div className="efsw-signin__intro-meta">
             <span>01</span>
-            <p>Connect · Empower · Advocate</p>
+            <div><p>Connect · Empower · Advocate</p></div>
           </div>
+          <ul className="efsw-signin__features">
+            <li>
+              <Globe2 size={14} />
+              Cross-border professional network spanning Eurasia
+            </li>
+            <li>
+              <ShieldCheck size={14} />
+              Verified member credentials &amp; member-only resources
+            </li>
+            <li>
+              <Users size={14} />
+              Regional forums, working groups, and shared research
+            </li>
+          </ul>
         </aside>
 
-        <section className="efsw-auth-card efsw-auth-card--login" aria-labelledby="login-title">
-          {loggedIn ? (
-            <div className="efsw-auth-success">
-              <div className="efsw-auth-card__icon"><CheckCircle2 size={21} /></div>
-              <p className="efsw-auth-kicker">Member access</p>
-              <h2 id="login-title">You are<br /><span>signed in.</span></h2>
-              <p>Your member session is active in this browser.</p>
-              <a href="/member/profile" className="efsw-button efsw-button--dark">Open profile <ArrowUpRight size={17} /></a>
-            </div>
-          ) : (
-            <>
-              <div className="efsw-auth-card__topline">
-                <div className="efsw-auth-card__icon"><LogIn size={21} /></div>
-                <span>Member portal</span>
+        {/* ── Right: form card ── */}
+        <section className="efsw-signin__card" aria-labelledby="login-title">
+          <div className="efsw-signin__card-inner">
+            {loggedIn ? (
+              <div className="efsw-signin__success">
+                <div className="efsw-signin__card-icon"><CheckCircle2 size={22} /></div>
+                <h2 id="login-title">
+                  You are<br /><em>signed in.</em>
+                </h2>
+                <p className="efsw-signin__card-lede">Your member session is active in this browser.</p>
+                <a href="/member/profile" className="efsw-signin__submit" style={{ textDecoration: "none" }}>
+                  Open profile <ArrowUpRight size={16} />
+                </a>
               </div>
-              <h2 id="login-title">Welcome<br /><span>back.</span></h2>
-              <p className="efsw-auth-card__lede">Sign in to manage your profile and stay connected to the network.</p>
-              {error && <div className="efsw-form-error" role="alert">{error}</div>}
-              <form onSubmit={submit} className="efsw-member-form">
-                <label>Email address<input required type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" /></label>
-                <div className="efsw-password-field">
-                  <label>Password<input required type={showPassword ? "text" : "password"} value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" /></label>
-                  <button type="button" onClick={() => setShowPassword((value) => !value)} aria-label={showPassword ? "Hide password" : "Show password"}>
-                    {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
-                  </button>
+            ) : (
+              <>
+                <div className="efsw-signin__card-topline">
+                  <div className="efsw-signin__card-icon"><LogIn size={20} /></div>
+                  <span>Member sign-in</span>
                 </div>
-                <button type="submit" className="efsw-button efsw-button--dark" disabled={submitting}>
-                  {submitting ? "Signing in..." : "Sign in"}
-                  <ArrowUpRight size={17} />
-                </button>
-              </form>
-              <div className="efsw-auth-card__footer">New to EFSW? <a href="/member/register">Create a member profile <ArrowUpRight size={15} /></a></div>
-            </>
-          )}
+                <h2 id="login-title">
+                  Welcome<br /><em>back.</em>
+                </h2>
+                <p className="efsw-signin__card-lede">
+                  Sign in to manage your profile, access member resources, and stay connected.
+                </p>
+
+                {error && (
+                  <div className="efsw-signin__error" role="alert">
+                    <AlertCircle size={15} />
+                    {error}
+                  </div>
+                )}
+
+                <form onSubmit={submit} className="efsw-signin__form">
+                  <div className="efsw-signin__field">
+                    <label htmlFor="login-email">Email address</label>
+                    <input
+                      id="login-email"
+                      required
+                      type="email"
+                      value={email}
+                      onChange={(e) => {
+                        setEmail(e.target.value);
+                        if (e.target.value) validateEmail(e.target.value);
+                      }}
+                      onBlur={(e) => validateEmail(e.target.value)}
+                      autoComplete="email"
+                      placeholder="you@example.org"
+                      aria-invalid={!!emailError}
+                      aria-describedby={emailError ? "email-error" : undefined}
+                      style={emailError ? { borderColor: "var(--efsw-danger, #e74c3c)" } : {}}
+                    />
+                    {emailError && (
+                      <div id="email-error" style={{ display: "flex", alignItems: "center", gap: "0.4rem", marginTop: "0.4rem", color: "var(--efsw-danger, #e74c3c)", fontSize: "0.8rem", fontWeight: 600 }}>
+                        <AlertCircle size={13} />
+                        {emailError}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="efsw-signin__field efsw-signin__field--pw">
+                    <label htmlFor="login-password">Password</label>
+                    <input
+                      id="login-password"
+                      required
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => {
+                        setPassword(e.target.value);
+                        if (e.target.value) validatePassword(e.target.value);
+                      }}
+                      onBlur={(e) => validatePassword(e.target.value)}
+                      autoComplete="current-password"
+                      placeholder="Your password"
+                      aria-invalid={!!passwordError}
+                      aria-describedby={passwordError ? "password-error" : undefined}
+                      style={passwordError ? { borderColor: "var(--efsw-danger, #e74c3c)" } : {}}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((v) => !v)}
+                      aria-label={showPassword ? "Hide password" : "Show password"}
+                    >
+                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                    {passwordError && (
+                      <div id="password-error" style={{ display: "flex", alignItems: "center", gap: "0.4rem", marginTop: "0.4rem", color: "var(--efsw-danger, #e74c3c)", fontSize: "0.8rem", fontWeight: 600 }}>
+                        <AlertCircle size={13} />
+                        {passwordError}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="efsw-signin__meta">
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={remember}
+                        onChange={(e) => setRemember(e.target.checked)}
+                      />
+                      Keep me signed in
+                    </label>
+                    <a href="/member/forgot-password">Forgot password?</a>
+                  </div>
+
+                  <button type="submit" className="efsw-signin__submit" disabled={submitting}>
+                    {submitting ? "Signing in…" : "Sign in"}
+                    <ArrowUpRight size={16} />
+                  </button>
+                </form>
+
+                <div className="efsw-signin__card-divider">or</div>
+
+                <div className="efsw-signin__card-footer">
+                  <span>New to EFSW?</span>
+                  <a href="/member/register">
+                    Create a member profile <ArrowUpRight size={14} />
+                  </a>
+                </div>
+              </>
+            )}
+          </div>
         </section>
       </div>
 
-      <a href="/" className="efsw-auth-back"><ArrowLeft size={15} /> Back to home</a>
-      <p className="efsw-auth-prototype-note">Prototype mode · Local browser session for this preview</p>
+      <a href="/" className="efsw-signin__back">
+        <ArrowLeft size={14} /> Back to home
+      </a>
+
+      <p className="efsw-signin__note">
+        {isRemoteMemberStoreEnabled()
+          ? "Secure sign-in · Verified against the EFSW member database"
+          : "Prototype mode · Sign-in checked against this browser"}
+      </p>
     </main>
   );
 }

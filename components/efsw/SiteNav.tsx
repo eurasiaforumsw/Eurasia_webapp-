@@ -4,11 +4,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowUpRight, Check, ChevronDown, Globe2, LogIn, Menu, UserPlus, X } from "lucide-react";
+import { ArrowUpRight, Check, ChevronDown, Globe2, LogIn, Menu, ShieldCheck, UserCircle2, UserPlus, X } from "lucide-react";
 
 const MotionLink = motion(Link);
 import { useI18n } from "@/contexts/I18nContext";
 import { useClickOutside } from "@/hooks/useClickOutside";
+import { ADMIN_SESSION_KEY, type AdminSession } from "@/lib/admin-auth";
+import { MEMBER_SESSION_KEY, getSessionMember, type MemberProfile } from "@/lib/member-auth";
+import { MemberMenu } from "@/components/efsw/MemberMenu";
 
 type NavNode = {
   /** Route the label links to. */
@@ -25,9 +28,10 @@ const NAV_NODES: NavNode[] = [
     labelKey: "about",
     children: [
       { href: "/about", labelKey: "overview" },
-      { href: "/about/organization", labelKey: "organization" },
+      { href: "/about/executive-board", labelKey: "executiveBoard" },
     ],
   },
+  { href: "/events", labelKey: "events" },
   { href: "/news", labelKey: "news" },
   { href: "/academic-documents", labelKey: "academicDocuments" },
 ];
@@ -62,6 +66,42 @@ export function SiteNav() {
   const [mobileExpandedKey, setMobileExpandedKey] = useState<string | null>(null);
   const [scrolled, setScrolled] = useState(false);
   const [hoverCapable, setHoverCapable] = useState(false);
+
+  /* Track whether an admin is signed in — only admins get a link to the
+     management console in the navigate bar. */
+  const [adminSession, setAdminSession] = useState<AdminSession | null>(null);
+  /* Members and admins are separate sessions in localStorage, and a person
+     can hold both at once. Track them independently so signing in as an
+     admin never hides the member's own profile link, and vice versa. */
+  const [hasMemberSession, setHasMemberSession] = useState(false);
+  const [memberProfile, setMemberProfile] = useState<MemberProfile | null>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const read = () => {
+      try {
+        const raw = window.localStorage.getItem(ADMIN_SESSION_KEY);
+        setAdminSession(raw ? (JSON.parse(raw) as AdminSession) : null);
+      } catch {
+        setAdminSession(null);
+      }
+      const isActive = window.localStorage.getItem(MEMBER_SESSION_KEY) === "active";
+      setHasMemberSession(isActive);
+      /* Hydrate the avatar/profile payload only when the session is active —
+         otherwise stale profile data could leak after logout. */
+      setMemberProfile(isActive ? getSessionMember() : null);
+    };
+    read();
+    // Re-read when either session changes elsewhere on the same tab/network.
+    window.addEventListener("storage", read);
+    window.addEventListener("efsw:admin-session-changed", read);
+    window.addEventListener("efsw:member-session-changed", read);
+    return () => {
+      window.removeEventListener("storage", read);
+      window.removeEventListener("efsw:admin-session-changed", read);
+      window.removeEventListener("efsw:member-session-changed", read);
+    };
+  }, []);
 
   const clearHoverTimer = useCallback(() => {
     if (hoverTimer.current !== null) {
@@ -250,17 +290,22 @@ export function SiteNav() {
   const loginLabel = t("navigation.login");
   const registerLabel = t("navigation.register");
   const menuLabel = t("navigation.menu");
+  const adminLabel = t("navigation.adminConsole");
+  const profileLabel = t("navigation.profile");
+  const isAdmin = adminSession !== null;
+  const isMember = hasMemberSession;
 
   return (
     <>
       <header ref={headerRef} className="efsw-nav" data-scrolled={scrolled}>
         <div className="efsw-nav__inner">
           <Link className="efsw-brand efsw-nav__brand" href="/" aria-label="Eurasia Forum for Social Workers — home">
-            <span className="efsw-brand__mark" aria-hidden="true">E</span>
+            <span className="efsw-brand__mark" aria-hidden="true">
+              <img src="/efsw-logo-sm.png" alt="" width={64} height={64} />
+            </span>
             <span className="efsw-nav__brand-text">
-              Eurasia Forum
-              <br />
-              for Social Workers
+              <span className="efsw-nav__brand-name">Eurasia Forum</span>
+              <span className="efsw-nav__brand-tag">of Social Workers</span>
             </span>
           </Link>
 
@@ -391,23 +436,46 @@ export function SiteNav() {
               </div>
             </div>
 
-            <Link className="efsw-nav__login" href="/member/login" aria-label={loginLabel}>
-              <LogIn size={15} strokeWidth={1.9} aria-hidden="true" />
-              <span className="efsw-nav__login-text">{loginLabel}</span>
-            </Link>
+            {/* Admin + member sessions are independent — show whichever
+                applies. A logged-in member always keeps a route to their
+                profile, even when an admin session is also active. */}
+            {isAdmin && (
+              <Link
+                className="efsw-nav__admin"
+                href="/admin"
+                aria-label={adminLabel}
+                data-active={pathname.startsWith("/admin") ? "true" : undefined}
+              >
+                <ShieldCheck size={15} strokeWidth={1.9} aria-hidden="true" />
+                <span className="efsw-nav__admin-text">{adminLabel}</span>
+              </Link>
+            )}
 
-            <MotionLink
-              className="efsw-nav__join"
-              href="/member/register"
-              whileHover={{ scale: 1.05, transition: { type: "spring", stiffness: 420, damping: 26 } }}
-              whileTap={{  scale: 0.96, transition: { type: "spring", stiffness: 500, damping: 30 } }}
-            >
-              <UserPlus size={15} strokeWidth={1.9} aria-hidden="true" />
-              <span>{registerLabel}</span>
-              <span className="efsw-nav__join-icon" aria-hidden="true">
-                <ArrowUpRight size={15} strokeWidth={2} />
-              </span>
-            </MotionLink>
+            {isMember && memberProfile && (
+              <MemberMenu member={memberProfile} />
+            )}
+
+            {!isMember && (
+              <Link className="efsw-nav__login" href="/member/login" aria-label={loginLabel}>
+                <LogIn size={15} strokeWidth={1.9} aria-hidden="true" />
+                <span className="efsw-nav__login-text">{loginLabel}</span>
+              </Link>
+            )}
+
+            {!isAdmin && !isMember && (
+              <MotionLink
+                className="efsw-nav__join"
+                href="/member/register"
+                whileHover={{ scale: 1.05, transition: { type: "spring", stiffness: 420, damping: 26 } }}
+                whileTap={{  scale: 0.96, transition: { type: "spring", stiffness: 500, damping: 30 } }}
+              >
+                <UserPlus size={15} strokeWidth={1.9} aria-hidden="true" />
+                <span>{registerLabel}</span>
+                <span className="efsw-nav__join-icon" aria-hidden="true">
+                  <ArrowUpRight size={15} strokeWidth={2} />
+                </span>
+              </MotionLink>
+            )}
 
             <button
               type="button"
@@ -493,21 +561,48 @@ export function SiteNav() {
           </div>
 
           <div className="efsw-sheet__actions">
-            <Link className="efsw-sheet__login" href="/member/login" onClick={() => setSheetOpen(false)}>
-              <LogIn size={17} aria-hidden="true" /> {loginLabel}
-            </Link>
-            <MotionLink
-              className="efsw-nav__join"
-              href="/member/register"
-              onClick={() => setSheetOpen(false)}
-              whileTap={{ scale: 0.97, transition: { type: "spring", stiffness: 500, damping: 30 } }}
-            >
-              <UserPlus size={15} strokeWidth={1.9} aria-hidden="true" />
-              <span>{registerLabel}</span>
-              <span className="efsw-nav__join-icon" aria-hidden="true">
-                <ArrowUpRight size={15} strokeWidth={2} />
-              </span>
-            </MotionLink>
+            {isAdmin && (
+              <Link
+                className="efsw-sheet__admin"
+                href="/admin"
+                onClick={() => setSheetOpen(false)}
+                data-active={pathname.startsWith("/admin") ? "true" : undefined}
+              >
+                <ShieldCheck size={17} aria-hidden="true" /> {adminLabel}
+              </Link>
+            )}
+
+            {isMember && memberProfile && (
+              <Link
+                className="efsw-sheet__profile"
+                href="/member/profile"
+                onClick={() => setSheetOpen(false)}
+                data-active={pathname.startsWith("/member/profile") ? "true" : undefined}
+              >
+                <UserCircle2 size={17} aria-hidden="true" /> {profileLabel}
+              </Link>
+            )}
+
+            {!isMember && (
+              <Link className="efsw-sheet__login" href="/member/login" onClick={() => setSheetOpen(false)}>
+                <LogIn size={17} aria-hidden="true" /> {loginLabel}
+              </Link>
+            )}
+
+            {!isAdmin && !isMember && (
+              <MotionLink
+                className="efsw-nav__join"
+                href="/member/register"
+                onClick={() => setSheetOpen(false)}
+                whileTap={{ scale: 0.97, transition: { type: "spring", stiffness: 500, damping: 30 } }}
+              >
+                <UserPlus size={15} strokeWidth={1.9} aria-hidden="true" />
+                <span>{registerLabel}</span>
+                <span className="efsw-nav__join-icon" aria-hidden="true">
+                  <ArrowUpRight size={15} strokeWidth={2} />
+                </span>
+              </MotionLink>
+            )}
           </div>
         </div>
       </div>

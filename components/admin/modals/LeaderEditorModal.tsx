@@ -88,210 +88,145 @@ export const LeaderEditorModal = memo(function LeaderEditorModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div
-        className="fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity"
-        onClick={onClose}
-      />
+    <div className="efsw-admin-modal-layer efsw-admin-modal-layer--center">
+      <div className="efsw-admin-modal-scrim" onClick={onClose} />
 
-      <div className="flex min-h-full items-center justify-center p-4">
-        <div className="relative w-full max-w-2xl rounded-3xl border border-surface-subtle bg-surface-deep p-6 shadow-2xl overflow-hidden">
-          {/* Header */}
-          <div className="flex items-center justify-between border-b border-surface-subtle pb-4">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal/15 text-teal-light">
-                <UserCheck size={20} />
-              </div>
-              <div>
-                <h2 className="text-base font-bold font-display text-text-primary">
-                  {formData.id ? "Edit leadership profile" : "Add leadership profile"}
-                </h2>
-                <p className="text-xs text-text-muted">
-                  Leadership profile shown in the homepage message slider.
-                </p>
-              </div>
+      <div className="efsw-admin-modal-card efsw-admin-modal-card--wide" role="dialog" aria-modal="true" aria-label={formData.id ? "Edit leadership profile" : "Add leadership profile"}>
+        {/* ── Head ── */}
+        <div className="efsw-admin-modal-card__head">
+          <div className="efsw-admin-modal-card__lead">
+            <div className="efsw-admin-modal-card__icon">
+              <UserCheck size={20} />
             </div>
-
-            <button
-              onClick={onClose}
-              className="flex h-8 w-8 items-center justify-center rounded-lg border border-surface-subtle text-text-muted hover:bg-surface-raised hover:text-text-primary"
-            >
-              <X size={18} />
-            </button>
-          </div>
-
-          <form onSubmit={handleSubmit} className="mt-6 space-y-5">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div>
-                <label className="block text-xs font-bold text-text-secondary mb-1.5">
-                  Full name (with title)
-                </label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
-                  placeholder="e.g. Prof. Dr. Emily Peterson"
-                  className="w-full rounded-xl border border-surface-subtle bg-surface-base px-3.5 py-2.5 text-xs text-text-primary focus:border-teal focus:outline-none"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-text-secondary mb-1.5">
-                  Academic or organisation title
-                </label>
-                <input
-                  type="text"
-                  value={formData.title}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, title: e.target.value }))}
-                  placeholder="e.g. Dean of Social Work & Regional Lead"
-                  className="w-full rounded-xl border border-surface-subtle bg-surface-base px-3.5 py-2.5 text-xs text-text-primary focus:border-teal focus:outline-none"
-                  required
-                />
-              </div>
-            </div>
-
-            {/* Quote */}
             <div>
-              <label className="block text-xs font-bold text-text-secondary mb-1.5">
-                Message / quote
-              </label>
-              <textarea
-                rows={4}
-                value={formData.quote}
-                onChange={(e) => setFormData((prev) => ({ ...prev, quote: e.target.value }))}
-                placeholder="An inspiring message, vision, or thought on international collaboration..."
-                className="w-full rounded-xl border border-surface-subtle bg-surface-base p-3.5 text-xs text-text-primary focus:border-teal focus:outline-none"
+              <h2 className="efsw-admin-modal-card__title">
+                {formData.id ? "Edit leadership profile" : "Add leadership profile"}
+              </h2>
+              <p className="efsw-admin-modal-card__lede">Leadership profile shown in the homepage message slider.</p>
+            </div>
+          </div>
+          <button type="button" onClick={onClose} aria-label="Close" className="efsw-admin-icon-button">
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* ── Form ── */}
+        <form onSubmit={handleSubmit} className="efsw-admin-modal-form">
+          <div className="efsw-admin-modal-grid">
+            <label>
+              Full name (with title)
+              <input
+                type="text"
+                value={formData.name}
+                onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
+                placeholder="e.g. Prof. Dr. Emily Peterson"
                 required
               />
-            </div>
+            </label>
 
-            {/* Specializations & Text Position */}
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div>
-                <label className="block text-xs font-bold text-text-secondary mb-1.5">
-                  Specialisations (comma-separated)
-                </label>
-                <input
-                  type="text"
-                  value={specInput}
-                  onChange={(e) => setSpecInput(e.target.value)}
-                  placeholder="Welfare Policy, Curriculum, Community"
-                  className="w-full rounded-xl border border-surface-subtle bg-surface-base px-3.5 py-2.5 text-xs text-text-primary focus:border-teal focus:outline-none"
-                />
-              </div>
+            <label>
+              Academic or organisation title
+              <input
+                type="text"
+                value={formData.title}
+                onChange={(e) => setFormData((prev) => ({ ...prev, title: e.target.value }))}
+                placeholder="e.g. Dean of Social Work & Regional Lead"
+                required
+              />
+            </label>
+          </div>
 
-              <div>
-                <label className="block text-xs font-bold text-text-secondary mb-1.5">
-                  Text position
-                </label>
-                <select
-                  value={formData.textPosition}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      textPosition: e.target.value as "left" | "right" | "both",
-                    }))
-                  }
-                  className="w-full rounded-xl border border-surface-subtle bg-surface-base px-3.5 py-2.5 text-xs text-text-primary focus:border-teal focus:outline-none"
-                >
-                  <option value="both">Both columns (balanced)</option>
-                  <option value="left">Left only</option>
-                  <option value="right">Right only</option>
-                </select>
-              </div>
-            </div>
+          {/* Quote */}
+          <label>
+            Message / quote
+            <textarea
+              rows={4}
+              value={formData.quote}
+              onChange={(e) => setFormData((prev) => ({ ...prev, quote: e.target.value }))}
+              placeholder="An inspiring message, vision, or thought on international collaboration..."
+              required
+            />
+          </label>
 
-            {/* Portrait Image Uploader */}
-            <div>
-              <label className="block text-xs font-bold text-text-secondary mb-1.5">
-                Portrait (auto-compressed)
-              </label>
-              <div
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  setIsDragOver(true);
-                }}
-                onDragLeave={() => setIsDragOver(false)}
-                onDrop={handleDrop}
-                className={`relative flex flex-col items-center justify-center rounded-2xl border-2 border-dashed p-6 transition-all ${
-                  isDragOver
-                    ? "border-teal bg-teal/10"
-                    : "border-surface-subtle bg-surface-base/50 hover:border-teal/50"
-                }`}
+          {/* Specializations & Text Position */}
+          <div className="efsw-admin-modal-grid">
+            <label>
+              Specialisations (comma-separated)
+              <input
+                type="text"
+                value={specInput}
+                onChange={(e) => setSpecInput(e.target.value)}
+                placeholder="Welfare Policy, Curriculum, Community"
+              />
+            </label>
+
+            <label>
+              Text position
+              <select
+                value={formData.textPosition}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    textPosition: e.target.value as "left" | "right" | "both",
+                  }))
+                }
               >
-                {formData.portrait ? (
-                  <div className="relative h-44 w-32 overflow-hidden rounded-xl border border-surface-subtle">
-                    <img
-                      src={formData.portrait}
-                      alt={formData.name}
-                      className="h-full w-full object-cover"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setFormData((prev) => ({ ...prev, portrait: "" }))}
-                      className="absolute top-2 right-2 rounded-lg bg-black/70 p-1.5 text-white hover:bg-red-600 transition-colors"
-                    >
-                      <Trash2 size={13} />
-                    </button>
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center text-center">
-                    <UploadCloud size={30} className="text-teal mb-2" />
-                    <p className="text-xs font-bold text-text-primary">
-                      {isCompressing ? "Processing image..." : "Drop a portrait here or click to upload"}
-                    </p>
-                    <p className="text-[11px] text-text-muted mt-1">
-                      Front-facing portrait, 3:4 ratio recommended.
-                    </p>
-                  </div>
-                )}
+                <option value="both">Both columns (balanced)</option>
+                <option value="left">Left only</option>
+                <option value="right">Right only</option>
+              </select>
+            </label>
+          </div>
 
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileChange}
-                  className="absolute inset-0 opacity-0 cursor-pointer"
-                  disabled={isCompressing}
-                />
-              </div>
-            </div>
-
-            {/* Footer buttons */}
-            <div className="flex items-center justify-between border-t border-surface-subtle pt-5">
-              {formData.id && onDelete ? (
-                <button
-                  type="button"
-                  onClick={() => onDelete(formData)}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-xs font-bold text-red-400 hover:bg-red-500 hover:text-white transition-all"
-                >
-                  <Trash2 size={14} />
-                  <span>Delete profile</span>
-                </button>
+          {/* Portrait */}
+          <div>
+            <label style={{ margin: 0 }}>Portrait (auto-compressed)</label>
+            <div
+              onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
+              onDragLeave={() => setIsDragOver(false)}
+              onDrop={handleDrop}
+              className={`efsw-admin-modal-dropzone ${isDragOver ? "is-dragover" : ""}`}
+            >
+              {formData.portrait ? (
+                <div className="efsw-admin-modal-preview">
+                  <img src={formData.portrait} alt={formData.name} />
+                  <button type="button" onClick={() => setFormData((prev) => ({ ...prev, portrait: "" }))} aria-label="Remove portrait">
+                    <Trash2 size={13} />
+                  </button>
+                </div>
               ) : (
-                <div />
+                <div className="efsw-admin-modal-dropzone__hint">
+                  <UploadCloud size={28} />
+                  <strong>{isCompressing ? "Processing image..." : "Drop a portrait here or click to upload"}</strong>
+                  <small>Front-facing portrait, 3:4 ratio recommended.</small>
+                </div>
               )}
-
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="rounded-xl border border-surface-subtle bg-surface-base px-4 py-2.5 text-xs font-bold text-text-muted hover:text-text-primary"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isCompressing}
-                  className="inline-flex items-center gap-2 rounded-xl bg-teal px-5 py-2.5 text-xs font-bold text-white shadow-md shadow-teal/20 hover:bg-teal-vivid disabled:opacity-50 transition-all"
-                >
-                  <Save size={15} />
-                  <span>Save profile</span>
-                </button>
-              </div>
+              <input type="file" accept="image/*" onChange={handleFileChange} disabled={isCompressing} aria-label="Choose portrait" />
             </div>
-          </form>
-        </div>
+          </div>
+
+          {/* ── Actions ── */}
+          <div className="efsw-admin-modal-actions efsw-admin-modal-actions--split">
+            {formData.id && onDelete ? (
+              <button type="button" onClick={() => onDelete(formData)} className="efsw-admin-danger-action">
+                <Trash2 size={14} />
+                <span>Delete profile</span>
+              </button>
+            ) : (
+              <span />
+            )}
+
+            <div className="efsw-admin-modal-actions__end">
+              <button type="button" onClick={onClose} className="efsw-admin-outline-action">
+                Cancel
+              </button>
+              <button type="submit" disabled={isCompressing} className="efsw-admin-primary">
+                <Save size={15} />
+                <span>Save profile</span>
+              </button>
+            </div>
+          </div>
+        </form>
       </div>
     </div>
   );

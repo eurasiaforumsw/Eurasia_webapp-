@@ -3,8 +3,13 @@
 
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import Link from "next/link";
-import { ArrowUpRight, Calendar, User, X, Image as ImageIcon, Search, FileText, ChevronLeft, ChevronRight, Microscope, BookOpenText, ScrollText, GraduationCap, Landmark, Megaphone, UsersRound, type LucideIcon } from "lucide-react";
+import { ArrowUpRight, Calendar, User, X, Image as ImageIcon, Search, FileText, ChevronLeft, ChevronRight, Microscope, BookOpenText, ScrollText, GraduationCap, Landmark, Megaphone, UsersRound, MapPin, type LucideIcon } from "lucide-react";
 import { useI18n } from "@/contexts/I18nContext";
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { SkeletonCard } from "@/components/ui/skeleton";
 import {
   ADMIN_CONTENT_KEY,
   ADMIN_CONTENT_CATEGORIES_KEY,
@@ -15,6 +20,8 @@ import {
   type AdminContentItem,
   type AdminContentKind,
 } from "@/lib/admin-data";
+import { getSessionMember, type MemberProfile } from "@/lib/member-auth";
+import { EngagementRow } from "@/components/efsw/EngagementRow";
 
 export type PublicContentItem = {
   id: string;
@@ -27,6 +34,12 @@ export type PublicContentItem = {
   author?: string;
   tags?: string[];
   updatedAt?: string;
+  /* event-only extras */
+  startsAt?: string;
+  endsAt?: string;
+  venue?: string;
+  format?: string;
+  registrationUrl?: string;
 };
 
 type PublicContentFeedProps = {
@@ -65,6 +78,28 @@ const formatDate = (value?: string) => {
   }
 };
 
+const formatDateRange = (startsAt?: string, endsAt?: string) => {
+  if (!startsAt) return "";
+  try {
+    const start = new Date(startsAt);
+    const end = endsAt ? new Date(endsAt) : null;
+    const sameDay = end && start.toDateString() === end.toDateString();
+    const startStr = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric" }).format(start);
+    if (!end) return startStr;
+    if (sameDay) {
+      const timeStr = new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit" }).format(end);
+      return `${startStr} · ${timeStr}`;
+    }
+    const sameMonth = start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear();
+    const endStr = sameMonth
+      ? new Intl.DateTimeFormat("en-US", { day: "numeric", year: "numeric" }).format(end)
+      : new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric" }).format(end);
+    return `${startStr} – ${endStr}`;
+  } catch {
+    return "";
+  }
+};
+
 export default function PublicContentFeed({
   kind,
   initialItems,
@@ -72,14 +107,30 @@ export default function PublicContentFeed({
   showFilters = true,
 }: PublicContentFeedProps) {
   const { t } = useI18n();
-  const ns = kind === "news" ? "newsroom" : "library";
+  const ns = kind === "news" ? "newsroom" : kind === "event" ? "events" : "library";
   const [items, setItems] = useState<PublicContentItem[]>(initialItems);
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [featuredIndex, setFeaturedIndex] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+  // True only after the first user interaction — prevents the entrance animation
+  // from running on initial page load (items should be visible immediately).
+  const [hasInteracted, setHasInteracted] = useState(false);
   // Drives the direction-aware enter animation when the featured story swaps.
   const [slideDirection, setSlideDirection] = useState<1 | -1>(1);
   const [categoryDefinitions, setCategoryDefinitions] = useState(() => defaultContentCategories.filter((category) => category.kind === kind));
+  const [member, setMember] = useState<MemberProfile | null>(null);
+
+  useEffect(() => {
+    setMember(getSessionMember());
+    const refresh = () => setMember(getSessionMember());
+    window.addEventListener("storage", refresh);
+    window.addEventListener("efsw:member-session-changed", refresh);
+    return () => {
+      window.removeEventListener("storage", refresh);
+      window.removeEventListener("efsw:member-session-changed", refresh);
+    };
+  }, []);
 
   const showFeatured = (resolveIndex: (current: number) => number, direction: 1 | -1) => {
     setSlideDirection(direction);
@@ -117,6 +168,11 @@ export default function PublicContentFeed({
           author: source.author,
           tags: source.tags,
           updatedAt: source.updatedAt,
+          startsAt: source.startsAt,
+          endsAt: source.endsAt,
+          venue: source.venue,
+          format: source.format,
+          registrationUrl: source.registrationUrl,
         };
       });
       if (published.length > 0) {
@@ -189,7 +245,7 @@ export default function PublicContentFeed({
   }, [selectedCategory, searchQuery]);
 
   useEffect(() => {
-    if (kind !== "news" || filteredItems.length < 2) return;
+    if ((kind !== "news" && kind !== "event") || filteredItems.length < 2) return;
     const rotation = window.setInterval(() => {
       showFeatured((index) => (index + 1) % filteredItems.length, 1);
     }, 5000);
@@ -198,8 +254,10 @@ export default function PublicContentFeed({
 
   const emptyItem = kind === "news"
     ? { category: t("newsroom.eyebrow"), title: t("newsroom.emptyTitle"), summary: t("newsroom.emptyBody") }
-    : { category: t("library.eyebrow"), title: t("library.emptyTitle"), summary: t("library.emptyBody") };
-  const detailBase = kind === "news" ? "/news" : "/academic-documents";
+    : kind === "event"
+      ? { category: t("events.eyebrow"), title: t("events.emptyTitle"), summary: t("events.emptyBody") }
+      : { category: t("library.eyebrow"), title: t("library.emptyTitle"), summary: t("library.emptyBody") };
+  const detailBase = kind === "news" ? "/news" : kind === "event" ? "/events" : "/academic-documents";
   const featuredItem = filteredItems[featuredIndex % Math.max(filteredItems.length, 1)];
   const streamItems = featuredItem ? filteredItems.filter((item) => item.id !== featuredItem.id) : [];
 
@@ -216,27 +274,40 @@ export default function PublicContentFeed({
                 role="tab"
                 aria-selected={selectedCategory === cat}
                 className={`efsw-category-pill ${selectedCategory === cat ? "is-active" : ""}`}
-                onClick={() => setSelectedCategory(cat)}
+                onClick={() => {
+                  setIsLoading(true);
+                  setHasInteracted(true);
+                  setSelectedCategory(cat);
+                  setTimeout(() => setIsLoading(false), 300);
+                }}
               >
-                {/* "All" is the internal sentinel value; only its label is localized. */}
                 {cat === "All" ? t("newsroom.all") : cat}
               </button>
             ))}
           </div>
 
           <div className="efsw-feed-search">
-            <Search size={15} aria-hidden />
-            <input
+            <Input
               type="search"
               placeholder={t(`${ns}.searchPlaceholder`)}
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              aria-label={t("common.search")}
+              onChange={(e) => {
+                setIsLoading(true);
+                setHasInteracted(true);
+                setSearchQuery(e.target.value);
+                setTimeout(() => setIsLoading(false), 300);
+              }}
+              className="efsw-feed-search__input"
+              floatingLabel={false}
             />
+            <Search size={15} className="efsw-feed-search__icon" aria-hidden />
             {searchQuery && (
               <button
                 type="button"
-                onClick={() => setSearchQuery("")}
+                onClick={() => {
+                  setSearchQuery("");
+                  setIsLoading(false);
+                }}
                 className="efsw-feed-search__clear"
                 aria-label={t("common.clear")}
               >
@@ -247,8 +318,8 @@ export default function PublicContentFeed({
         </div>
       )}
 
-      {/* News Feed View */}
-      {kind === "news" ? (
+      {/* News Feed View — also used for events (kind === "event") */}
+      {kind === "news" || kind === "event" ? (
         <section className={`efsw-news-grid ${streamItems.length === 0 ? "is-single" : ""}`} aria-live="polite">
           {filteredItems.length ? (
             <>
@@ -262,13 +333,16 @@ export default function PublicContentFeed({
                     {featuredItem.coverImage ? (
                       <img src={featuredItem.coverImage} alt={featuredItem.imageCaption || featuredItem.title} loading="eager" />
                     ) : (
-                      <div className="efsw-news-card__placeholder"><ImageIcon size={30} /><span>EFSW News</span></div>
+                      <div className="efsw-news-card__placeholder"><ImageIcon size={30} /><span>{kind === "event" ? "EFSW Event" : "EFSW News"}</span></div>
                     )}
                     <span className="efsw-news-card__category">{featuredItem.category}</span>
                   </div>
                   <div className="efsw-news-feature__body">
                     <div className="efsw-news-card__meta">
-                      {featuredItem.updatedAt && <span><Calendar size={13} aria-hidden />{formatDate(featuredItem.updatedAt)}</span>}
+                      {kind !== "event" && featuredItem.updatedAt && <span><Calendar size={13} aria-hidden />{formatDate(featuredItem.updatedAt)}</span>}
+                      {kind === "event" && featuredItem.startsAt && <span><Calendar size={13} aria-hidden />{formatDateRange(featuredItem.startsAt, featuredItem.endsAt)}</span>}
+                      {kind === "event" && featuredItem.venue && <span><MapPin size={13} aria-hidden />{featuredItem.venue}</span>}
+                      {kind === "event" && featuredItem.format && <span className="efsw-event-format">{featuredItem.format}</span>}
                       {featuredItem.author && <span><User size={13} aria-hidden />{featuredItem.author}</span>}
                     </div>
                     <p className="efsw-news-feature__eyebrow">{t("newsroom.featured")}</p>
@@ -327,37 +401,55 @@ export default function PublicContentFeed({
               {streamItems.length > 0 && (
                 <div className="efsw-news-stream" key={`stream-${featuredItem?.id ?? "none"}`}>
                   <div className="efsw-news-stream__heading">
-                    <span>{t(streamItems.length === 1 ? "newsroom.storyCountOne" : "newsroom.storyCount", { count: streamItems.length })}</span>
+                    <h3 className="efsw-section-label">{t("newsroom.moreStories")}</h3>
+                    <span>{t("newsroom.updated")}</span>
                   </div>
-                  {streamItems.map((item, index) => (
-                    <article
-                      key={item.id}
-                      className="efsw-news-story"
-                      style={{ "--story-stagger": `${index * 55}ms` } as CSSProperties}
-                    >
-                      <div className="efsw-news-story__media">
-                        {item.coverImage ? (
-                          <img src={item.coverImage} alt={item.imageCaption || item.title} loading="lazy" />
-                        ) : (
-                          <div className="efsw-news-card__placeholder"><ImageIcon size={22} /></div>
-                        )}
-                      </div>
-                      <div className="efsw-news-story__body">
-                        <div className="efsw-news-story__meta">
-                          <span>{itemNumber(index + 1)}</span>
-                          <span>{item.category}</span>
-                          {item.updatedAt && <span>{formatDate(item.updatedAt)}</span>}
+                  {isLoading ? (
+                    Array.from({ length: 3 }).map((_, index) => (
+                      <div key={`skeleton-stream-${index}`} className="efsw-news-story">
+                        <div className="efsw-news-story__media" />
+                        <div className="efsw-news-story__body">
+                          <div className="efsw-news-story__meta"><span>Loading...</span></div>
+                          <h2>Loading story...</h2>
                         </div>
-                        <h2>
-                          <Link href={`${detailBase}/${item.id}`} className="efsw-news-story__link-cover">
-                            {item.title}
-                          </Link>
-                        </h2>
-                        <p>{item.summary}</p>
-                        <span className="efsw-news-story__link">{t("newsroom.readStory")} <ArrowUpRight size={15} /></span>
                       </div>
-                    </article>
-                  ))}
+                    ))
+                  ) : (
+                    streamItems.slice(0, 5).map((item, index) => (
+                      <article
+                        key={item.id}
+                        className="efsw-news-story"
+                        style={{ "--story-stagger": `${index * 60}ms` } as CSSProperties}
+                      >
+                        <Link href={`${detailBase}/${item.id}`} className="efsw-news-story__link-cover" aria-label={item.title} />
+                        <div className="efsw-news-story__media">
+                          {item.coverImage ? (
+                            <img src={item.coverImage} alt={item.imageCaption || item.title} loading="lazy" />
+                          ) : (
+                            <div className="efsw-news-card__placeholder">
+                              <ImageIcon size={20} />
+                            </div>
+                          )}
+                        </div>
+                        <div className="efsw-news-story__body">
+                          <div className="efsw-news-story__meta">
+                            <span>{item.category}</span>
+                            {kind !== "event" && item.updatedAt && <time dateTime={item.updatedAt}>{formatDate(item.updatedAt)}</time>}
+                            {kind === "event" && item.startsAt && <time dateTime={item.startsAt}>{formatDateRange(item.startsAt, item.endsAt)}</time>}
+                            {kind === "event" && item.format && <span className="efsw-event-format efsw-event-format--sm">{item.format}</span>}
+                          </div>
+                          <h2>{item.title}</h2>
+                          <p>{item.summary}</p>
+                          <div className="efsw-news-story__engagement">
+                            <EngagementRow contentId={item.id} memberId={member?.id ?? null} />
+                          </div>
+                          <span className="efsw-news-story__link">
+                            {linkLabel} <ArrowUpRight size={13} />
+                          </span>
+                        </div>
+                      </article>
+                    ))
+                  )}
                 </div>
               )}
             </>
@@ -376,7 +468,9 @@ export default function PublicContentFeed({
             return (
             <article
               key={item.id}
-              style={{ "--row-stagger": `${index * 50}ms` } as CSSProperties}
+              data-category={item.category}
+              className={hasInteracted ? undefined : "efsw-resource-list__row--no-anim"}
+              style={hasInteracted ? ({ "--row-stagger": `${index * 50}ms` } as CSSProperties) : undefined}
             >
               <span className="efsw-resource-list__glyph" aria-hidden>
                 <CategoryGlyph size={17} strokeWidth={1.9} />

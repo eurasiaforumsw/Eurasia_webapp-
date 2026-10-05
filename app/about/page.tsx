@@ -45,6 +45,8 @@ export default function AboutPage() {
 
       <nav className="efsw-about-subnav" aria-label="About EFSW sections">
         <a href="#about-top" data-active="true">About us</a>
+        <a href="/about/executive-board">Executive Board</a>
+        <a href="/about/organization">Organization</a>
         <a href="#direction">Our direction</a>
         <a href="#history">Our story</a>
         <a href="#principles">Our commitments</a>
@@ -58,22 +60,6 @@ export default function AboutPage() {
             <p>Our vision is a regional network that raises the standard of social work practice and creates social change through genuine solidarity between countries.</p>
             <div className="efsw-about-stat"><UsersRound size={19} /><span>Professionals · Students · Institutions</span></div>
           </div>
-        </div>
-      </section>
-
-      <section className="efsw-about-reach" id="reach" aria-label="Network at a glance">
-        <div className="efsw-about-reach__inner" data-reveal-group>
-          {([
-            { value: "3", label: "Languages", note: "English · Korean · Thai" },
-            { value: "4", label: "Member pathways", note: "Professional · Student · Institutional · Partner" },
-            { value: "1", label: "Regional network", note: "Connecting practitioners across Eurasia" },
-          ] as const).map(({ value, label, note }) => (
-            <div key={label} className="efsw-reach-stat" data-reveal="scale">
-              <strong>{value}</strong>
-              <span>{label}</span>
-              <small>{note}</small>
-            </div>
-          ))}
         </div>
       </section>
 
@@ -100,7 +86,7 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <footer className="efsw-about-footer"><span>© 2026 EFSW</span><a href="/">Eurasia Forum for Social Workers</a><span>English · Korean · Thai</span></footer>
+      <footer className="efsw-about-footer"><span>© 2026 EFSW</span><a href="/">Eurasia Forum for Social Workers</a></footer>
       </main>
     </>
   );

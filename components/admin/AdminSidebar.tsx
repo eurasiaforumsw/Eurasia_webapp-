@@ -11,11 +11,12 @@ import {
   Settings,
   LogOut,
   X,
-  ShieldCheck,
+  Mail,
+  MessageSquare,
 } from "lucide-react";
 import { AdminSession } from "@/lib/admin-auth";
 
-export type AdminView = "overview" | "members" | "content" | "layout" | "activity" | "settings";
+export type AdminView = "overview" | "members" | "content" | "layout" | "messages" | "broadcast" | "activity" | "settings";
 
 interface AdminSidebarProps {
   currentView: AdminView;
@@ -68,6 +69,20 @@ export const AdminSidebar = memo(function AdminSidebar({
       badge: null,
     },
     {
+      id: "messages" as AdminView,
+      label: "Messages",
+      subtitle: "In-app messaging",
+      icon: MessageSquare,
+      badge: null,
+    },
+    {
+      id: "broadcast" as AdminView,
+      label: "Broadcast",
+      subtitle: "Email campaigns",
+      icon: Mail,
+      badge: null,
+    },
+    {
       id: "activity" as AdminView,
       label: "Activity log",
       subtitle: "Audit & Logs",
@@ -95,12 +110,12 @@ export const AdminSidebar = memo(function AdminSidebar({
       )}
 
       <aside
-        className={`fixed top-0 bottom-0 left-0 z-50 flex w-72 flex-col border-r border-surface-subtle bg-surface-deep/95 backdrop-blur-md transition-transform duration-300 lg:static lg:translate-x-0 ${
+        className={`fixed top-0 bottom-0 left-0 z-50 flex w-72 flex-col bg-surface-deep transition-transform duration-300 lg:static lg:translate-x-0 ${
           mobileNavOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         {/* Brand Header */}
-        <div className="flex items-center justify-between border-b border-surface-subtle p-5">
+        <div className="flex items-center justify-between p-5">
           <Link href="/" className="flex items-center gap-3 text-text-primary hover:opacity-90">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-teal to-teal-vivid text-lg font-bold text-white shadow-lg shadow-teal/20">
               E
@@ -117,17 +132,11 @@ export const AdminSidebar = memo(function AdminSidebar({
 
           <button
             onClick={onCloseMobileNav}
-            className="flex h-8 w-8 items-center justify-center rounded-lg border border-surface-subtle text-text-muted hover:bg-surface-raised hover:text-text-primary lg:hidden"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-text-muted hover:bg-surface-raised hover:text-text-primary lg:hidden"
             aria-label="Close sidebar"
           >
             <X size={18} />
           </button>
-        </div>
-
-        {/* Security Badge */}
-        <div className="mx-4 my-3 flex items-center gap-2 rounded-lg bg-teal/10 px-3 py-2 text-xs font-semibold text-teal-light">
-          <ShieldCheck size={15} className="text-teal" />
-          <span>Secured Session · Trilingual</span>
         </div>
 
         {/* Navigation list */}
@@ -143,25 +152,35 @@ export const AdminSidebar = memo(function AdminSidebar({
                   onSelectView(item.id);
                   onCloseMobileNav();
                 }}
-                className={`group flex w-full items-center justify-between rounded-xl px-3.5 py-3 text-left transition-all duration-150 ${
+                className={`group flex w-full items-center justify-between rounded-lg px-3.5 py-3 text-left transition-all duration-150 ${
                   isActive
-                    ? "bg-teal text-white shadow-md shadow-teal/25 font-semibold"
+                    ? "font-semibold"
                     : "text-text-secondary hover:bg-surface-raised hover:text-text-primary"
                 }`}
+                style={
+                  isActive
+                    ? {
+                        borderLeft: "2px solid var(--admin-green)",
+                        background: "var(--admin-green-soft)",
+                        color: "var(--admin-ink)",
+                      }
+                    : undefined
+                }
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <Icon
                     size={19}
                     className={`flex-shrink-0 transition-colors ${
-                      isActive ? "text-white" : "text-text-muted group-hover:text-teal"
+                      isActive ? "text-teal" : "text-text-muted group-hover:text-teal"
                     }`}
                   />
                   <div className="truncate">
                     <div className="text-sm font-medium leading-tight">{item.label}</div>
                     <div
                       className={`text-[11px] leading-tight mt-0.5 truncate ${
-                        isActive ? "text-teal-light/90" : "text-text-muted"
+                        isActive ? "" : "text-text-muted"
                       }`}
+                      style={isActive ? { color: "var(--admin-green)" } : undefined}
                     >
                       {item.subtitle}
                     </div>
@@ -172,7 +191,7 @@ export const AdminSidebar = memo(function AdminSidebar({
                   <span
                     className={`ml-2 inline-flex items-center justify-center rounded-full px-2 py-0.5 text-xs font-bold ${
                       isActive
-                        ? "bg-white text-teal"
+                        ? "bg-teal/15 text-teal"
                         : "bg-amber-500/20 text-amber-300 border border-amber-500/30"
                     }`}
                   >
@@ -185,10 +204,10 @@ export const AdminSidebar = memo(function AdminSidebar({
         </nav>
 
         {/* Sidebar Footer / User Profile */}
-        <div className="border-t border-surface-subtle p-4">
+        <div className="mx-3 mb-3 rounded-lg bg-surface-base p-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3 min-w-0">
-              <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-surface-raised border border-surface-subtle font-bold text-teal text-xs">
+              <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-surface-raised font-bold text-teal text-xs">
                 {session?.name ? session.name.charAt(0).toUpperCase() : "A"}
               </div>
               <div className="truncate min-w-0">
@@ -204,7 +223,7 @@ export const AdminSidebar = memo(function AdminSidebar({
             <button
               onClick={onSignOut}
               title="Log out"
-              className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border border-surface-subtle text-text-muted hover:border-red-500/40 hover:bg-red-500/10 hover:text-red-400 transition-colors"
+              className="flex h-8 w-8 flex-shrink-0 items-center justify-center p-2 rounded-lg text-text-muted hover:bg-red-500/10 hover:text-red-500 transition-colors"
             >
               <LogOut size={16} />
             </button>

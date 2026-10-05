@@ -5,6 +5,7 @@ import { RevealObserver } from "@/components/efsw/RevealObserver";
 import { SmoothScrollProvider } from "@/components/efsw/SmoothScrollProvider";
 import { I18nProvider } from "@/contexts/I18nContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import { ToastProvider } from "@/components/ui/toast";
 import enMessages from "@/locales/en.json";
 import thMessages from "@/locales/th.json";
 import koMessages from "@/locales/ko.json";
@@ -65,12 +66,14 @@ export default function RootLayout({
       <body className="antialiased bg-surface-deep text-text-primary">
         <ThemeProvider>
           <I18nProvider defaultLocale="en" messages={messages}>
-            <SmoothScrollProvider>
-              {/* Watches every [data-reveal] element on any route and adds
-                  .is-visible when it scrolls into view. Renders nothing. */}
-              <RevealObserver />
-              {children}
-            </SmoothScrollProvider>
+            <ToastProvider>
+              <SmoothScrollProvider>
+                {/* Watches every [data-reveal] element on any route and adds
+                    .is-visible when it scrolls into view. Renders nothing. */}
+                <RevealObserver />
+                {children}
+              </SmoothScrollProvider>
+            </ToastProvider>
           </I18nProvider>
         </ThemeProvider>
       </body>

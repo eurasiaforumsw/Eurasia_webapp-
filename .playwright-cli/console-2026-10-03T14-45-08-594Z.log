@@ -1,0 +1,15 @@
+[     642ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom.development.js:38559
+[     671ms] [WARNING] motion() is deprecated. Use motion.create() instead. @ webpack-internal:///(app-pages-browser)/./node_modules/framer-motion/dist/es/utils/warn-once.mjs:8
+[    3554ms] [ERROR] Failed to load resource: the server responded with a status of 503 (Service Unavailable) @ http://localhost:2024/api/stats/organization:0
+[    3555ms] [WARNING] Organization stats fell back to local data: Error: stats unavailable
+    at eval (webpack-internal:///(app-pages-browser)/./hooks/useOrgStats.ts:40:53) @ webpack-internal:///(app-pages-browser)/./hooks/useOrgStats.ts:43
+[  300691ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom.development.js:38559
+[  300722ms] [WARNING] motion() is deprecated. Use motion.create() instead. @ webpack-internal:///(app-pages-browser)/./node_modules/framer-motion/dist/es/utils/warn-once.mjs:8
+[  301633ms] [ERROR] Failed to load resource: the server responded with a status of 503 (Service Unavailable) @ http://localhost:2024/api/stats/organization:0
+[  301634ms] [WARNING] Organization stats fell back to local data: Error: stats unavailable
+    at eval (webpack-internal:///(app-pages-browser)/./hooks/useOrgStats.ts:40:53) @ webpack-internal:///(app-pages-browser)/./hooks/useOrgStats.ts:43
+[  365497ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom.development.js:38559
+[  365514ms] [WARNING] motion() is deprecated. Use motion.create() instead. @ webpack-internal:///(app-pages-browser)/./node_modules/framer-motion/dist/es/utils/warn-once.mjs:8
+[  366063ms] [ERROR] Failed to load resource: the server responded with a status of 503 (Service Unavailable) @ http://localhost:2024/api/stats/organization:0
+[  366065ms] [WARNING] Organization stats fell back to local data: Error: stats unavailable
+    at eval (webpack-internal:///(app-pages-browser)/./hooks/useOrgStats.ts:40:53) @ webpack-internal:///(app-pages-browser)/./hooks/useOrgStats.ts:43

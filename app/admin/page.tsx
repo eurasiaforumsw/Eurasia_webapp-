@@ -12,7 +12,7 @@ import {
   AdminMember,
   AdminSettings,
   defaultLayoutConfig,
-  deleteAdminContent,
+  deleteAdminContentRemote,
   deleteAdminMember,
   getAdminActivity,
   getAdminContent,
@@ -21,11 +21,12 @@ import {
   getAdminMembers,
   getAdminSettings,
   recordAdminActivity,
-  saveAdminContent,
   saveAdminContentCategories,
+  saveAdminContentRemote,
   saveAdminLayout,
   saveAdminSettings,
   setAdminMemberStatus,
+  syncAdminContent,
 } from "@/lib/admin-data";
 import { AdminSidebar, AdminView } from "@/components/admin/AdminSidebar";
 import { AdminTopbar } from "@/components/admin/AdminTopbar";
@@ -33,6 +34,8 @@ import { AdminOverviewView } from "@/components/admin/views/AdminOverviewView";
 import { AdminMembersView } from "@/components/admin/views/AdminMembersView";
 import { AdminContentView } from "@/components/admin/views/AdminContentView";
 import { AdminLayoutView } from "@/components/admin/views/AdminLayoutView";
+import { AdminMessagesView } from "@/components/admin/views/AdminMessagesView";
+import { AdminBroadcastView } from "@/components/admin/views/AdminBroadcastView";
 import { AdminActivityView } from "@/components/admin/views/AdminActivityView";
 import { AdminSettingsView } from "@/components/admin/views/AdminSettingsView";
 import { MemberDetailDrawer } from "@/components/admin/modals/MemberDetailDrawer";
@@ -86,6 +89,15 @@ export default function AdminDashboardPage() {
     setActivity(getAdminActivity());
     setSettings(getAdminSettings());
     setLayout(getAdminLayout());
+
+    // Pull latest from Supabase in the background.
+    syncAdminContent()
+      .then((merged) => {
+        setContent(merged);
+      })
+      .catch(() => {
+        // Silent — local data remains available.
+      });
   }, []);
 
   // Toast timer
@@ -175,9 +187,11 @@ export default function AdminDashboardPage() {
 
   // Content actions
   const handleSaveContent = useCallback(
-    (item: AdminContentItem) => {
+    async (item: AdminContentItem) => {
       const isNew = !item.id || !content.some((c) => c.id === item.id);
-      const updatedList = saveAdminContent(item);
+      const updatedList = await saveAdminContentRemote(item, (errorMsg) => {
+        notify(`Database error: ${errorMsg}`);
+      });
       setContent(updatedList);
       setIsContentModalOpen(false);
       setContentEditorItem(null);
@@ -202,8 +216,10 @@ export default function AdminDashboardPage() {
         isOpen: true,
         title: "Confirm content deletion",
         description: `Delete "${item?.title || id}" from the system?`,
-        onConfirm: () => {
-          const updated = deleteAdminContent(id);
+        onConfirm: async () => {
+          const updated = await deleteAdminContentRemote(id, (errorMsg) => {
+            notify(`Database error: ${errorMsg}`);
+          });
           setContent(updated);
           setIsContentModalOpen(false);
           setContentEditorItem(null);
@@ -217,14 +233,16 @@ export default function AdminDashboardPage() {
   );
 
   const handleToggleContentStatus = useCallback(
-    (item: AdminContentItem) => {
+    async (item: AdminContentItem) => {
       const nextStatus = item.status === "published" ? "draft" : "published";
       const updated: AdminContentItem = {
         ...item,
         status: nextStatus,
         updatedAt: new Date().toISOString(),
       };
-      const updatedList = saveAdminContent(updated);
+      const updatedList = await saveAdminContentRemote(updated, (errorMsg) => {
+        notify(`Database error: ${errorMsg}`);
+      });
       setContent(updatedList);
       logActivity(
         nextStatus === "published" ? "Published content" : "Moved content to draft",
@@ -325,7 +343,7 @@ export default function AdminDashboardPage() {
   const draftContentCount = content.filter((c) => c.status === "draft").length;
 
   return (
-    <div className="flex min-h-screen bg-surface-deep text-text-primary">
+    <div className="efsw-admin-shell flex min-h-screen bg-surface-deep text-text-primary">
       {/* Toast Notification */}
       {toast && (
         <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-2xl border border-teal/40 bg-surface-raised/95 px-5 py-3 text-xs font-bold text-teal-light shadow-2xl backdrop-blur-md animate-fade-in">
@@ -404,6 +422,17 @@ export default function AdminDashboardPage() {
               }}
               onDeleteLeader={handleDeleteLeader}
             />
+          )}
+
+          {view === "broadcast" && (
+            <AdminBroadcastView
+              content={content}
+              members={members}
+            />
+          )}
+
+          {view === "messages" && (
+            <AdminMessagesView members={members} />
           )}
 
           {view === "activity" && <AdminActivityView activity={activity} />}

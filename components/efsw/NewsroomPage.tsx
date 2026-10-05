@@ -3,6 +3,7 @@
 import { ArrowUpRight, Radio } from "lucide-react";
 import PublicContentFeed, { type PublicContentItem } from "@/components/efsw/PublicContentFeed";
 import { SiteNav } from "@/components/efsw/SiteNav";
+import { Button } from "@/components/ui/button";
 import { useI18n } from "@/contexts/I18nContext";
 
 /* Client body of /news: the route file stays a server component so it can own
@@ -20,12 +21,6 @@ export default function NewsroomPage({ initialItems }: { initialItems: PublicCon
           <div className="efsw-newsroom-masthead__meta" data-reveal="fade">
             <Radio size={12} aria-hidden />
             <span>{t("newsroom.eyebrow")}</span>
-            <span className="efsw-newsroom-sep" aria-hidden>·</span>
-            <span>EFSW</span>
-            <span className="efsw-newsroom-sep" aria-hidden>·</span>
-            <span>2026</span>
-            <span className="efsw-newsroom-sep" aria-hidden>·</span>
-            <span>English · Korean · Thai</span>
           </div>
 
           <div className="efsw-newsroom-masthead__body" data-reveal-group>
@@ -49,19 +44,23 @@ export default function NewsroomPage({ initialItems }: { initialItems: PublicCon
             {t("newsroom.ctaHeadline")}<br /><span>{t("newsroom.ctaHeadlineAccent")}</span>
           </h2>
           <p className="efsw-content-cta__copy" data-reveal="slide">{t("newsroom.ctaBody")}</p>
-          <a
-            href="mailto:support@eurasiaforumsw.org"
-            className="efsw-button efsw-button--dark"
+          <Button
+            variant="secondary"
+            size="lg"
+            magnetic
+            className="mt-6"
             data-reveal="slide"
+            asChild
           >
-            {t("newsroom.ctaButton")} <ArrowUpRight size={17} aria-hidden />
-          </a>
+            <a href="mailto:support@eurasiaforumsw.org">
+              {t("newsroom.ctaButton")} <ArrowUpRight size={17} aria-hidden />
+            </a>
+          </Button>
         </section>
 
         <footer className="efsw-about-footer">
           <span>© 2026 EFSW</span>
           <a href="/">Eurasia Forum for Social Workers</a>
-          <span>English · Korean · Thai</span>
         </footer>
       </main>
     </>

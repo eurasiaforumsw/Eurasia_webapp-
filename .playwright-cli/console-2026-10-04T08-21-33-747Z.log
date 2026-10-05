@@ -1,0 +1,44 @@
+[     347ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom.development.js:38559
+[     375ms] [WARNING] motion() is deprecated. Use motion.create() instead. @ webpack-internal:///(app-pages-browser)/./node_modules/framer-motion/dist/es/utils/warn-once.mjs:8
+[    2355ms] [ERROR] Failed to load resource: the server responded with a status of 503 (Service Unavailable) @ http://localhost:2024/api/stats/organization:0
+[    2356ms] [WARNING] Organization stats fell back to local data: Error: stats unavailable
+    at eval (webpack-internal:///(app-pages-browser)/./hooks/useOrgStats.ts:40:53) @ webpack-internal:///(app-pages-browser)/./hooks/useOrgStats.ts:43
+[   21860ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom.development.js:38559
+[   21873ms] [WARNING] motion() is deprecated. Use motion.create() instead. @ webpack-internal:///(app-pages-browser)/./node_modules/framer-motion/dist/es/utils/warn-once.mjs:8
+[   22396ms] [ERROR] Failed to load resource: the server responded with a status of 503 (Service Unavailable) @ http://localhost:2024/api/stats/organization:0
+[   22397ms] [WARNING] Organization stats fell back to local data: Error: stats unavailable
+    at eval (webpack-internal:///(app-pages-browser)/./hooks/useOrgStats.ts:40:53) @ webpack-internal:///(app-pages-browser)/./hooks/useOrgStats.ts:43
+[   22938ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom.development.js:38559
+[   22950ms] [WARNING] motion() is deprecated. Use motion.create() instead. @ webpack-internal:///(app-pages-browser)/./node_modules/framer-motion/dist/es/utils/warn-once.mjs:8
+[   23481ms] [ERROR] Failed to load resource: the server responded with a status of 503 (Service Unavailable) @ http://localhost:2024/api/stats/organization:0
+[   23481ms] [WARNING] Organization stats fell back to local data: Error: stats unavailable
+    at eval (webpack-internal:///(app-pages-browser)/./hooks/useOrgStats.ts:40:53) @ webpack-internal:///(app-pages-browser)/./hooks/useOrgStats.ts:43
+[   83169ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom.development.js:38559
+[   83183ms] [WARNING] motion() is deprecated. Use motion.create() instead. @ webpack-internal:///(app-pages-browser)/./node_modules/framer-motion/dist/es/utils/warn-once.mjs:8
+[   83629ms] [ERROR] Failed to load resource: the server responded with a status of 503 (Service Unavailable) @ http://localhost:2024/api/stats/organization:0
+[   83630ms] [WARNING] Organization stats fell back to local data: Error: stats unavailable
+    at eval (webpack-internal:///(app-pages-browser)/./hooks/useOrgStats.ts:40:53) @ webpack-internal:///(app-pages-browser)/./hooks/useOrgStats.ts:43
+[   85061ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom.development.js:38559
+[   85073ms] [WARNING] motion() is deprecated. Use motion.create() instead. @ webpack-internal:///(app-pages-browser)/./node_modules/framer-motion/dist/es/utils/warn-once.mjs:8
+[   85466ms] [ERROR] Failed to load resource: the server responded with a status of 503 (Service Unavailable) @ http://localhost:2024/api/stats/organization:0
+[   85467ms] [WARNING] Organization stats fell back to local data: Error: stats unavailable
+    at eval (webpack-internal:///(app-pages-browser)/./hooks/useOrgStats.ts:40:53) @ webpack-internal:///(app-pages-browser)/./hooks/useOrgStats.ts:43
+[   86956ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom.development.js:38559
+[   86967ms] [WARNING] motion() is deprecated. Use motion.create() instead. @ webpack-internal:///(app-pages-browser)/./node_modules/framer-motion/dist/es/utils/warn-once.mjs:8
+[   87395ms] [ERROR] Failed to load resource: the server responded with a status of 503 (Service Unavailable) @ http://localhost:2024/api/stats/organization:0
+[   87396ms] [WARNING] Organization stats fell back to local data: Error: stats unavailable
+    at eval (webpack-internal:///(app-pages-browser)/./hooks/useOrgStats.ts:40:53) @ webpack-internal:///(app-pages-browser)/./hooks/useOrgStats.ts:43
+[   88726ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom.development.js:38559
+[   88737ms] [WARNING] motion() is deprecated. Use motion.create() instead. @ webpack-internal:///(app-pages-browser)/./node_modules/framer-motion/dist/es/utils/warn-once.mjs:8
+[   89139ms] [ERROR] Failed to load resource: the server responded with a status of 503 (Service Unavailable) @ http://localhost:2024/api/stats/organization:0
+[   89140ms] [WARNING] Organization stats fell back to local data: Error: stats unavailable
+    at eval (webpack-internal:///(app-pages-browser)/./hooks/useOrgStats.ts:40:53) @ webpack-internal:///(app-pages-browser)/./hooks/useOrgStats.ts:43
+[   90529ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom.development.js:38559
+[   90540ms] [WARNING] motion() is deprecated. Use motion.create() instead. @ webpack-internal:///(app-pages-browser)/./node_modules/framer-motion/dist/es/utils/warn-once.mjs:8
+[   91065ms] [ERROR] Failed to load resource: the server responded with a status of 503 (Service Unavailable) @ http://localhost:2024/api/stats/organization:0
+[   91065ms] [WARNING] Organization stats fell back to local data: Error: stats unavailable
+    at eval (webpack-internal:///(app-pages-browser)/./hooks/useOrgStats.ts:40:53) @ webpack-internal:///(app-pages-browser)/./hooks/useOrgStats.ts:43
+[  366948ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/components/react-dev-overlay/app/hot-reloader-client.js:186
+[  367420ms] [LOG] [Fast Refresh] done in 471ms @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/components/react-dev-overlay/app/hot-reloader-client.js:43
+[ 1446560ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/components/react-dev-overlay/app/hot-reloader-client.js:186
+[ 1446810ms] [LOG] [Fast Refresh] done in 253ms @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/components/react-dev-overlay/app/hot-reloader-client.js:43

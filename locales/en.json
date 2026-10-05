@@ -34,8 +34,11 @@
     "dashboard": "Dashboard",
     "overview": "About us",
     "organization": "Organization",
+    "executiveBoard": "Executive Board",
     "menu": "Menu",
-    "language": "Language"
+    "language": "Language",
+    "events": "Events",
+    "adminConsole": "Admin console"
   },
   "hero": {
     "title": "Eurasia Foundation for Social Work",
@@ -303,7 +306,8 @@
         "purpose": "Shape policy",
         "description": "Concise perspectives on policy and collaboration — ready for professional conversations."
       }
-    }
+    },
+    "documentsLabel": "Documents"
   },
   "article": {
     "backToNews": "Back to newsroom",
@@ -339,11 +343,9 @@
     "headlineAccent": "One direction.",
     "intro": "EFSW is held together by four interconnected bodies — from strategic governance to active community practice across the region.",
     "structureLabel": "Organizational structure",
-    "collabEyebrow": "Team collaboration",
-    "collabHeadline": "Standing groups,",
-    "collabHeadlineAccent": "shared work.",
-    "collabLede": "The four bodies meet in practice through standing working groups. Each group draws members from more than one country and reports back into the structure above.",
-    "stagesLabel": "How a collaboration moves",
+    "jumpStructure": "Structure",
+    "jumpNetwork": "Our reach",
+    "jumpMembership": "Join us",
     "membershipLabel": "Who can join",
     "membershipHeadline": "Open to",
     "membershipHeadlineAccent": "every voice.",
@@ -388,91 +390,62 @@
         "body": "Universities, NGOs, government bodies, and partner organisations working at scale."
       }
     },
-    "workingGroups": {
-      "wg01": {
-        "name": "Research & Publication",
-        "focus": "Coordinates joint studies, peer review, and the shared citation library so findings reach practice quickly.",
-        "composition": [
-          "Academics",
-          "Field researchers",
-          "Postgraduate students"
-        ],
-        "cadence": "Monthly",
-        "reportsTo": "knowledge"
-      },
-      "wg02": {
-        "name": "Field Practice Exchange",
-        "focus": "Runs case clinics and peer supervision across borders, turning individual casework into transferable method.",
-        "composition": [
-          "Licensed practitioners",
-          "Supervisors",
-          "NGO field leads"
-        ],
-        "cadence": "Fortnightly",
-        "reportsTo": "community"
-      },
-      "wg03": {
-        "name": "Curriculum & Training",
-        "focus": "Builds shared teaching material and a common competency baseline across partner programmes.",
-        "composition": [
-          "Faculty",
-          "Curriculum designers",
-          "Training officers"
-        ],
-        "cadence": "Quarterly",
-        "reportsTo": "knowledge"
-      },
-      "wg04": {
-        "name": "Policy & Advocacy",
-        "focus": "Translates the network's evidence into submissions, briefings, and positions for public partners.",
-        "composition": [
-          "Policy analysts",
-          "Institutional delegates",
-          "Advocacy leads"
-        ],
-        "cadence": "Quarterly",
-        "reportsTo": "partnerships"
-      }
-    },
-    "reportsTo": "Reports to {group}",
-    "seats": "{count} seats",
-    "openToMembers": "Open to members",
-    "note": "Group names, cadences, and seat counts are placeholder values for layout review. Confirmed appointments will replace them once EFSW ratifies the 2026 cycle.",
-    "reach": {
-      "groups": {
-        "label": "Working groups",
-        "note": "Standing, cross-border"
-      },
-      "seats": {
-        "label": "Group seats",
-        "note": "Held across the network"
-      },
-      "languages": {
-        "label": "Working languages",
-        "note": "English · Korean · Thai"
-      },
-      "cycle": {
-        "label": "Current cycle",
-        "note": "Reviewed annually"
-      }
-    },
-    "stages": {
-      "proposal": {
-        "title": "Proposal",
-        "body": "Any member or partner institution can open a proposal to the relevant working group."
-      },
-      "review": {
-        "title": "Group review",
-        "body": "The working group tests scope, ethics, and capacity, then assigns a lead and co-lead."
-      },
-      "joint": {
-        "title": "Joint work",
-        "body": "Teams form across countries and disciplines, working in the language that fits the field site."
-      },
-      "practice": {
-        "title": "Return to practice",
-        "body": "Findings publish to the resource hub and feed back into curriculum and policy work."
-      }
+    "structureTitle": "How EFSW is organised",
+    "structureLede": "An executive council sets direction; three bodies carry the work into knowledge, partnerships, and the member community.",
+    "membersCount": "{count} members",
+    "apply": "Apply as {type}",
+    "glance": {
+      "title": "The network, counted.",
+      "lede": "Live figures from the EFSW member register and knowledge library, refreshed every few minutes.",
+      "live": "Live from the member register",
+      "local": "Preview data from this browser — connect the database to show live figures",
+      "loading": "Loading figures…",
+      "members": "Active members",
+      "countries": "Countries",
+      "documents": "Academic documents",
+      "mix": "Who the members are",
+      "browseLibrary": "Browse the library",
+      "emptyMembers": "No active members yet. Approved members appear here automatically.",
+      "reach": "Members based across {count} countries"
     }
+  },
+  "events": {
+    "eyebrow": "Events",
+    "headline": "Gatherings moving",
+    "headlineAccent": "the field forward.",
+    "intro": "Summits, webinars, workshops and convenings hosted or co-hosted by the Eurasia Forum for Social Workers.",
+    "searchPlaceholder": "Search events...",
+    "featured": "Featured event",
+    "moreFrom": "More events",
+    "linkLabel": "View event details",
+    "emptyTitle": "No events scheduled",
+    "emptyBody": "Check back soon — new summits, webinars and workshops are announced regularly.",
+    "ctaHeadline": "Never miss",
+    "ctaHeadlineAccent": "the next gathering.",
+    "ctaBody": "Members receive first-notice invitations, early-bird registration and reserved seats at regional summits.",
+    "ctaButton": "Become a member",
+    "searchLabel": "Search",
+    "filter": "Filter",
+    "all": "All",
+    "upcoming": "Upcoming",
+    "past": "Past",
+    "rsvp": "Register"
+  },
+  "user": {
+    "menu": {
+      "open": "Open account menu",
+      "profile": "My profile",
+      "messages": "Messages",
+      "interest": "Saved items",
+      "logout": "Log out"
+    }
+  },
+  "engagement": {
+    "like": "Like",
+    "unlike": "Unlike",
+    "interest": "Save",
+    "uninterest": "Saved",
+    "view": "views",
+    "loginToEngage": "Log in to interact"
   }
 }

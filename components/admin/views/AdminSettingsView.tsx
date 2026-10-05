@@ -36,53 +36,43 @@ export const AdminSettingsView = memo(function AdminSettingsView({
   };
 
   return (
-    <div className="max-w-3xl space-y-6 animate-fade-in">
-      <form onSubmit={handleSubmit} className="space-y-6">
+    <div style={{ display: "grid", gap: "1rem", maxWidth: "44rem" }}>
+      <form onSubmit={handleSubmit} className="efsw-admin-settings-form">
         {/* Organization Info */}
-        <div className="rounded-2xl border border-surface-subtle bg-surface-raised p-6 space-y-5">
-          <div>
-            <h3 className="text-base font-bold font-display text-text-primary flex items-center gap-2">
-              <Building size={18} className="text-teal" />
-              Organisation and contact details
-            </h3>
-            <p className="text-xs text-text-muted mt-0.5">
-              Details shown in official documents and the website footer.
-            </p>
-          </div>
+        <fieldset>
+          <legend className="efsw-admin-eyebrow" style={{ display: "flex", alignItems: "center", gap: "0.45rem" }}>
+            <Building size={15} style={{ color: "var(--admin-green)" }} />
+            Organisation and contact details
+          </legend>
+          <p style={{ margin: "0.35rem 0 0", color: "var(--admin-muted)", fontSize: "0.74rem", lineHeight: 1.5 }}>
+            Details shown in official documents and the website footer.
+          </p>
 
-          <div className="space-y-4">
-            <div>
-              <label className="block text-xs font-bold text-text-secondary mb-1.5">
-                Organisation name
-              </label>
+          <div style={{ display: "grid", gap: "0.8rem", marginTop: "1.2rem" }}>
+            <label>
+              Organisation name
               <input
                 type="text"
                 value={formData.organizationName}
                 onChange={(e) =>
                   setFormData((prev) => ({ ...prev, organizationName: e.target.value }))
                 }
-                className="w-full rounded-xl border border-surface-subtle bg-surface-base px-4 py-2.5 text-xs text-text-primary focus:border-teal focus:outline-none"
               />
-            </div>
+            </label>
 
-            <div>
-              <label className="block text-xs font-bold text-text-secondary mb-1.5">
-                Primary contact email
-              </label>
+            <label>
+              Primary contact email
               <input
                 type="email"
                 value={formData.contactEmail}
                 onChange={(e) =>
                   setFormData((prev) => ({ ...prev, contactEmail: e.target.value }))
                 }
-                className="w-full rounded-xl border border-surface-subtle bg-surface-base px-4 py-2.5 text-xs text-text-primary focus:border-teal focus:outline-none"
               />
-            </div>
+            </label>
 
-            <div>
-              <label className="block text-xs font-bold text-text-secondary mb-1.5">
-                Default locale
-              </label>
+            <label>
+              Default locale
               <select
                 value={formData.defaultLocale}
                 onChange={(e) =>
@@ -91,75 +81,58 @@ export const AdminSettingsView = memo(function AdminSettingsView({
                     defaultLocale: e.target.value as "th" | "en" | "ko",
                   }))
                 }
-                className="w-full rounded-xl border border-surface-subtle bg-surface-base px-4 py-2.5 text-xs text-text-primary focus:border-teal focus:outline-none"
               >
                 <option value="th">Thai</option>
                 <option value="en">English (US)</option>
                 <option value="ko">한국어 (Korean)</option>
               </select>
-            </div>
+            </label>
           </div>
-        </div>
+        </fieldset>
 
         {/* Notifications & Automation */}
-        <div className="rounded-2xl border border-surface-subtle bg-surface-raised p-6 space-y-5">
-          <div>
-            <h3 className="text-base font-bold font-display text-text-primary flex items-center gap-2">
-              <Bell size={18} className="text-teal" />
-              Notifications and review
-            </h3>
-            <p className="text-xs text-text-muted mt-0.5">
-              Configure notifications when new members register.
-            </p>
-          </div>
+        <fieldset>
+          <legend className="efsw-admin-eyebrow" style={{ display: "flex", alignItems: "center", gap: "0.45rem" }}>
+            <Bell size={15} style={{ color: "var(--admin-green)" }} />
+            Notifications and review
+          </legend>
+          <p style={{ margin: "0.35rem 0 0", color: "var(--admin-muted)", fontSize: "0.74rem", lineHeight: 1.5 }}>
+            Configure notifications when new members register.
+          </p>
 
-          <div className="flex items-center justify-between p-4 rounded-xl border border-surface-subtle bg-surface-base">
-            <div>
-              <div className="text-xs font-bold text-text-primary">
-                Notify when a new application arrives
-              </div>
-              <div className="text-[11px] text-text-muted mt-0.5">
-                Show a badge in the admin navigation for applications awaiting review
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={() =>
+          <label className="efsw-admin-switch-row" htmlFor="efsw-admin-toggle-notifications">
+            <span>
+              <strong>Notify when a new application arrives</strong>
+              <small>Show a badge in the admin navigation for applications awaiting review</small>
+            </span>
+            <input
+              id="efsw-admin-toggle-notifications"
+              type="checkbox"
+              checked={formData.reviewNotifications}
+              onChange={() =>
                 setFormData((prev) => ({
                   ...prev,
                   reviewNotifications: !prev.reviewNotifications,
                 }))
               }
-              className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
-                formData.reviewNotifications ? "bg-teal" : "bg-surface-subtle"
-              }`}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition duration-200 ease-in-out ${
-                  formData.reviewNotifications ? "translate-x-4" : "translate-x-0"
-                }`}
-              />
-            </button>
-          </div>
-        </div>
+            />
+          </label>
+        </fieldset>
 
         {/* Save Bar */}
-        <div className="flex items-center justify-between border-t border-surface-subtle pt-5">
+        <div className="efsw-admin-settings-actions" style={{ justifyContent: "space-between", paddingTop: "1.2rem", borderTop: "1px solid var(--admin-line)" }}>
           {savedSuccess ? (
-            <div className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-400">
-              <CheckCircle2 size={16} />
+            <div className="efsw-admin-status is-active">
+              <CheckCircle2 size={14} />
               <span>Settings saved</span>
             </div>
           ) : (
-            <span className="text-xs text-text-muted">
-              Changes take effect immediately.
-            </span>
+            <p>Changes take effect immediately.</p>
           )}
 
           <button
             type="submit"
-            className="inline-flex items-center gap-2 rounded-xl bg-teal px-5 py-2.5 text-xs font-bold text-white shadow-md shadow-teal/20 hover:bg-teal-vivid transition-all"
+            className="efsw-admin-primary"
           >
             <Save size={15} />
             <span>Save settings</span>

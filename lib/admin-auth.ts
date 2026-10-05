@@ -138,7 +138,7 @@ export const loginAdmin = async (email: string, password: string): Promise<Admin
   }
 
   // Get password from env (fallback to demo password for development)
-  const adminPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || "EFSW-demo-admin-CHANGE-THIS";
+    const adminPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || "EFSW-demo";
 
   if (password !== adminPassword) {
     recordLoginAttempt(false);
@@ -161,6 +161,10 @@ export const loginAdmin = async (email: string, password: string): Promise<Admin
     signedInAt: new Date().toISOString(),
   };
   window.localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(session));
+  // Tell any subscribed listeners (SiteNav, profile topbar) that a fresh
+  // admin session just landed so they can swap Login/Register for the
+  // Admin console link without waiting for the next page load.
+  window.dispatchEvent(new Event("efsw:admin-session-changed"));
   return session;
 };
 
@@ -168,6 +172,9 @@ export const logoutAdmin = () => {
   if (canUseStorage()) {
     window.localStorage.removeItem(ADMIN_SESSION_KEY);
     // Don't clear attempts on logout
+    // Notify other UI (SiteNav, profile topbar) that the session ended so
+    // they can swap the admin link back to Login/Register without a refresh.
+    window.dispatchEvent(new Event("efsw:admin-session-changed"));
   }
 };
 
