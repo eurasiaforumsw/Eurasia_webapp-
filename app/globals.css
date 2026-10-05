@@ -11928,8 +11928,7 @@ body {
   align-items: start;
   width: min(100%, var(--efsw-max));
   margin-inline: auto;
-  padding: 0 var(--efsw-gutter) 5rem;
-  margin-top: -3.5rem;
+  padding: 2rem var(--efsw-gutter) 5rem;
 }
 
 @media (max-width: 60rem) {
