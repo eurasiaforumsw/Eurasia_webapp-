@@ -66,7 +66,7 @@ function getInitialLocale(): Locale {
     // Cookies not available in static rendering
   }
 
-  return "th";
+  return "en";
 }
 
 export default function RootLayout({
