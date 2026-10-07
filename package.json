@@ -18,6 +18,13 @@
     "@react-three/drei": "^9.105.0",
     "@react-three/fiber": "^8.16.0",
     "@supabase/supabase-js": "^2.117.2",
+    "@tiptap/extension-image": "^3.31.4",
+    "@tiptap/extension-link": "^3.31.4",
+    "@tiptap/extension-placeholder": "^3.31.4",
+    "@tiptap/extension-text-align": "^3.31.4",
+    "@tiptap/extension-underline": "^3.31.4",
+    "@tiptap/react": "^3.31.4",
+    "@tiptap/starter-kit": "^3.31.4",
     "@vercel/blob": "^0.23.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -31,7 +38,8 @@
     "react-dom": "^18.3.0",
     "shaders": "^3.0.448",
     "tailwind-merge": "^2.3.0",
-    "three": "^0.163.0"
+    "three": "^0.163.0",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@netlify/plugin-nextjs": "^5.15.13",
