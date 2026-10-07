@@ -25,6 +25,10 @@ import {
 } from "lucide-react";
 import { AdminMember } from "@/lib/admin-data";
 import { useDebounce } from "@/hooks/useDebounce";
+import { useFilterPersistence } from "@/hooks/useFilterPersistence";
+import { BulkSelectCheckbox } from "@/components/admin/BulkSelectCheckbox";
+import { BulkActionBar } from "@/components/admin/BulkActionBar";
+import { BulkProgressModal } from "@/components/admin/modals/BulkProgressModal";
 
 /* Member filters are intentionally multi-select so admins can layer
  * conditions (e.g. "Thailand + active + 5+ years"). Every filter
@@ -36,6 +40,14 @@ export type MemberTypeFilter = "professional" | "student" | "institutional";
 /* Experience buckets are coarse — they're meant for a glance at the
  * roster, not a precise statistical breakdown. */
 export type MemberExperienceBucket = "new" | "mid" | "senior" | "expert";
+
+interface MemberFilterValues {
+  searchQuery: string;
+  statusFilters: MemberStatusFilter[];
+  typeFilters: MemberTypeFilter[];
+  countryFilters: string[];
+  experienceFilters: MemberExperienceBucket[];
+}
 
 interface AdminMembersViewProps {
   members: AdminMember[];
@@ -54,16 +66,37 @@ export const AdminMembersView = memo(function AdminMembersView({
   onUpdateStatus,
   onExportCsv,
 }: AdminMembersViewProps) {
-  const [searchQuery, setSearchQuery] = useState("");
-  /* Multi-select filters — empty array means "no constraint" (i.e.
-     show every member regardless of that facet). Each filter is
-     additive with the others. */
-  const [statusFilters, setStatusFilters] = useState<MemberStatusFilter[]>([]);
-  const [typeFilters, setTypeFilters] = useState<MemberTypeFilter[]>([]);
-  const [countryFilters, setCountryFilters] = useState<string[]>([]);
-  const [experienceFilters, setExperienceFilters] = useState<MemberExperienceBucket[]>([]);
+  // Filter persistence with localStorage and URL state
+  const {
+    filterValues,
+    setFilterValues,
+    presets,
+    savePreset,
+    deletePreset,
+    loadPreset,
+    clearFilters,
+  } = useFilterPersistence<MemberFilterValues>({
+    viewName: "members",
+    defaultValues: {
+      searchQuery: "",
+      statusFilters: [],
+      typeFilters: [],
+      countryFilters: [],
+      experienceFilters: [],
+    },
+    enableUrlState: true, // Allow sharing filtered views via URL
+  });
+
   const [countryOpen, setCountryOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+
+  // Bulk selection state
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkAction, setBulkAction] = useState<"approve" | "delete" | null>(null);
+  const [showBulkProgress, setShowBulkProgress] = useState(false);
+
+  // Destructure for easier access
+  const { searchQuery, statusFilters, typeFilters, countryFilters, experienceFilters } = filterValues;
 
   // Debounce search query to prevent re-filtering on every keystroke
   const debouncedQuery = useDebounce(searchQuery.trim().toLowerCase(), 220);
@@ -134,11 +167,7 @@ export const AdminMembersView = memo(function AdminMembersView({
     statusFilters.length + typeFilters.length + countryFilters.length + experienceFilters.length;
 
   const clearAllFilters = () => {
-    setStatusFilters([]);
-    setTypeFilters([]);
-    setCountryFilters([]);
-    setExperienceFilters([]);
-    setSearchQuery("");
+    clearFilters();
   };
 
   // ── Summary stats ─────────────────────────────────────────────
@@ -197,6 +226,44 @@ export const AdminMembersView = memo(function AdminMembersView({
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
     return filteredMembers.slice(startIndex, startIndex + ITEMS_PER_PAGE);
   }, [filteredMembers, currentPage]);
+
+  // ── Bulk selection handlers ───────────────────────────────────
+  const currentPageIds = useMemo(() => paginatedMembers.map((m) => m.id), [paginatedMembers]);
+  const allCurrentPageSelected = currentPageIds.length > 0 && currentPageIds.every((id) => selectedIds.has(id));
+  const someCurrentPageSelected = currentPageIds.some((id) => selectedIds.has(id)) && !allCurrentPageSelected;
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedIds(new Set([...selectedIds, ...currentPageIds]));
+    } else {
+      const newSet = new Set(selectedIds);
+      currentPageIds.forEach((id) => newSet.delete(id));
+      setSelectedIds(newSet);
+    }
+  };
+
+  const handleSelectOne = (id: string, checked: boolean) => {
+    const newSet = new Set(selectedIds);
+    if (checked) {
+      newSet.add(id);
+    } else {
+      newSet.delete(id);
+    }
+    setSelectedIds(newSet);
+  };
+
+  const handleBulkAction = async (action: "approve" | "delete") => {
+    setBulkAction(action);
+    setShowBulkProgress(true);
+  };
+
+  const handleBulkComplete = () => {
+    setShowBulkProgress(false);
+    setBulkAction(null);
+    setSelectedIds(new Set());
+    // Trigger refresh by calling parent's refresh method if available
+    // For now, we rely on the parent component to re-fetch data
+  };
 
   // ── Helpers ───────────────────────────────────────────────────
   const formatDate = (value?: string) => {
@@ -270,6 +337,58 @@ export const AdminMembersView = memo(function AdminMembersView({
 
   return (
     <div style={{ display: "grid", gap: "0.85rem" }}>
+      {/* Bulk action bar (sticky when items selected) */}
+      {selectedIds.size > 0 && (
+        <BulkActionBar
+          selectedCount={selectedIds.size}
+          totalCount={filteredMembers.length}
+          onClearSelection={() => setSelectedIds(new Set())}
+          actions={[
+            {
+              label: "Approve selected",
+              icon: Check,
+              onClick: () => handleBulkAction("approve"),
+              variant: "success",
+            },
+            {
+              label: "Delete selected",
+              icon: Ban,
+              onClick: () => handleBulkAction("delete"),
+              variant: "danger",
+            },
+          ]}
+        />
+      )}
+
+      {/* Bulk progress modal */}
+      {showBulkProgress && bulkAction && (
+        <BulkProgressModal
+          isOpen={showBulkProgress}
+          onClose={() => {
+            setShowBulkProgress(false);
+            setBulkAction(null);
+          }}
+          action={bulkAction}
+          selectedIds={Array.from(selectedIds)}
+          entityType="members"
+          onExecute={async (ids) => {
+            if (bulkAction === "delete") {
+              await fetch("/api/members/bulk", {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ ids }),
+              });
+            } else if (bulkAction === "approve") {
+              await fetch("/api/members/bulk", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ ids, action: "approve" }),
+              });
+            }
+          }}
+        />
+      )}
+
       {/* ── KPI summary cards ──────────────────────────────────── */}
       <div className="efsw-admin-summary-grid">
         <div className="efsw-admin-summary-card">
@@ -428,7 +547,7 @@ export const AdminMembersView = memo(function AdminMembersView({
             type="text"
             placeholder="Search name, email, country, organisation…"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => setFilterValues({ ...filterValues, searchQuery: e.target.value })}
           />
         </div>
 
@@ -455,11 +574,12 @@ export const AdminMembersView = memo(function AdminMembersView({
                   className={`efsw-admin-chip${active ? " is-active" : ""}`}
                   aria-pressed={active}
                   onClick={() =>
-                    setStatusFilters((current) =>
-                      current.includes(tab.id)
-                        ? current.filter((s) => s !== tab.id)
-                        : [...current, tab.id],
-                    )
+                    setFilterValues({
+                      ...filterValues,
+                      statusFilters: statusFilters.includes(tab.id)
+                        ? statusFilters.filter((s) => s !== tab.id)
+                        : [...statusFilters, tab.id],
+                    })
                   }
                 >
                   <span>{tab.label}</span>
@@ -491,11 +611,12 @@ export const AdminMembersView = memo(function AdminMembersView({
                   className={`efsw-admin-chip${active ? " is-active" : ""}`}
                   aria-pressed={active}
                   onClick={() =>
-                    setTypeFilters((current) =>
-                      current.includes(tab.id)
-                        ? current.filter((s) => s !== tab.id)
-                        : [...current, tab.id],
-                    )
+                    setFilterValues({
+                      ...filterValues,
+                      typeFilters: typeFilters.includes(tab.id)
+                        ? typeFilters.filter((s) => s !== tab.id)
+                        : [...typeFilters, tab.id],
+                    })
                   }
                 >
                   <Icon size={12} strokeWidth={2.2} aria-hidden="true" />
@@ -547,11 +668,12 @@ export const AdminMembersView = memo(function AdminMembersView({
                         aria-selected={active}
                         className={`efsw-admin-multiselect__option${active ? " is-active" : ""}`}
                         onClick={() =>
-                          setCountryFilters((current) =>
-                            current.includes(country)
-                              ? current.filter((c) => c !== country)
-                              : [...current, country],
-                          )
+                          setFilterValues({
+                            ...filterValues,
+                            countryFilters: countryFilters.includes(country)
+                              ? countryFilters.filter((c) => c !== country)
+                              : [...countryFilters, country],
+                          })
                         }
                       >
                         <span className="efsw-admin-multiselect__check" aria-hidden="true">
@@ -590,11 +712,12 @@ export const AdminMembersView = memo(function AdminMembersView({
                   aria-pressed={active}
                   title={tab.helper}
                   onClick={() =>
-                    setExperienceFilters((current) =>
-                      current.includes(tab.id)
-                        ? current.filter((s) => s !== tab.id)
-                        : [...current, tab.id],
-                    )
+                    setFilterValues({
+                      ...filterValues,
+                      experienceFilters: experienceFilters.includes(tab.id)
+                        ? experienceFilters.filter((s) => s !== tab.id)
+                        : [...experienceFilters, tab.id],
+                    })
                   }
                 >
                   <span>{tab.label}</span>
@@ -634,6 +757,14 @@ export const AdminMembersView = memo(function AdminMembersView({
         <table className="efsw-admin-table">
           <thead>
             <tr>
+              <th style={{ width: "40px" }}>
+                <BulkSelectCheckbox
+                  checked={allCurrentPageSelected}
+                  indeterminate={someCurrentPageSelected}
+                  onChange={handleSelectAll}
+                  ariaLabel="Select all members on this page"
+                />
+              </th>
               <th>Member</th>
               <th>Country / institution</th>
               <th>Type</th>
@@ -645,7 +776,7 @@ export const AdminMembersView = memo(function AdminMembersView({
           <tbody>
             {paginatedMembers.length === 0 ? (
               <tr>
-                <td colSpan={6}>
+                <td colSpan={7}>
                   <div className="efsw-admin-empty">
                     <AlertCircle size={20} />
                     <h2>No members match the current filters</h2>
@@ -663,6 +794,13 @@ export const AdminMembersView = memo(function AdminMembersView({
                     if (event.key === "Enter") onOpenMember(member);
                   }}
                 >
+                  <td onClick={(e) => e.stopPropagation()}>
+                    <BulkSelectCheckbox
+                      checked={selectedIds.has(member.id)}
+                      onChange={(checked) => handleSelectOne(member.id, checked)}
+                      ariaLabel={`Select ${member.fullName}`}
+                    />
+                  </td>
                   <td>
                     <div className="efsw-admin-member-cell">
                       <div className="efsw-admin-member-avatar">

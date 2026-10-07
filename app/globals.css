@@ -3,6 +3,7 @@
 @import "../components/efsw/DeanMessage.css";
 @import "./academic-library.css";
 @import "../components/admin/RichTextEditor.css";
+@import "../components/admin/TipTapEditor.css";
 @import "../components/admin/MediaLibrary.css";
 @import "../components/admin/ContentPreview.css";
 @import "../components/admin/AnalyticsDashboard.css";
@@ -15846,4 +15847,328 @@ body {
 
 .skip-link:focus-visible {
   transform: translateY(100px);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   BULK OPERATIONS — Checkbox, Action Bar, Progress Modal
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Bulk Select Checkbox ── */
+.efsw-admin-bulk-checkbox {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+}
+
+.efsw-admin-bulk-checkbox__input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.efsw-admin-bulk-checkbox__box {
+  display: grid;
+  place-items: center;
+  width: 1.125rem;
+  height: 1.125rem;
+  border: 2px solid var(--admin-line);
+  border-radius: 0.25rem;
+  background: var(--admin-surface);
+  color: #fff;
+  transition: all 180ms var(--ease-out);
+}
+
+.efsw-admin-bulk-checkbox__input:checked ~ .efsw-admin-bulk-checkbox__box,
+.efsw-admin-bulk-checkbox__input:indeterminate ~ .efsw-admin-bulk-checkbox__box {
+  border-color: var(--admin-green);
+  background: var(--admin-green);
+}
+
+.efsw-admin-bulk-checkbox__input:focus-visible ~ .efsw-admin-bulk-checkbox__box {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.efsw-admin-bulk-checkbox:hover .efsw-admin-bulk-checkbox__box {
+  border-color: var(--admin-green);
+}
+
+.efsw-admin-bulk-checkbox__input:disabled ~ .efsw-admin-bulk-checkbox__box {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Bulk Action Bar ── */
+.efsw-admin-bulk-bar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  width: 100%;
+  padding: 0.85rem 1.25rem;
+  border-bottom: 1px solid var(--admin-line);
+  background: var(--admin-green-soft);
+  backdrop-filter: blur(8px);
+  animation: efswAdminBulkBarIn 280ms var(--ease-out) both;
+}
+
+.efsw-admin-bulk-bar__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem;
+}
+
+.efsw-admin-bulk-bar__count {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.efsw-admin-bulk-bar__count-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.75rem;
+  height: 1.75rem;
+  padding: 0 0.45rem;
+  border-radius: 999px;
+  background: var(--admin-green);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.efsw-admin-bulk-bar__count-text {
+  color: var(--admin-ink);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.efsw-admin-bulk-bar__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex: 1;
+  justify-content: center;
+}
+
+.efsw-admin-bulk-bar__action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 2.5rem;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--admin-line);
+  border-radius: 999px;
+  background: var(--admin-surface);
+  color: var(--admin-ink);
+  font-size: 0.72rem;
+  font-weight: 750;
+  white-space: nowrap;
+  transition: all 180ms var(--ease-out);
+  cursor: pointer;
+}
+
+.efsw-admin-bulk-bar__action:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: var(--admin-green);
+  color: var(--admin-green);
+}
+
+.efsw-admin-bulk-bar__action--success {
+  border-color: color-mix(in oklch, var(--admin-green) 40%, var(--admin-line));
+  background: var(--admin-green-soft);
+  color: var(--admin-green);
+}
+
+.efsw-admin-bulk-bar__action--success:hover:not(:disabled) {
+  border-color: var(--admin-green);
+  background: var(--admin-green);
+  color: #fff;
+}
+
+.efsw-admin-bulk-bar__action--danger {
+  border-color: color-mix(in oklch, var(--admin-danger) 40%, var(--admin-line));
+  background: var(--admin-danger-soft);
+  color: var(--admin-danger);
+}
+
+.efsw-admin-bulk-bar__action--danger:hover:not(:disabled) {
+  border-color: var(--admin-danger);
+  background: var(--admin-danger);
+  color: #fff;
+}
+
+.efsw-admin-bulk-bar__action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.efsw-admin-bulk-bar__clear {
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 1px solid var(--admin-line);
+  border-radius: 50%;
+  background: var(--admin-surface);
+  color: var(--admin-muted);
+  transition: all 180ms var(--ease-out);
+  cursor: pointer;
+}
+
+.efsw-admin-bulk-bar__clear:hover {
+  border-color: var(--admin-danger);
+  background: var(--admin-danger-soft);
+  color: var(--admin-danger);
+}
+
+.efsw-admin-bulk-bar__clear:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/* ── Bulk Progress Modal ── */
+.efsw-admin-bulk-progress__body {
+  margin-top: 1.25rem;
+  display: grid;
+  gap: 1rem;
+}
+
+.efsw-admin-bulk-progress__track {
+  position: relative;
+  height: 0.5rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--admin-surface-deep);
+}
+
+.efsw-admin-bulk-progress__fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--admin-green);
+  transition: width 300ms var(--ease-out);
+}
+
+.efsw-admin-bulk-progress__stats {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.efsw-admin-bulk-progress__stat {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.76rem;
+  font-weight: 600;
+}
+
+.efsw-admin-bulk-progress__stat--success {
+  color: var(--admin-green);
+}
+
+.efsw-admin-bulk-progress__stat--error {
+  color: var(--admin-danger);
+}
+
+.efsw-admin-bulk-progress__errors {
+  margin-top: 0.5rem;
+  padding: 0.9rem;
+  border: 1px solid color-mix(in oklch, var(--admin-danger) 30%, var(--admin-line));
+  border-radius: 0.5rem;
+  background: var(--admin-danger-soft);
+}
+
+.efsw-admin-bulk-progress__errors-title {
+  margin: 0 0 0.6rem;
+  color: var(--admin-danger);
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.efsw-admin-bulk-progress__errors-list {
+  margin: 0;
+  padding-left: 1.25rem;
+  color: var(--admin-ink);
+  font-size: 0.74rem;
+  line-height: 1.5;
+}
+
+.efsw-admin-bulk-progress__errors-list li {
+  margin-bottom: 0.35rem;
+}
+
+.efsw-admin-bulk-progress__errors-more {
+  color: var(--admin-muted);
+  font-style: italic;
+}
+
+/* ── Icon button (for close buttons) ── */
+.efsw-admin-icon-button {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 0;
+  border-radius: 0.35rem;
+  background: transparent;
+  color: var(--admin-muted);
+  cursor: pointer;
+  transition: all 180ms var(--ease-out);
+}
+
+.efsw-admin-icon-button:hover {
+  background: var(--admin-surface-raised);
+  color: var(--admin-ink);
+}
+
+.efsw-admin-icon-button:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/* ── Animations ── */
+@keyframes efswAdminBulkBarIn {
+  from {
+    opacity: 0;
+    transform: translateY(-0.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Responsive ── */
+@media (max-width: 48rem) {
+  .efsw-admin-bulk-bar {
+    padding: 0.7rem 1rem;
+  }
+
+  .efsw-admin-bulk-bar__inner {
+    flex-wrap: wrap;
+    gap: 0.8rem;
+  }
+
+  .efsw-admin-bulk-bar__actions {
+    width: 100%;
+    justify-content: flex-start;
+    overflow-x: auto;
+  }
+
+  .efsw-admin-bulk-bar__action {
+    min-height: 2.25rem;
+    padding: 0.4rem 0.85rem;
+    font-size: 0.7rem;
+  }
 }
