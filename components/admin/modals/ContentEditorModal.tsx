@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, DragEvent, FormEvent, memo, useEffect, useMemo, useState } from "react";
+import { ChangeEvent, DragEvent, FormEvent, memo, useEffect, useMemo, useState, useRef, useCallback } from "react";
 import {
   X,
   UploadCloud,
@@ -16,6 +16,7 @@ import {
   Users,
   AlertTriangle,
   Info,
+  Clock,
 } from "lucide-react";
 import {
   AdminContentCategory,
@@ -85,6 +86,13 @@ const BLANK_ITEM: AdminContentItem = {
   updatedAt: "",
 };
 
+const AUTOSAVE_INTERVAL = 30000; // 30 seconds
+const DRAFT_STORAGE_PREFIX = "efsw-content-draft-";
+
+function formatTime(date: Date): string {
+  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
 function isoToLocalInput(iso?: string): string {
   if (!iso) return "";
   const d = new Date(iso);
@@ -122,7 +130,87 @@ export const ContentEditorModal = memo(function ContentEditorModal({
   const [audienceMode, setAudienceMode] = useState<"all" | "members-only">(
     initialItem?.targetMembershipTypes?.length || initialItem?.targetGroups?.length ? "members-only" : "all",
   );
+
+  // Dirty state and autosave tracking
+  const [isDirty, setIsDirty] = useState(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
+  const initialDataRef = useRef<string>("");
+  const autosaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
+  const firstInputRef = useRef<HTMLInputElement>(null);
+  const previousActiveElementRef = useRef<Element | null>(null);
+
   const { addToast } = useToast();
+
+  const draftKey = useMemo(() => {
+    return `${DRAFT_STORAGE_PREFIX}${formData.id || "new"}`;
+  }, [formData.id]);
+
+  const saveDraft = useCallback(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const draftData = { formData, tagsInput, audienceMode, timestamp: Date.now() };
+      localStorage.setItem(draftKey, JSON.stringify(draftData));
+      setLastSaved(new Date());
+    } catch (err) {
+      console.error("Failed to save draft:", err);
+    }
+  }, [formData, tagsInput, audienceMode, draftKey]);
+
+  const loadDraft = useCallback(() => {
+    if (typeof window === "undefined") return null;
+    try {
+      const stored = localStorage.getItem(draftKey);
+      if (!stored) return null;
+      return JSON.parse(stored);
+    } catch (err) {
+      console.error("Failed to load draft:", err);
+      return null;
+    }
+  }, [draftKey]);
+
+  const clearDraft = useCallback(() => {
+    if (typeof window === "undefined") return;
+    try {
+      localStorage.removeItem(draftKey);
+      setLastSaved(null);
+    } catch (err) {
+      console.error("Failed to clear draft:", err);
+    }
+  }, [draftKey]);
+
+  const checkDirty = useCallback(() => {
+    const currentData = JSON.stringify({ formData, tagsInput, audienceMode });
+    const dirty = currentData !== initialDataRef.current;
+    setIsDirty(dirty);
+    return dirty;
+  }, [formData, tagsInput, audienceMode]);
+
+  const handleCloseWithConfirmation = useCallback(() => {
+    if (checkDirty()) {
+      setShowUnsavedDialog(true);
+    } else {
+      clearDraft();
+      onClose();
+    }
+  }, [checkDirty, clearDraft, onClose]);
+
+  const handleConfirmClose = useCallback(() => {
+    clearDraft();
+    setShowUnsavedDialog(false);
+    onClose();
+  }, [clearDraft, onClose]);
+
+  const handleCancelClose = useCallback(() => {
+    setShowUnsavedDialog(false);
+  }, []);
+
+  const restoreFocus = useCallback(() => {
+    if (previousActiveElementRef.current instanceof HTMLElement) {
+      previousActiveElementRef.current.focus();
+    }
+  }, []);
 
   useEffect(() => {
     if (isOpen) {
@@ -140,8 +228,131 @@ export const ContentEditorModal = memo(function ContentEditorModal({
         setCoverImageStatus("remote");
       }
       setCoverImageError(null);
+
+      // Store initial data for dirty tracking
+      initialDataRef.current = JSON.stringify({ formData: next, tagsInput: next.tags ? next.tags.join(", ") : "", audienceMode: next.targetMembershipTypes?.length || next.targetGroups?.length ? "members-only" : "all" });
+      setIsDirty(false);
+
+      // Try to load draft
+      const draft = loadDraft();
+      if (draft && draft.timestamp > Date.parse(next.updatedAt || "0")) {
+        const shouldRestore = confirm("A newer draft was found. Restore it?");
+        if (shouldRestore) {
+          setFormData(draft.formData);
+          setTagsInput(draft.tagsInput);
+          setAudienceMode(draft.audienceMode);
+        }
+      }
+
+      // Store previous active element and focus first input
+      previousActiveElementRef.current = document.activeElement;
+      setTimeout(() => {
+        firstInputRef.current?.focus();
+      }, 100);
     }
-  }, [initialItem, isOpen]);
+  }, [initialItem, isOpen, loadDraft]);
+
+  // Autosave effect
+  useEffect(() => {
+    if (!isOpen) return;
+
+    checkDirty();
+
+    if (autosaveTimerRef.current) {
+      clearTimeout(autosaveTimerRef.current);
+    }
+
+    if (isDirty) {
+      autosaveTimerRef.current = setTimeout(() => {
+        saveDraft();
+      }, AUTOSAVE_INTERVAL);
+    }
+
+    return () => {
+      if (autosaveTimerRef.current) {
+        clearTimeout(autosaveTimerRef.current);
+      }
+    };
+  }, [isOpen, formData, tagsInput, audienceMode, isDirty, checkDirty, saveDraft]);
+
+  // BeforeUnload warning
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isDirty) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [isOpen, isDirty]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Cmd/Ctrl + S to save
+      if ((e.metaKey || e.ctrlKey) && e.key === "s") {
+        e.preventDefault();
+        const form = modalRef.current?.querySelector("form") as HTMLFormElement;
+        form?.requestSubmit();
+      }
+
+      // Escape to close (with confirmation if dirty)
+      if (e.key === "Escape") {
+        e.preventDefault();
+        handleCloseWithConfirmation();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, handleCloseWithConfirmation]);
+
+  // Focus trap
+  useEffect(() => {
+    if (!isOpen || !modalRef.current) return;
+
+    const modal = modalRef.current;
+    const focusableElements = modal.querySelectorAll(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    const firstElement = focusableElements[0] as HTMLElement;
+    const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
+
+    const handleTabKey = (e: KeyboardEvent) => {
+      if (e.key !== "Tab") return;
+
+      if (e.shiftKey) {
+        if (document.activeElement === firstElement) {
+          e.preventDefault();
+          lastElement.focus();
+        }
+      } else {
+        if (document.activeElement === lastElement) {
+          e.preventDefault();
+          firstElement.focus();
+        }
+      }
+    };
+
+    modal.addEventListener("keydown", handleTabKey);
+    return () => modal.removeEventListener("keydown", handleTabKey);
+  }, [isOpen]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (autosaveTimerRef.current) {
+        clearTimeout(autosaveTimerRef.current);
+      }
+      restoreFocus();
+    };
+  }, [restoreFocus]);
 
   const handleImageUpload = async (file: File) => {
     if (!file.type.startsWith("image/")) {
@@ -228,7 +439,7 @@ export const ContentEditorModal = memo(function ContentEditorModal({
       addToast({
         type: "error",
         title: "Display window is invalid",
-        description: "“Show from” must be earlier than “hide after”.",
+        description: "'Show from' must be earlier than 'hide after'.",
       });
       return;
     }
@@ -248,6 +459,8 @@ export const ContentEditorModal = memo(function ContentEditorModal({
     };
 
     onSave(updated);
+    clearDraft();
+    setIsDirty(false);
     addToast({
       type: "success",
       title: formData.id ? "Content updated" : "Content created",
@@ -286,7 +499,7 @@ export const ContentEditorModal = memo(function ContentEditorModal({
 
   return (
     <div className="efsw-admin-modal-layer">
-      <div className="efsw-admin-editor" role="dialog" aria-label={isEditing ? "Edit content" : "Create content"}>
+      <div className="efsw-admin-editor" ref={modalRef} role="dialog" aria-label={isEditing ? "Edit content" : "Create content"}>
         <header>
           <div>
             <span className="efsw-admin-eyebrow">
@@ -297,7 +510,7 @@ export const ContentEditorModal = memo(function ContentEditorModal({
           <button
             type="button"
             className="efsw-admin-icon-button"
-            onClick={onClose}
+            onClick={handleCloseWithConfirmation}
             aria-label="Close editor"
           >
             <X size={16} />
@@ -331,6 +544,20 @@ export const ContentEditorModal = memo(function ContentEditorModal({
               }}
             >
               <AlertTriangle size={13} /> Expired
+            </span>
+          )}
+          {isDirty && (
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "0.3rem",
+                color: "var(--admin-green)",
+                fontWeight: 700,
+              }}
+            >
+              <Clock size={13} />
+              {lastSaved ? `Autosaved at ${formatTime(lastSaved)}` : "Unsaved changes"}
             </span>
           )}
         </div>
@@ -428,6 +655,7 @@ export const ContentEditorModal = memo(function ContentEditorModal({
               <label>
                 Category
                 <input
+                  ref={firstInputRef}
                   type="text"
                   list={`category-options-${formData.kind}`}
                   value={formData.category}
@@ -935,7 +1163,7 @@ export const ContentEditorModal = memo(function ContentEditorModal({
               }}
             >
               Leave either field empty to leave that side of the window open.
-              Once “Hide after” passes, the item is automatically excluded from the public feed.
+              Once "Hide after" passes, the item is automatically excluded from the public feed.
             </p>
 
             {/* Audience mode switch */}
@@ -1232,7 +1460,7 @@ export const ContentEditorModal = memo(function ContentEditorModal({
               <span style={{ marginRight: "auto" }} />
             )}
 
-            <button type="button" onClick={onClose} className="efsw-admin-text-action">
+            <button type="button" onClick={handleCloseWithConfirmation} className="efsw-admin-text-action">
               Cancel
             </button>
             <button type="submit" className="efsw-admin-text-action" style={{ color: "var(--admin-green)", fontSize: "0.78rem" }}>
@@ -1241,6 +1469,77 @@ export const ContentEditorModal = memo(function ContentEditorModal({
           </div>
         </form>
       </div>
+
+      {/* Unsaved changes dialog */}
+      {showUnsavedDialog && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            display: "grid",
+            placeItems: "center",
+            background: "rgba(0, 0, 0, 0.5)",
+            zIndex: 10000,
+          }}
+          onClick={handleCancelClose}
+        >
+          <div
+            role="dialog"
+            aria-labelledby="unsaved-dialog-title"
+            aria-describedby="unsaved-dialog-description"
+            style={{
+              background: "var(--admin-surface)",
+              padding: "1.5rem",
+              borderRadius: "0.5rem",
+              maxWidth: "28rem",
+              width: "90%",
+              boxShadow: "0 10px 40px rgba(0, 0, 0, 0.3)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3
+              id="unsaved-dialog-title"
+              style={{
+                margin: "0 0 0.5rem",
+                fontFamily: "var(--font-display)",
+                fontSize: "1.1rem",
+                fontWeight: 650,
+                color: "var(--admin-ink)",
+              }}
+            >
+              Unsaved changes
+            </h3>
+            <p
+              id="unsaved-dialog-description"
+              style={{
+                margin: "0 0 1.5rem",
+                color: "var(--admin-muted)",
+                fontSize: "0.85rem",
+                lineHeight: 1.5,
+              }}
+            >
+              You have unsaved changes. Are you sure you want to close without saving?
+            </p>
+            <div style={{ display: "flex", gap: "0.75rem", justifyContent: "flex-end" }}>
+              <button
+                type="button"
+                onClick={handleCancelClose}
+                className="efsw-admin-text-action"
+              >
+                Keep editing
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmClose}
+                className="efsw-admin-text-action"
+                style={{ color: "var(--admin-danger)" }}
+              >
+                Discard changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 });
