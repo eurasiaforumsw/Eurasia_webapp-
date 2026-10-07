@@ -291,6 +291,7 @@ export default function MemberProfilePage() {
   const [avatarEditor, setAvatarEditor] = useState<{ src: string; open: boolean }>({ src: "", open: false });
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [avatarError, setAvatarError] = useState("");
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -400,10 +401,37 @@ export default function MemberProfilePage() {
     setAvatarEditor({ src: "", open: false });
   };
 
+  /* ---------- validation ---------- */
+  const validateForm = (): boolean => {
+    if (!draft) return false;
+
+    const newErrors: Record<string, string> = {};
+
+    if (!draft.firstName.trim()) {
+      newErrors.firstName = "First name is required";
+    }
+    if (!draft.lastName.trim()) {
+      newErrors.lastName = "Last name is required";
+    }
+    if (!draft.country.trim()) {
+      newErrors.country = "Country is required";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   /* ---------- save ---------- */
   const handleUpdate = async (e: FormEvent) => {
     e.preventDefault();
     if (!member || !draft) return;
+
+    if (!validateForm()) {
+      setStatus("error");
+      setTimeout(() => setStatus(""), 3200);
+      return;
+    }
+
     setStatus("saving");
 
     const firstName = draft.firstName.trim();
@@ -662,7 +690,26 @@ export default function MemberProfilePage() {
           </div>
         </aside>
 
-        <form className="efsw-profile__form" onSubmit={handleUpdate} noValidate>
+        <form
+          className="efsw-profile__form"
+          onSubmit={handleUpdate}
+          noValidate
+          aria-describedby={Object.keys(errors).length > 0 ? "form-errors" : undefined}
+        >
+          {Object.keys(errors).length > 0 && (
+            <div id="form-errors" role="alert" className="efsw-profile__alert efsw-profile__alert--error">
+              <AlertCircle size={14} />
+              <div>
+                <strong>Please fix the following errors:</strong>
+                <ul>
+                  {Object.entries(errors).map(([field, message]) => (
+                    <li key={field}>{message}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          )}
+
           {/* ── Identity ── */}
           <section id="profile-section-identity" className="efsw-profile__card">
             <header className="efsw-profile__card-head">
@@ -679,11 +726,27 @@ export default function MemberProfilePage() {
                   id="firstName"
                   type="text"
                   value={draft.firstName}
-                  onChange={(e) => setDraft({ ...draft, firstName: e.target.value })}
+                  onChange={(e) => {
+                    setDraft({ ...draft, firstName: e.target.value });
+                    if (errors.firstName) {
+                      setErrors((prev) => {
+                        const next = { ...prev };
+                        delete next.firstName;
+                        return next;
+                      });
+                    }
+                  }}
                   required
                   placeholder="e.g. Aisha"
+                  aria-invalid={!!errors.firstName}
+                  aria-describedby={errors.firstName ? "firstName-error" : undefined}
                 />
                 <span className="efsw-profile__field-hint">As shown on your professional documents</span>
+                {errors.firstName && (
+                  <p id="firstName-error" role="alert" className="efsw-profile__field-error">
+                    {errors.firstName}
+                  </p>
+                )}
               </div>
               <div className="efsw-profile__field">
                 <label htmlFor="lastName">Last name <span className="efsw-profile__req">*</span></label>
@@ -691,10 +754,26 @@ export default function MemberProfilePage() {
                   id="lastName"
                   type="text"
                   value={draft.lastName}
-                  onChange={(e) => setDraft({ ...draft, lastName: e.target.value })}
+                  onChange={(e) => {
+                    setDraft({ ...draft, lastName: e.target.value });
+                    if (errors.lastName) {
+                      setErrors((prev) => {
+                        const next = { ...prev };
+                        delete next.lastName;
+                        return next;
+                      });
+                    }
+                  }}
                   required
                   placeholder="e.g. Karimova"
+                  aria-invalid={!!errors.lastName}
+                  aria-describedby={errors.lastName ? "lastName-error" : undefined}
                 />
+                {errors.lastName && (
+                  <p id="lastName-error" role="alert" className="efsw-profile__field-error">
+                    {errors.lastName}
+                  </p>
+                )}
               </div>
             </div>
             {avatarError && (
@@ -719,15 +798,31 @@ export default function MemberProfilePage() {
                 <select
                   id="country"
                   value={draft.country}
-                  onChange={(e) => setDraft({ ...draft, country: e.target.value })}
+                  onChange={(e) => {
+                    setDraft({ ...draft, country: e.target.value });
+                    if (errors.country) {
+                      setErrors((prev) => {
+                        const next = { ...prev };
+                        delete next.country;
+                        return next;
+                      });
+                    }
+                  }}
                   required
+                  aria-invalid={!!errors.country}
+                  aria-describedby={errors.country ? "country-error" : "country-hint"}
                 >
                   <option value="">Select country...</option>
                   {COUNTRIES.map((c) => (
                     <option key={c} value={c}>{c}</option>
                   ))}
                 </select>
-                <span className="efsw-profile__field-hint">Used for regional working groups</span>
+                <span id="country-hint" className="efsw-profile__field-hint">Used for regional working groups</span>
+                {errors.country && (
+                  <p id="country-error" role="alert" className="efsw-profile__field-error">
+                    {errors.country}
+                  </p>
+                )}
               </div>
               <div className="efsw-profile__field">
                 <label htmlFor="city">City</label>
@@ -737,7 +832,14 @@ export default function MemberProfilePage() {
                   value={draft.city}
                   onChange={(e) => setDraft({ ...draft, city: e.target.value })}
                   placeholder="e.g. Bangkok"
+                  aria-invalid={!!errors.city}
+                  aria-describedby={errors.city ? "city-error" : undefined}
                 />
+                {errors.city && (
+                  <p id="city-error" role="alert" className="efsw-profile__field-error">
+                    {errors.city}
+                  </p>
+                )}
               </div>
             </div>
           </section>
@@ -757,7 +859,18 @@ export default function MemberProfilePage() {
                 <select
                   id="educationLevel"
                   value={draft.educationLevel}
-                  onChange={(e) => setDraft({ ...draft, educationLevel: e.target.value as Draft["educationLevel"] })}
+                  onChange={(e) => {
+                    setDraft({ ...draft, educationLevel: e.target.value as Draft["educationLevel"] });
+                    if (errors.educationLevel) {
+                      setErrors((prev) => {
+                        const next = { ...prev };
+                        delete next.educationLevel;
+                        return next;
+                      });
+                    }
+                  }}
+                  aria-invalid={!!errors.educationLevel}
+                  aria-describedby={errors.educationLevel ? "educationLevel-error" : undefined}
                 >
                   <option value="">Select level...</option>
                   {EDUCATION_LEVELS.map((level) => (
@@ -766,6 +879,11 @@ export default function MemberProfilePage() {
                     </option>
                   ))}
                 </select>
+                {errors.educationLevel && (
+                  <p id="educationLevel-error" role="alert" className="efsw-profile__field-error">
+                    {errors.educationLevel}
+                  </p>
+                )}
               </div>
               <div className="efsw-profile__field">
                 <label htmlFor="degree">Degree / qualification</label>
@@ -773,9 +891,25 @@ export default function MemberProfilePage() {
                   id="degree"
                   type="text"
                   value={draft.degree}
-                  onChange={(e) => setDraft({ ...draft, degree: e.target.value })}
+                  onChange={(e) => {
+                    setDraft({ ...draft, degree: e.target.value });
+                    if (errors.degree) {
+                      setErrors((prev) => {
+                        const next = { ...prev };
+                        delete next.degree;
+                        return next;
+                      });
+                    }
+                  }}
                   placeholder="e.g. Master of Social Work"
+                  aria-invalid={!!errors.degree}
+                  aria-describedby={errors.degree ? "degree-error" : undefined}
                 />
+                {errors.degree && (
+                  <p id="degree-error" role="alert" className="efsw-profile__field-error">
+                    {errors.degree}
+                  </p>
+                )}
               </div>
             </div>
             <div className="efsw-profile__field-grid">
@@ -785,10 +919,26 @@ export default function MemberProfilePage() {
                   id="license"
                   type="text"
                   value={draft.license}
-                  onChange={(e) => setDraft({ ...draft, license: e.target.value })}
+                  onChange={(e) => {
+                    setDraft({ ...draft, license: e.target.value });
+                    if (errors.license) {
+                      setErrors((prev) => {
+                        const next = { ...prev };
+                        delete next.license;
+                        return next;
+                      });
+                    }
+                  }}
                   placeholder="License number or registration"
+                  aria-invalid={!!errors.license}
+                  aria-describedby={errors.license ? "license-error" : "license-hint"}
                 />
-                <span className="efsw-profile__field-hint">If applicable in your jurisdiction</span>
+                <span id="license-hint" className="efsw-profile__field-hint">If applicable in your jurisdiction</span>
+                {errors.license && (
+                  <p id="license-error" role="alert" className="efsw-profile__field-error">
+                    {errors.license}
+                  </p>
+                )}
               </div>
               <div className="efsw-profile__field">
                 <label htmlFor="experienceYears">Years of experience</label>
@@ -808,8 +958,19 @@ export default function MemberProfilePage() {
                     max={80}
                     step={1}
                     value={draft.experienceYears}
-                    onChange={(e) => setDraft({ ...draft, experienceYears: e.target.value })}
+                    onChange={(e) => {
+                      setDraft({ ...draft, experienceYears: e.target.value });
+                      if (errors.experienceYears) {
+                        setErrors((prev) => {
+                          const next = { ...prev };
+                          delete next.experienceYears;
+                          return next;
+                        });
+                      }
+                    }}
                     placeholder="0"
+                    aria-invalid={!!errors.experienceYears}
+                    aria-describedby={errors.experienceYears ? "experienceYears-error" : "experienceYears-hint"}
                   />
                   <button
                     type="button"
@@ -820,11 +981,16 @@ export default function MemberProfilePage() {
                     })}
                   >+</button>
                 </div>
-                <span className="efsw-profile__field-hint">
+                <span id="experienceYears-hint" className="efsw-profile__field-hint">
                   {draft.experienceYears
                     ? `${draft.experienceYears} ${Number(draft.experienceYears) === 1 ? "year" : "years"} of practice`
                     : "0 – 80 years"}
                 </span>
+                {errors.experienceYears && (
+                  <p id="experienceYears-error" role="alert" className="efsw-profile__field-error">
+                    {errors.experienceYears}
+                  </p>
+                )}
               </div>
             </div>
           </section>
@@ -845,9 +1011,25 @@ export default function MemberProfilePage() {
                   id="organization"
                   type="text"
                   value={draft.organization}
-                  onChange={(e) => setDraft({ ...draft, organization: e.target.value })}
+                  onChange={(e) => {
+                    setDraft({ ...draft, organization: e.target.value });
+                    if (errors.organization) {
+                      setErrors((prev) => {
+                        const next = { ...prev };
+                        delete next.organization;
+                        return next;
+                      });
+                    }
+                  }}
                   placeholder="Where you work"
+                  aria-invalid={!!errors.organization}
+                  aria-describedby={errors.organization ? "organization-error" : undefined}
                 />
+                {errors.organization && (
+                  <p id="organization-error" role="alert" className="efsw-profile__field-error">
+                    {errors.organization}
+                  </p>
+                )}
               </div>
               <div className="efsw-profile__field">
                 <label htmlFor="position">Position</label>
@@ -855,9 +1037,25 @@ export default function MemberProfilePage() {
                   id="position"
                   type="text"
                   value={draft.position}
-                  onChange={(e) => setDraft({ ...draft, position: e.target.value })}
+                  onChange={(e) => {
+                    setDraft({ ...draft, position: e.target.value });
+                    if (errors.position) {
+                      setErrors((prev) => {
+                        const next = { ...prev };
+                        delete next.position;
+                        return next;
+                      });
+                    }
+                  }}
                   placeholder="Your role"
+                  aria-invalid={!!errors.position}
+                  aria-describedby={errors.position ? "position-error" : undefined}
                 />
+                {errors.position && (
+                  <p id="position-error" role="alert" className="efsw-profile__field-error">
+                    {errors.position}
+                  </p>
+                )}
               </div>
             </div>
             <div className="efsw-profile__field">
@@ -866,10 +1064,26 @@ export default function MemberProfilePage() {
                 id="expertise"
                 type="text"
                 value={draft.expertise}
-                onChange={(e) => setDraft({ ...draft, expertise: e.target.value })}
+                onChange={(e) => {
+                  setDraft({ ...draft, expertise: e.target.value });
+                  if (errors.expertise) {
+                    setErrors((prev) => {
+                      const next = { ...prev };
+                      delete next.expertise;
+                      return next;
+                    });
+                  }
+                }}
                 placeholder="e.g. Trauma-informed care, child welfare"
+                aria-invalid={!!errors.expertise}
+                aria-describedby={errors.expertise ? "expertise-error" : "expertise-hint"}
               />
-              <span className="efsw-profile__field-hint">Comma-separate multiple specialties</span>
+              <span id="expertise-hint" className="efsw-profile__field-hint">Comma-separate multiple specialties</span>
+              {errors.expertise && (
+                <p id="expertise-error" role="alert" className="efsw-profile__field-error">
+                  {errors.expertise}
+                </p>
+              )}
             </div>
 
             {member.membershipType === "student" && (
@@ -880,9 +1094,25 @@ export default function MemberProfilePage() {
                     id="university"
                     type="text"
                     value={draft.university}
-                    onChange={(e) => setDraft({ ...draft, university: e.target.value })}
+                    onChange={(e) => {
+                      setDraft({ ...draft, university: e.target.value });
+                      if (errors.university) {
+                        setErrors((prev) => {
+                          const next = { ...prev };
+                          delete next.university;
+                          return next;
+                        });
+                      }
+                    }}
                     placeholder="Your institution"
+                    aria-invalid={!!errors.university}
+                    aria-describedby={errors.university ? "university-error" : undefined}
                   />
+                  {errors.university && (
+                    <p id="university-error" role="alert" className="efsw-profile__field-error">
+                      {errors.university}
+                    </p>
+                  )}
                 </div>
                 <div className="efsw-profile__field">
                   <label htmlFor="faculty">Faculty / department</label>
@@ -890,8 +1120,24 @@ export default function MemberProfilePage() {
                     id="faculty"
                     type="text"
                     value={draft.faculty}
-                    onChange={(e) => setDraft({ ...draft, faculty: e.target.value })}
+                    onChange={(e) => {
+                      setDraft({ ...draft, faculty: e.target.value });
+                      if (errors.faculty) {
+                        setErrors((prev) => {
+                          const next = { ...prev };
+                          delete next.faculty;
+                          return next;
+                        });
+                      }
+                    }}
+                    aria-invalid={!!errors.faculty}
+                    aria-describedby={errors.faculty ? "faculty-error" : undefined}
                   />
+                  {errors.faculty && (
+                    <p id="faculty-error" role="alert" className="efsw-profile__field-error">
+                      {errors.faculty}
+                    </p>
+                  )}
                 </div>
               </div>
             )}
@@ -903,9 +1149,25 @@ export default function MemberProfilePage() {
                   id="contactPosition"
                   type="text"
                   value={draft.contactPosition}
-                  onChange={(e) => setDraft({ ...draft, contactPosition: e.target.value })}
+                  onChange={(e) => {
+                    setDraft({ ...draft, contactPosition: e.target.value });
+                    if (errors.contactPosition) {
+                      setErrors((prev) => {
+                        const next = { ...prev };
+                        delete next.contactPosition;
+                        return next;
+                      });
+                    }
+                  }}
                   placeholder="Your role at this organization"
+                  aria-invalid={!!errors.contactPosition}
+                  aria-describedby={errors.contactPosition ? "contactPosition-error" : undefined}
                 />
+                {errors.contactPosition && (
+                  <p id="contactPosition-error" role="alert" className="efsw-profile__field-error">
+                    {errors.contactPosition}
+                  </p>
+                )}
               </div>
             )}
           </section>
@@ -961,14 +1223,30 @@ export default function MemberProfilePage() {
                 id="bio"
                 rows={5}
                 value={draft.bio}
-                onChange={(e) => setDraft({ ...draft, bio: e.target.value })}
+                onChange={(e) => {
+                  setDraft({ ...draft, bio: e.target.value });
+                  if (errors.bio) {
+                    setErrors((prev) => {
+                      const next = { ...prev };
+                      delete next.bio;
+                      return next;
+                    });
+                  }
+                }}
                 placeholder="Tell the community about your work, interests, and what brought you to EFSW..."
                 maxLength={500}
+                aria-invalid={!!errors.bio}
+                aria-describedby={errors.bio ? "bio-error" : "bio-meta"}
               />
-              <div className="efsw-profile__field-meta">
+              <div id="bio-meta" className="efsw-profile__field-meta">
                 <span className="efsw-profile__field-hint">Optional · max 500 characters</span>
                 <span className="efsw-profile__counter">{draft.bio.length} / 500</span>
               </div>
+              {errors.bio && (
+                <p id="bio-error" role="alert" className="efsw-profile__field-error">
+                  {errors.bio}
+                </p>
+              )}
             </div>
           </section>
 
