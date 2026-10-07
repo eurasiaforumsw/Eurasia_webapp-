@@ -23,6 +23,29 @@ html, body {
 
 
 
+/* ── Skip Navigation Link (Accessibility) ────────────────────────────────── */
+.skip-link {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform: translateY(-100%);
+  padding: 1rem 1.5rem;
+  background: var(--background, hsl(210, 20%, 98%));
+  color: var(--foreground, hsl(210, 10%, 10%));
+  font-weight: 600;
+  border-radius: 0 0 0.5rem 0.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: transform 250ms var(--ease-expo-out, cubic-bezier(0.16, 1, 0.3, 1));
+  z-index: 9999;
+  text-decoration: none;
+}
+
+.skip-link:focus {
+  transform: translateY(100px);
+  outline: 2px solid var(--ring, hsl(187, 62%, 50%));
+  outline-offset: 2px;
+}
+
 @layer base {
   :root {
     /* Design tokens from DESIGN.md — font vars resolve to next/font-loaded
@@ -15792,4 +15815,35 @@ body {
 }
 .efsw-article__engagement .efsw-engagement__count {
   font-size: 0.9rem;
+}
+
+/* =================================================================
+   ACCESSIBILITY — Skip Link
+   ================================================================= */
+
+.skip-link {
+  position: absolute;
+  top: -100px;
+  left: 0;
+  z-index: 9999;
+  padding: 0.75rem 1.5rem;
+  background: var(--background, #ffffff);
+  color: var(--foreground, #000000);
+  font-size: 1rem;
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 0 0 0.5rem 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: transform 0.2s var(--ease-expo-out, ease-out);
+  transform: translateY(-100%);
+}
+
+.skip-link:focus {
+  transform: translateY(100px);
+  outline: 3px solid var(--ring, #2563eb);
+  outline-offset: 2px;
+}
+
+.skip-link:focus-visible {
+  transform: translateY(100px);
 }
