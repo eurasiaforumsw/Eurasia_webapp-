@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { memo } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
@@ -13,7 +13,7 @@ export interface BooleanFilterProps {
   className?: string;
 }
 
-export function BooleanFilter({
+export const BooleanFilter = memo(function BooleanFilter({
   id,
   label,
   value,
@@ -69,4 +69,4 @@ export function BooleanFilter({
       </div>
     </div>
   );
-}
+});

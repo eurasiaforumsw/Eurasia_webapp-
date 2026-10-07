@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { memo } from "react";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -19,7 +19,7 @@ export interface SelectFilterProps {
   className?: string;
 }
 
-export function SelectFilter({
+export const SelectFilter = memo(function SelectFilter({
   id,
   label,
   value,
@@ -70,4 +70,4 @@ export function SelectFilter({
       </div>
     </div>
   );
-}
+});

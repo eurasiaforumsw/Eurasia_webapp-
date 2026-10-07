@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { memo } from "react";
 import { Calendar, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -51,7 +51,7 @@ const PRESETS = [
   }},
 ];
 
-export function DateRangeFilter({
+export const DateRangeFilter = memo(function DateRangeFilter({
   id,
   label,
   value,
@@ -158,4 +158,4 @@ export function DateRangeFilter({
       </div>
     </div>
   );
-}
+});

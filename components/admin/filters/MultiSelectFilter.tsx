@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, memo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Check, X, Search, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -22,7 +22,7 @@ export interface MultiSelectFilterProps {
   className?: string;
 }
 
-export function MultiSelectFilter({
+export const MultiSelectFilter = memo(function MultiSelectFilter({
   id,
   label,
   value = [],
@@ -262,4 +262,4 @@ export function MultiSelectFilter({
       </AnimatePresence>
     </div>
   );
-}
+});

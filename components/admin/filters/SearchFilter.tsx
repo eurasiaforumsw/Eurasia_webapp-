@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { memo, useState, useEffect } from "react";
 import { Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -15,7 +15,7 @@ export interface SearchFilterProps {
   className?: string;
 }
 
-export function SearchFilter({
+export const SearchFilter = memo(function SearchFilter({
   id,
   label,
   value,
@@ -90,4 +90,4 @@ export function SearchFilter({
       </div>
     </div>
   );
-}
+});

@@ -1,6 +1,7 @@
 "use client";
 
 import { memo, useMemo, useState } from "react";
+import dynamic from "next/dynamic";
 import {
   Search,
   Download,
@@ -28,7 +29,12 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { useFilterPersistence } from "@/hooks/useFilterPersistence";
 import { BulkSelectCheckbox } from "@/components/admin/BulkSelectCheckbox";
 import { BulkActionBar } from "@/components/admin/BulkActionBar";
-import { BulkProgressModal } from "@/components/admin/modals/BulkProgressModal";
+
+// Dynamic import for heavy modal
+const BulkProgressModal = dynamic(
+  () => import("@/components/admin/modals/BulkProgressModal").then((mod) => ({ default: mod.BulkProgressModal })),
+  { ssr: false }
+);
 
 /* Member filters are intentionally multi-select so admins can layer
  * conditions (e.g. "Thailand + active + 5+ years"). Every filter

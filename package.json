@@ -39,10 +39,12 @@
     "shaders": "^3.0.448",
     "tailwind-merge": "^2.3.0",
     "three": "^0.163.0",
+    "web-vitals": "^6.2.3",
     "zod": "^4.6.5"
   },
   "devDependencies": {
     "@netlify/plugin-nextjs": "^5.15.13",
+    "@next/bundle-analyzer": "^16.4.0",
     "@types/node": "^20.12.0",
     "@types/react": "^18.3.0",
     "@types/react-dom": "^18.3.0",

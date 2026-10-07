@@ -1,6 +1,7 @@
 "use client";
 
 import { memo, useMemo, useState } from "react";
+import dynamic from "next/dynamic";
 import {
   Plus,
   Search,
@@ -29,8 +30,17 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { useFilterPersistence } from "@/hooks/useFilterPersistence";
 import { BulkSelectCheckbox } from "@/components/admin/BulkSelectCheckbox";
 import { BulkActionBar } from "@/components/admin/BulkActionBar";
-import { BulkProgressModal } from "@/components/admin/modals/BulkProgressModal";
-import { ContentAdvancedFilters } from "@/components/admin/ContentAdvancedFilters";
+
+// Dynamic imports for heavy components
+const BulkProgressModal = dynamic(
+  () => import("@/components/admin/modals/BulkProgressModal").then((mod) => ({ default: mod.BulkProgressModal })),
+  { ssr: false }
+);
+
+const ContentAdvancedFilters = dynamic(
+  () => import("@/components/admin/ContentAdvancedFilters").then((mod) => ({ default: mod.ContentAdvancedFilters })),
+  { ssr: false }
+);
 
 interface AdminContentViewProps {
   content: AdminContentItem[];

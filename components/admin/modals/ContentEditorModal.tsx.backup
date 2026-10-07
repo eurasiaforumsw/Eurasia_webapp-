@@ -1,7 +1,6 @@
 "use client";
 
 import { ChangeEvent, DragEvent, FormEvent, memo, useEffect, useMemo, useState } from "react";
-import dynamic from "next/dynamic";
 import {
   X,
   UploadCloud,
@@ -33,17 +32,7 @@ import {
   EFSW_MEMBERSHIP_TYPES,
   EFSW_TARGET_GROUPS,
 } from "@/lib/target-groups";
-
-// Lazy load TipTap editor (50 kB saving)
-const TipTapEditor = dynamic(
-  () => import("@/components/admin/TipTapEditor").then((mod) => ({ default: mod.TipTapEditor })),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="min-h-[300px] rounded-lg border border-slate-700 bg-slate-900/50 animate-pulse" />
-    ),
-  }
-);
+import { RichTextEditor } from "@/components/admin/RichTextEditor";
 
 interface ContentEditorModalProps {
   initialItem: AdminContentItem | null;
@@ -713,10 +702,11 @@ export const ContentEditorModal = memo(function ContentEditorModal({
                   {wordCount} {wordCount === 1 ? "word" : "words"}
                 </small>
               </span>
-              <TipTapEditor
+              <RichTextEditor
                 value={formData.body || ""}
                 onChange={(body) => setFormData((prev) => ({ ...prev, body }))}
                 placeholder="Write your content here... Use the toolbar to format text, add images, links, and more."
+                minHeight="400px"
               />
             </label>
           </fieldset>
