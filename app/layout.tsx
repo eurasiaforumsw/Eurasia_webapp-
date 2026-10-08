@@ -6,6 +6,8 @@ import { SmoothScrollProvider } from "@/components/efsw/SmoothScrollProvider";
 import { I18nProvider } from "@/contexts/I18nContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { ToastProvider } from "@/components/ui/toast";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { SkipLink } from "@/components/SkipLink";
 import enMessages from "@/locales/en.json";
 import thMessages from "@/locales/th.json";
 import koMessages from "@/locales/ko.json";
@@ -98,24 +100,23 @@ export default function RootLayout({
         />
       </head>
       <body className="antialiased bg-surface-deep text-text-primary">
-        <a
-          href="#main-content"
-          className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:top-4 focus:left-4 focus:px-4 focus:py-2 focus:bg-primary focus:text-white focus:rounded-md focus:shadow-lg"
-        >
-          Skip to main content
-        </a>
-        <ThemeProvider>
-          <I18nProvider defaultLocale={initialLocale} messages={messages}>
-            <ToastProvider>
-              <SmoothScrollProvider>
-                {/* Watches every [data-reveal] element on any route and adds
-                    .is-visible when it scrolls into view. Renders nothing. */}
-                <RevealObserver />
-                {children}
-              </SmoothScrollProvider>
-            </ToastProvider>
-          </I18nProvider>
-        </ThemeProvider>
+        <ErrorBoundary>
+          <SkipLink />
+          <ThemeProvider>
+            <I18nProvider defaultLocale={initialLocale} messages={messages}>
+              <ToastProvider>
+                <SmoothScrollProvider>
+                  {/* Watches every [data-reveal] element on any route and adds
+                      .is-visible when it scrolls into view. Renders nothing. */}
+                  <RevealObserver />
+                  <main id="main-content">
+                    {children}
+                  </main>
+                </SmoothScrollProvider>
+              </ToastProvider>
+            </I18nProvider>
+          </ThemeProvider>
+        </ErrorBoundary>
       </body>
     </html>
   );

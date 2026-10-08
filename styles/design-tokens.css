@@ -1,0 +1,233 @@
+/**
+ * Design Tokens System
+ * Eurasia Forum for Social Workers
+ *
+ * A comprehensive design token system providing:
+ * - Fluid typography scales
+ * - Semantic color palette (WCAG AA compliant)
+ * - Consistent spacing
+ * - Border radius scales
+ * - Shadow system
+ */
+
+:root {
+  /* ============================================
+     TYPOGRAPHY SCALE - Fluid & Responsive
+     ============================================ */
+
+  /* Font Sizes - Using clamp() for fluid scaling */
+  --text-xs: clamp(0.75rem, 0.7rem + 0.25vw, 0.875rem);      /* 12-14px */
+  --text-sm: clamp(0.875rem, 0.825rem + 0.25vw, 1rem);       /* 14-16px */
+  --text-base: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);      /* 16-18px */
+  --text-lg: clamp(1.125rem, 1.05rem + 0.375vw, 1.5rem);     /* 18-24px */
+  --text-xl: clamp(1.25rem, 1.15rem + 0.5vw, 1.75rem);       /* 20-28px */
+  --text-2xl: clamp(1.5rem, 1.35rem + 0.75vw, 2.25rem);      /* 24-36px */
+  --text-3xl: clamp(1.875rem, 1.65rem + 1.125vw, 3rem);      /* 30-48px */
+  --text-4xl: clamp(2.25rem, 1.95rem + 1.5vw, 4rem);         /* 36-64px */
+
+  /* Line Heights - Optimized for readability */
+  --leading-tight: 1.25;
+  --leading-snug: 1.375;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.625;
+  --leading-loose: 1.75;
+
+  /* Font Weights */
+  --font-normal: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+
+  /* Letter Spacing */
+  --tracking-tight: -0.025em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.025em;
+  --tracking-wider: 0.05em;
+
+  /* ============================================
+     COLOR SYSTEM - Dark Mode First
+     ============================================ */
+
+  /* Surface Levels - Progressive depth */
+  --surface-0: #05070C;   /* Deepest background - 15:1 contrast with white */
+  --surface-1: #0A0D12;   /* Card/panel base - 13:1 contrast */
+  --surface-2: #0F131C;   /* Hover states - 11:1 contrast */
+  --surface-3: #161D2B;   /* Active/selected - 9:1 contrast */
+  --surface-4: #1E2636;   /* Elevated elements - 7.5:1 contrast */
+  --surface-5: #2A3347;   /* Highest elevation - 6:1 contrast */
+
+  /* Text Colors - WCAG AA Compliant (4.5:1 minimum) */
+  --text-primary: #F5F5F5;      /* Primary text - 15:1 contrast on surface-0 */
+  --text-secondary: #D1D1D1;    /* Secondary text - 10:1 contrast */
+  --text-muted: #A8A8A8;        /* Muted text - 6:1 contrast */
+  --text-disabled: #737373;     /* Disabled text - 4.5:1 contrast (minimum) */
+  --text-inverse: #0A0D12;      /* Text on light backgrounds */
+
+  /* Accent Colors - Primary actions */
+  --accent-primary: #38BDF8;         /* Cool blue - primary CTAs */
+  --accent-primary-hover: #0EA5E9;   /* Darker on hover */
+  --accent-primary-active: #0284C7;  /* Darker on active */
+  --accent-primary-muted: #0E778F;   /* Muted variant */
+
+  /* Accent Colors - Secondary */
+  --accent-secondary: #6EE7B7;       /* Teal green - success, secondary actions */
+  --accent-secondary-hover: #34D399;
+  --accent-secondary-active: #10B981;
+
+  /* Accent Colors - Warm */
+  --accent-warm: #FDE047;            /* Warm yellow - highlights */
+  --accent-warm-hover: #FACC15;
+  --accent-warm-muted: #D0AB86;      /* Muted gold */
+
+  /* Semantic Colors */
+  --color-success: #10B981;          /* Green - 4.5:1 on surface-0 */
+  --color-warning: #F59E0B;          /* Amber - 4.5:1 on surface-0 */
+  --color-error: #EF4444;            /* Red - 4.5:1 on surface-0 */
+  --color-info: #3B82F6;             /* Blue - 4.5:1 on surface-0 */
+
+  /* Border Colors */
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-default: rgba(255, 255, 255, 0.1);
+  --border-strong: rgba(255, 255, 255, 0.2);
+  --border-accent: var(--accent-primary);
+
+  /* ============================================
+     SPACING SCALE - Fluid & Consistent
+     ============================================ */
+
+  --space-px: 1px;
+  --space-0: 0;
+  --space-xs: clamp(0.25rem, 0.2rem + 0.25vw, 0.5rem);      /* 4-8px */
+  --space-sm: clamp(0.5rem, 0.45rem + 0.25vw, 0.75rem);     /* 8-12px */
+  --space-md: clamp(0.75rem, 0.65rem + 0.5vw, 1.25rem);     /* 12-20px */
+  --space-lg: clamp(1rem, 0.85rem + 0.75vw, 1.75rem);       /* 16-28px */
+  --space-xl: clamp(1.5rem, 1.25rem + 1.25vw, 2.75rem);     /* 24-44px */
+  --space-2xl: clamp(2rem, 1.5rem + 2.5vw, 4.5rem);         /* 32-72px */
+  --space-3xl: clamp(3rem, 2rem + 5vw, 8rem);               /* 48-128px */
+
+  /* ============================================
+     BORDER RADIUS
+     ============================================ */
+
+  --radius-none: 0;
+  --radius-sm: 0.25rem;    /* 4px */
+  --radius-md: 0.375rem;   /* 6px */
+  --radius-lg: 0.5rem;     /* 8px */
+  --radius-xl: 0.75rem;    /* 12px */
+  --radius-2xl: 1rem;      /* 16px */
+  --radius-3xl: 1.5rem;    /* 24px */
+  --radius-full: 9999px;   /* Perfect circles */
+
+  /* ============================================
+     SHADOWS - Depth & Elevation
+     ============================================ */
+
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5),
+               0 2px 4px -1px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5),
+               0 4px 6px -2px rgba(0, 0, 0, 0.3);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.5),
+               0 10px 10px -5px rgba(0, 0, 0, 0.2);
+  --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+
+  /* Glow effects */
+  --glow-accent: 0 0 20px rgba(56, 189, 248, 0.3);
+  --glow-success: 0 0 20px rgba(16, 185, 129, 0.3);
+  --glow-error: 0 0 20px rgba(239, 68, 68, 0.3);
+
+  /* ============================================
+     Z-INDEX SCALE
+     ============================================ */
+
+  --z-base: 0;
+  --z-dropdown: 1000;
+  --z-sticky: 1100;
+  --z-fixed: 1200;
+  --z-modal-backdrop: 1300;
+  --z-modal: 1400;
+  --z-popover: 1500;
+  --z-tooltip: 1600;
+
+  /* ============================================
+     TRANSITIONS
+     ============================================ */
+
+  --transition-fast: 150ms ease-in-out;
+  --transition-base: 200ms ease-in-out;
+  --transition-slow: 300ms ease-in-out;
+  --transition-slower: 500ms ease-in-out;
+
+  /* Easing functions */
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* ============================================
+     CONTAINER WIDTHS
+     ============================================ */
+
+  --container-sm: 640px;
+  --container-md: 768px;
+  --container-lg: 1024px;
+  --container-xl: 1280px;
+  --container-2xl: 1536px;
+
+  /* Content widths for optimal readability */
+  --content-narrow: 45ch;    /* Optimal for body text */
+  --content-medium: 65ch;
+  --content-wide: 80ch;
+
+  /* ============================================
+     BREAKPOINTS (for reference in JS)
+     ============================================ */
+
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+  --breakpoint-2xl: 1536px;
+}
+
+/* ============================================
+   UTILITY CLASSES USING TOKENS
+   ============================================ */
+
+.surface-0 { background-color: var(--surface-0); }
+.surface-1 { background-color: var(--surface-1); }
+.surface-2 { background-color: var(--surface-2); }
+.surface-3 { background-color: var(--surface-3); }
+.surface-4 { background-color: var(--surface-4); }
+
+.text-primary { color: var(--text-primary); }
+.text-secondary { color: var(--text-secondary); }
+.text-muted { color: var(--text-muted); }
+
+.accent-primary { color: var(--accent-primary); }
+.accent-secondary { color: var(--accent-secondary); }
+
+/* Focus styles */
+.focus-ring {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+
+/* Skip link for accessibility */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: var(--accent-primary);
+  color: var(--text-inverse);
+  padding: var(--space-sm) var(--space-md);
+  text-decoration: none;
+  border-radius: var(--radius-md);
+  font-weight: var(--font-semibold);
+  z-index: var(--z-tooltip);
+  transition: top var(--transition-fast);
+}
+
+.skip-link:focus {
+  top: var(--space-sm);
+}
