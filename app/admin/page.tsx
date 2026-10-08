@@ -27,6 +27,7 @@ import {
   setAdminMemberStatus,
   syncAdminContent,
 } from "@/lib/admin-data";
+import { AdminRole } from "@/lib/admin-auth";
 import { AdminSidebar, AdminView } from "@/components/admin/AdminSidebar";
 import { AdminTopbar } from "@/components/admin/AdminTopbar";
 import { AdminOverviewView } from "@/components/admin/views/AdminOverviewView";
@@ -48,7 +49,7 @@ interface AdminSession {
   id: string;
   name: string;
   email: string;
-  role: string;
+  role: AdminRole;
   signedInAt: string;
 }
 
