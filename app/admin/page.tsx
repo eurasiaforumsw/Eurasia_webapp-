@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { getAdminSession, logoutAdmin, AdminSession } from "@/lib/admin-auth";
 import {
   AdminActivity,
   AdminContentItem,
@@ -45,6 +44,14 @@ import { ConfirmDeleteDialog } from "@/components/admin/modals/ConfirmDeleteDial
 
 const escapeCsv = (value: string) => `"${value.replace(/"/g, '""')}"`;
 
+interface AdminSession {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  signedInAt: string;
+}
+
 export default function AdminDashboardPage() {
   const router = useRouter();
   const [session, setSession] = useState<AdminSession | null>(null);
@@ -77,27 +84,36 @@ export default function AdminDashboardPage() {
 
   // Initialize and verify session
   useEffect(() => {
-    const current = getAdminSession();
-    if (!current) {
-      window.location.replace("/admin/login");
-      return;
-    }
-    setSession(current);
-    setMembers(getAdminMembers());
-    setContent(getAdminContent());
-    setContentCategories(getAdminContentCategories());
-    setActivity(getAdminActivity());
-    setSettings(getAdminSettings());
-    setLayout(getAdminLayout());
+    const verifySession = async () => {
+      try {
+        const response = await fetch('/api/admin/auth/verify');
+        if (!response.ok) {
+          window.location.replace("/admin/login");
+          return;
+        }
+        const sessionData = await response.json();
+        setSession(sessionData);
+        setMembers(getAdminMembers());
+        setContent(getAdminContent());
+        setContentCategories(getAdminContentCategories());
+        setActivity(getAdminActivity());
+        setSettings(getAdminSettings());
+        setLayout(getAdminLayout());
 
-    // Pull latest from Supabase in the background.
-    syncAdminContent()
-      .then((merged) => {
-        setContent(merged);
-      })
-      .catch(() => {
-        // Silent — local data remains available.
-      });
+        // Pull latest from Supabase in the background.
+        syncAdminContent()
+          .then((merged) => {
+            setContent(merged);
+          })
+          .catch(() => {
+            // Silent — local data remains available.
+          });
+      } catch (error) {
+        window.location.replace("/admin/login");
+      }
+    };
+
+    verifySession();
   }, []);
 
   // Toast timer
@@ -323,8 +339,12 @@ export default function AdminDashboardPage() {
     [logActivity, notify]
   );
 
-  const handleSignOut = () => {
-    logoutAdmin();
+  const handleSignOut = async () => {
+    try {
+      await fetch('/api/admin/auth/logout', { method: 'POST' });
+    } catch (error) {
+      // Continue to logout even if request fails
+    }
     router.push("/admin/login");
   };
 

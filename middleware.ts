@@ -1,66 +1,130 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { jwtVerify } from 'jose';
 
-const MEMBER_SESSION_KEY = 'efsw.member.session';
-const ADMIN_SESSION_KEY = 'efsw.admin.session';
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 
 /**
- * Middleware to protect member and admin routes
- * Checks localStorage-based sessions for authentication
+ * Verify JWT token and return payload if valid
+ * Uses jose library which is Edge Runtime compatible
  */
-export function middleware(request: NextRequest) {
+async function verifyToken(token: string): Promise<any> {
+  try {
+    const secret = new TextEncoder().encode(JWT_SECRET);
+    const { payload } = await jwtVerify(token, secret);
+    return payload;
+  } catch (error) {
+    return null;
+  }
+}
+
+/**
+ * Middleware to protect admin routes with JWT authentication
+ * BLOCKS unauthorized access on the server - no client-side bypass possible
+ */
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Skip middleware for public routes and static assets
-  if (
-    pathname.startsWith('/_next') ||
-    pathname.startsWith('/api') ||
-    pathname.startsWith('/static') ||
-    pathname.includes('.') // static files (images, fonts, etc.)
-  ) {
-    return NextResponse.next();
-  }
-
-  // Check admin routes
+  // ============================================
+  // ADMIN PAGE ROUTES PROTECTION
+  // ============================================
   if (pathname.startsWith('/admin')) {
-    // Allow admin login page
+    // Allow login page without auth
     if (pathname === '/admin/login') {
       return NextResponse.next();
     }
 
-    // Check admin session via cookie (since we can't access localStorage server-side)
-    // For localStorage-based auth, we rely on client-side redirect as fallback
-    // This middleware adds response headers to help client-side protection
-    const response = NextResponse.next();
-    response.headers.set('x-middleware-route', 'admin');
-    return response;
+    // Get JWT token from cookie
+    const token = request.cookies.get('admin_token')?.value;
+
+    // No token = BLOCK immediately
+    if (!token) {
+      const loginUrl = new URL('/admin/login', request.url);
+      loginUrl.searchParams.set('redirect', pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+
+    // Invalid token = BLOCK immediately
+    const payload = await verifyToken(token);
+    if (!payload) {
+      const loginUrl = new URL('/admin/login', request.url);
+      loginUrl.searchParams.set('redirect', pathname);
+      loginUrl.searchParams.set('error', 'session_expired');
+      return NextResponse.redirect(loginUrl);
+    }
+
+    // Valid token = allow access
+    return NextResponse.next();
   }
 
-  // Check member routes
+  // ============================================
+  // ADMIN API ROUTES PROTECTION
+  // ============================================
+  if (
+    pathname.startsWith('/api/admin/') ||
+    pathname.startsWith('/api/content') ||
+    pathname.startsWith('/api/members')
+  ) {
+    // Get JWT token from cookie
+    const token = request.cookies.get('admin_token')?.value;
+
+    // No token = BLOCK with 401
+    if (!token) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
+    // Invalid token = BLOCK with 401
+    const payload = await verifyToken(token);
+    if (!payload) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'Invalid or expired token' },
+        { status: 401 }
+      );
+    }
+
+    // Valid token = allow API access
+    return NextResponse.next();
+  }
+
+  // ============================================
+  // MEMBER ROUTES (Existing localStorage pattern)
+  // ============================================
   if (pathname.startsWith('/member')) {
     // Allow login and register pages
     if (pathname === '/member/login' || pathname === '/member/register') {
       return NextResponse.next();
     }
 
-    // Add header for client-side check
-    const response = NextResponse.next();
-    response.headers.set('x-middleware-route', 'member');
-    return response;
+    // Member routes still use client-side auth (can be upgraded later)
+    return NextResponse.next();
   }
 
+  // All other routes
   return NextResponse.next();
 }
 
 export const config = {
   matcher: [
     /*
-     * Match all request paths except:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public folder files
+     * Match all paths that need protection:
+     * - /admin/* (except /admin/login)
+     * - /api/admin/*
+     * - /api/content*
+     * - /api/members*
+     * - /member/* (for future upgrade)
+     *
+     * Exclude:
+     * - /_next/* (Next.js internals)
+     * - Static files (files with extensions like .png, .css, .js)
+     * - /api/public/* (if you add public APIs)
      */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\..*|api).*)',
+    '/admin/:path*',
+    '/api/admin/:path*',
+    '/api/content/:path*',
+    '/api/members/:path*',
+    '/member/:path*',
   ],
 };

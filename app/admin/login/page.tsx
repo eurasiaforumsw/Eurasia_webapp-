@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useState } from "react";
 import {
   ArrowLeft,
   ArrowUpRight,
@@ -16,7 +16,6 @@ import {
   Copy,
   ShieldCheck,
 } from "lucide-react";
-import { ADMIN_DEMO_ACCOUNT, getAdminSession, loginAdmin } from "@/lib/admin-auth";
 import { useToast } from "@/components/ui/toast";
 
 export default function AdminLoginPage() {
@@ -28,16 +27,23 @@ export default function AdminLoginPage() {
   const [copied, setCopied] = useState<"" | "email" | "password">("");
   const { addToast } = useToast();
 
-  useEffect(() => {
-    if (getAdminSession()) window.location.replace("/admin");
-  }, []);
-
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError("");
     setSubmitting(true);
     try {
-      await loginAdmin(email, password);
+      const response = await fetch("/api/admin/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Unable to sign in. Please try again.");
+      }
+
       addToast({
         type: "success",
         title: "Welcome back!",
@@ -59,7 +65,7 @@ export default function AdminLoginPage() {
   };
 
   const copyDemo = async (kind: "email" | "password") => {
-    const value = kind === "email" ? ADMIN_DEMO_ACCOUNT.email : "EFSW-demo-admin-2024";
+    const value = kind === "email" ? "admin@efsw.local" : "EFSW-demo-admin-2024";
     try {
       await navigator.clipboard.writeText(value);
       setCopied(kind);
@@ -75,7 +81,7 @@ export default function AdminLoginPage() {
   };
 
   const fillDemo = () => {
-    setEmail(ADMIN_DEMO_ACCOUNT.email);
+    setEmail("admin@efsw.local");
     setPassword("EFSW-demo-admin-2024");
     setError("");
   };
@@ -190,7 +196,7 @@ export default function AdminLoginPage() {
             <div className="efsw-signin__demo">
               <div className="efsw-signin__demo-row">
                 <span className="efsw-signin__demo-label">Email</span>
-                <code>{ADMIN_DEMO_ACCOUNT.email}</code>
+                <code>admin@efsw.local</code>
                 <button
                   type="button"
                   className="efsw-signin__demo-copy"

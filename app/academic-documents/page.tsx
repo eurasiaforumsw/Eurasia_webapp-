@@ -1,25 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import {
-  Search,
-  BookOpen,
-  FileText,
-  FileBarChart2,
-  Download,
-  ExternalLink,
-  Filter,
-  X,
-  Calendar,
-  User,
-  Tag,
-  TrendingUp,
-  Grid3x3,
-  List,
-  ChevronDown,
-  Heart,
-  Eye,
-} from "lucide-react";
+import { BookOpen, FileText, FileBarChart2, ExternalLink, Search, X } from "lucide-react";
 import { SiteNav } from "@/components/efsw/SiteNav";
 import { getPublishedAdminContent } from "@/lib/admin-data";
 import {
@@ -30,6 +12,10 @@ import {
   hasUserLiked,
 } from "@/lib/content-engagement";
 import { useRouter } from "next/navigation";
+import { AuthorMarquee } from "@/components/academic/AuthorMarquee";
+import { StickyDocumentFilters } from "@/components/academic/StickyDocumentFilters";
+import { DocumentCard } from "@/components/academic/DocumentCard";
+import "./styles.css";
 
 // Document type definition
 type Document = {
@@ -240,8 +226,8 @@ export default function AcademicDocumentsPage() {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState("newest");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [showFilters, setShowFilters] = useState(false); // Default: closed
   const [likedDocs, setLikedDocs] = useState<Set<string>>(new Set());
+  const [selectedAuthor, setSelectedAuthor] = useState<string | null>(null);
 
   // Load liked state on mount
   useMemo(() => {
@@ -261,9 +247,51 @@ export default function AcademicDocumentsPage() {
     return Array.from(tags).sort();
   }, [allDocuments]);
 
+  // Calculate author stats
+  const authorStats = useMemo(() => {
+    const stats = new Map<string, {
+      id: string;
+      name: string;
+      documentCount: number;
+      totalViews: number;
+      latestDate: string;
+      profileImage?: string;
+    }>();
+
+    allDocuments.forEach((doc) => {
+      const existing = stats.get(doc.author);
+      const engagement = getContentEngagement(doc.id);
+
+      if (existing) {
+        existing.documentCount++;
+        existing.totalViews += engagement.viewCount || 0;
+        if (new Date(doc.date) > new Date(existing.latestDate)) {
+          existing.latestDate = doc.date;
+        }
+      } else {
+        stats.set(doc.author, {
+          id: doc.author.toLowerCase().replace(/\s+/g, "-"),
+          name: doc.author,
+          documentCount: 1,
+          totalViews: engagement.viewCount || 0,
+          latestDate: doc.date,
+        });
+      }
+    });
+
+    return Array.from(stats.values());
+  }, [allDocuments]);
+
   // Filter and sort documents
   const filteredDocuments = useMemo(() => {
     let filtered = [...allDocuments];
+
+    // Author filter
+    if (selectedAuthor) {
+      filtered = filtered.filter((doc) =>
+        doc.author.toLowerCase().replace(/\s+/g, "-") === selectedAuthor
+      );
+    }
 
     // Search
     if (searchQuery) {
@@ -306,7 +334,7 @@ export default function AcademicDocumentsPage() {
     });
 
     return filtered;
-  }, [allDocuments, searchQuery, selectedCategory, selectedTags, sortBy]);
+  }, [allDocuments, searchQuery, selectedCategory, selectedTags, sortBy, selectedAuthor]);
 
   // Get category stats
   const categoryStats = useMemo(() => {
@@ -316,6 +344,19 @@ export default function AcademicDocumentsPage() {
     });
     return stats;
   }, [allDocuments]);
+
+  const categories = useMemo(() => {
+    return [
+      { value: "Research", label: "Research Papers", count: categoryStats["Research"] || 0 },
+      { value: "Practice", label: "Practice Guides", count: categoryStats["Practice"] || 0 },
+      { value: "Briefings", label: "Policy Briefings", count: categoryStats["Briefings"] || 0 },
+    ];
+  }, [categoryStats]);
+
+  const handleAuthorClick = (authorId: string) => {
+    setSelectedAuthor(selectedAuthor === authorId ? null : authorId);
+    window.scrollTo({ top: 800, behavior: "smooth" });
+  };
 
   const toggleTag = (tag: string) => {
     setSelectedTags((prev) =>
@@ -327,6 +368,7 @@ export default function AcademicDocumentsPage() {
     setSearchQuery("");
     setSelectedCategory(null);
     setSelectedTags([]);
+    setSelectedAuthor(null);
   };
 
   const handleLike = (docId: string, e: React.MouseEvent) => {
@@ -357,375 +399,128 @@ export default function AcademicDocumentsPage() {
     alert(`Download started for document: ${docId}`);
   };
 
-  const activeFiltersCount =
-    (selectedCategory ? 1 : 0) + selectedTags.length + (searchQuery ? 1 : 0);
-
   return (
     <>
       <SiteNav />
-      <main className="efsw-academic-library">
-        {/* Hero Section */}
-        <section className="efsw-academic-hero">
-          <div className="efsw-academic-hero__inner">
-            <div className="efsw-academic-hero__content">
-              <span className="efsw-academic-hero__eyebrow">Knowledge Hub</span>
-              <h1 className="efsw-academic-hero__title">
+      <main className="academic-library">
+        {/* Hero Section with Marquee */}
+        <section className="academic-hero">
+          <div className="academic-hero__inner">
+            <div className="academic-hero__content">
+              <span className="academic-hero__eyebrow">Knowledge Hub</span>
+              <h1 className="academic-hero__title">
                 Academic Documents
               </h1>
-              <p className="efsw-academic-hero__description">
+              <p className="academic-hero__description">
                 A shared library of research papers, field manuals, and policy briefings
                 from social work practitioners and researchers across Eurasia.
               </p>
-              <div className="efsw-academic-hero__stats">
-                <div className="efsw-academic-hero__stat">
+              <div className="academic-hero__stats">
+                <div className="academic-hero__stat">
                   <strong>{allDocuments.length}</strong>
                   <span>Documents</span>
                 </div>
-                <div className="efsw-academic-hero__stat">
-                  <strong>{Object.keys(categoryStats).length}</strong>
-                  <span>Categories</span>
+                <div className="academic-hero__stat">
+                  <strong>{authorStats.length}</strong>
+                  <span>Authors</span>
                 </div>
-                <div className="efsw-academic-hero__stat">
+                <div className="academic-hero__stat">
                   <strong>{allTags.length}</strong>
                   <span>Topics</span>
                 </div>
               </div>
             </div>
           </div>
+
+          {/* Author Marquee */}
+          <AuthorMarquee
+            authors={authorStats}
+            sortMode="popular"
+            onAuthorClick={handleAuthorClick}
+          />
         </section>
 
-        {/* Category Cards */}
-        <section className="efsw-academic-categories">
-          <div className="efsw-academic-categories__inner">
-            <div className="efsw-academic-categories__grid">
-              {Object.entries(CATEGORY_CONFIG).map(([key, config]) => {
-                const Icon = config.icon;
-                const count = categoryStats[key] || 0;
-                const isActive = selectedCategory === key;
+        {/* Sticky Filters */}
+        <StickyDocumentFilters
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          selectedCategory={selectedCategory}
+          onCategoryChange={setSelectedCategory}
+          categories={categories}
+          selectedTags={selectedTags}
+          onTagsChange={setSelectedTags}
+          allTags={allTags}
+          sortBy={sortBy}
+          onSortChange={setSortBy}
+          sortOptions={SORT_OPTIONS}
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
+          resultsCount={filteredDocuments.length}
+        />
 
-                return (
-                  <button
-                    key={key}
-                    type="button"
-                    onClick={() =>
-                      setSelectedCategory(isActive ? null : key)
-                    }
-                    className={`efsw-academic-category ${
-                      isActive ? "is-active" : ""
-                    }`}
-                    style={
-                      {
-                        "--category-color": config.color,
-                        "--category-bg": config.bgColor,
-                      } as React.CSSProperties
-                    }
-                  >
-                    <div className="efsw-academic-category__icon">
-                      <Icon size={24} />
-                    </div>
-                    <div className="efsw-academic-category__content">
-                      <h3>{config.label}</h3>
-                      <p>{config.description}</p>
-                      <span className="efsw-academic-category__count">
-                        {count} {count === 1 ? "document" : "documents"}
-                      </span>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-
-        {/* Search and Filters */}
-        <section className="efsw-academic-toolbar">
-          <div className="efsw-academic-toolbar__inner">
-            {/* Search Bar */}
-            <div className="efsw-academic-search">
-              <Search size={20} className="efsw-academic-search__icon" />
-              <input
-                type="text"
-                placeholder="Search documents by title, author, or topic..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="efsw-academic-search__input"
-              />
-              {searchQuery && (
+        {/* Documents Grid */}
+        <section className="academic-results">
+          <div className="academic-results__inner">
+            {selectedAuthor && (
+              <div className="academic-results__filter-notice">
+                <span>
+                  Showing documents by{" "}
+                  <strong>
+                    {authorStats.find((a) => a.id === selectedAuthor)?.name}
+                  </strong>
+                </span>
                 <button
                   type="button"
-                  onClick={() => setSearchQuery("")}
-                  className="efsw-academic-search__clear"
-                  aria-label="Clear search"
+                  onClick={() => setSelectedAuthor(null)}
+                  className="academic-results__clear-filter"
                 >
-                  <X size={16} />
-                </button>
-              )}
-            </div>
-
-            {/* Toolbar Controls */}
-            <div className="efsw-academic-toolbar__controls">
-              <button
-                type="button"
-                onClick={() => setShowFilters(!showFilters)}
-                className={`efsw-academic-filter-btn ${
-                  showFilters ? "is-active" : ""
-                }`}
-              >
-                <Filter size={18} />
-                Filters
-                {activeFiltersCount > 0 && (
-                  <span className="efsw-academic-filter-badge">
-                    {activeFiltersCount}
-                  </span>
-                )}
-              </button>
-
-              <div className="efsw-academic-sort">
-                <label htmlFor="sort-select">Sort:</label>
-                <select
-                  id="sort-select"
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="efsw-academic-sort__select"
-                >
-                  {SORT_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown size={16} className="efsw-academic-sort__icon" />
-              </div>
-
-              <div className="efsw-academic-view-toggle">
-                <button
-                  type="button"
-                  onClick={() => setViewMode("grid")}
-                  className={viewMode === "grid" ? "is-active" : ""}
-                  aria-label="Grid view"
-                >
-                  <Grid3x3 size={18} />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setViewMode("list")}
-                  className={viewMode === "list" ? "is-active" : ""}
-                  aria-label="List view"
-                >
-                  <List size={18} />
+                  Clear
                 </button>
               </div>
-            </div>
-          </div>
-
-          {/* Filter Panel */}
-          {showFilters && (
-            <div className="efsw-academic-filters">
-              <div className="efsw-academic-filters__inner">
-                <div className="efsw-academic-filters__header">
-                  <h3>Filter by topic</h3>
-                  {activeFiltersCount > 0 && (
-                    <button
-                      type="button"
-                      onClick={clearFilters}
-                      className="efsw-academic-filters__clear"
-                    >
-                      Clear all
-                    </button>
-                  )}
-                </div>
-                <div className="efsw-academic-filters__tags">
-                  {allTags.map((tag) => (
-                    <button
-                      key={tag}
-                      type="button"
-                      onClick={() => toggleTag(tag)}
-                      className={`efsw-academic-tag ${
-                        selectedTags.includes(tag) ? "is-active" : ""
-                      }`}
-                    >
-                      <Tag size={14} />
-                      {tag}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-        </section>
-
-        {/* Results */}
-        <section className="efsw-academic-results">
-          <div className="efsw-academic-results__inner">
-            <div className="efsw-academic-results__header">
-              <h2>
-                {filteredDocuments.length}{" "}
-                {filteredDocuments.length === 1 ? "document" : "documents"}
-                {selectedCategory && ` in ${selectedCategory}`}
-                {searchQuery && ` matching "${searchQuery}"`}
-              </h2>
-            </div>
+            )}
 
             {filteredDocuments.length === 0 ? (
-              <div className="efsw-academic-empty">
+              <div className="academic-empty">
                 <BookOpen size={48} />
                 <h3>No documents found</h3>
                 <p>Try adjusting your filters or search query</p>
-                {activeFiltersCount > 0 && (
-                  <button
-                    type="button"
-                    onClick={clearFilters}
-                    className="efsw-academic-btn efsw-academic-btn--primary"
-                  >
-                    Clear all filters
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={clearFilters}
+                  className="academic-btn academic-btn--primary"
+                >
+                  Clear all filters
+                </button>
               </div>
             ) : (
               <div
-                className={`efsw-academic-grid ${
-                  viewMode === "list" ? "efsw-academic-grid--list" : ""
+                className={`academic-grid ${
+                  viewMode === "list" ? "academic-grid--list" : ""
                 }`}
               >
                 {filteredDocuments.map((doc) => {
-                  const categoryConfig = CATEGORY_CONFIG[doc.category];
-
-                  // Skip if category config not found (safety check)
-                  if (!categoryConfig) {
-                    console.warn(`Unknown category: ${doc.category}`);
-                    return null;
-                  }
-
-                  const Icon = categoryConfig.icon;
                   const engagement = getContentEngagement(doc.id);
                   const isLiked = likedDocs.has(doc.id);
 
                   return (
-                    <article
+                    <DocumentCard
                       key={doc.id}
-                      className="efsw-academic-card"
-                      onClick={() => handleView(doc.id)}
-                      style={{ cursor: "pointer" }}
-                    >
-                      {doc.featured && (
-                        <div className="efsw-academic-card__badge">
-                          <TrendingUp size={12} />
-                          Featured
-                        </div>
-                      )}
-
-                      <div className="efsw-academic-card__header">
-                        <div
-                          className="efsw-academic-card__category"
-                          style={
-                            {
-                              "--category-color": categoryConfig.color,
-                              "--category-bg": categoryConfig.bgColor,
-                            } as React.CSSProperties
-                          }
-                        >
-                          <Icon size={16} />
-                          <span>{doc.category}</span>
-                        </div>
-                        <div className="efsw-academic-card__meta">
-                          <span>
-                            <Calendar size={14} />
-                            {new Date(doc.date).toLocaleDateString("en-US", {
-                              year: "numeric",
-                              month: "short",
-                            })}
-                          </span>
-                          <span>
-                            <Download size={14} />
-                            {doc.downloads}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="efsw-academic-card__content">
-                        <h3>{doc.title}</h3>
-                        <p className="efsw-academic-card__summary">
-                          {doc.summary}
-                        </p>
-                        <div className="efsw-academic-card__author">
-                          <User size={14} />
-                          {doc.author}
-                        </div>
-                      </div>
-
-                      {doc.tags.length > 0 && (
-                        <div className="efsw-academic-card__tags">
-                          {doc.tags.slice(0, 3).map((tag) => (
-                            <span key={tag} className="efsw-academic-card__tag">
-                              {tag}
-                            </span>
-                          ))}
-                          {doc.tags.length > 3 && (
-                            <span className="efsw-academic-card__tag">
-                              +{doc.tags.length - 3}
-                            </span>
-                          )}
-                        </div>
-                      )}
-
-                      <div className="efsw-academic-card__footer">
-                        <div className="efsw-academic-card__stats">
-                          <span title="Views">
-                            <Eye size={14} />
-                            {engagement.viewCount || 0}
-                          </span>
-                          <span title="Downloads">
-                            <Download size={14} />
-                            {engagement.downloadCount || 0}
-                          </span>
-                          <span title="Likes">
-                            <Heart
-                              size={14}
-                              fill={isLiked ? "currentColor" : "none"}
-                            />
-                            {engagement.likeCount || 0}
-                          </span>
-                        </div>
-                        <div className="efsw-academic-card__actions">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleLike(doc.id, e);
-                            }}
-                            className={`efsw-academic-card__action ${
-                              isLiked ? "is-liked" : ""
-                            }`}
-                            title={isLiked ? "Unlike" : "Like"}
-                          >
-                            <Heart
-                              size={16}
-                              fill={isLiked ? "currentColor" : "none"}
-                            />
-                            {isLiked ? "Liked" : "Like"}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={(e) => handleDownload(doc.id, e)}
-                            className="efsw-academic-card__action"
-                          >
-                            <Download size={16} />
-                            Download
-                          </button>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleView(doc.id);
-                            }}
-                            className="efsw-academic-card__action efsw-academic-card__action--primary"
-                          >
-                            <ExternalLink size={16} />
-                            View
-                          </button>
-                        </div>
-                      </div>
-                    </article>
+                      id={doc.id}
+                      title={doc.title}
+                      category={doc.category}
+                      author={doc.author}
+                      date={doc.date}
+                      summary={doc.summary}
+                      tags={doc.tags}
+                      downloads={doc.downloads}
+                      featured={doc.featured}
+                      viewCount={engagement.viewCount || 0}
+                      likeCount={engagement.likeCount || 0}
+                      isLiked={isLiked}
+                      onView={() => handleView(doc.id)}
+                      onLike={(e) => handleLike(doc.id, e)}
+                      onDownload={(e) => handleDownload(doc.id, e)}
+                    />
                   );
                 })}
               </div>
@@ -734,8 +529,8 @@ export default function AcademicDocumentsPage() {
         </section>
 
         {/* CTA Section */}
-        <section className="efsw-academic-cta">
-          <div className="efsw-academic-cta__inner">
+        <section className="academic-cta">
+          <div className="academic-cta__inner">
             <h2>Share your knowledge</h2>
             <p>
               Have research or resources to contribute? Help grow this library
@@ -743,7 +538,7 @@ export default function AcademicDocumentsPage() {
             </p>
             <a
               href="mailto:support@eurasiaforumsw.org"
-              className="efsw-academic-btn efsw-academic-btn--primary"
+              className="academic-btn academic-btn--primary"
             >
               Submit a document
               <ExternalLink size={16} />
@@ -751,7 +546,7 @@ export default function AcademicDocumentsPage() {
           </div>
         </section>
 
-        <footer className="efsw-about-footer">
+        <footer className="academic-footer">
           <span>© 2026 EFSW</span>
           <a href="/">Eurasia Forum for Social Workers</a>
         </footer>

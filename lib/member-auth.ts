@@ -315,3 +315,20 @@ export const removeMember = () => {
   window.localStorage.removeItem(MEMBER_STORAGE_KEY);
   window.localStorage.removeItem(MEMBER_SESSION_KEY);
 };
+
+/**
+ * Get all members (for admin/aggregation purposes).
+ * In a local-only setup this returns an empty array.
+ * With Supabase enabled, it fetches from the remote store.
+ */
+export const getAllMembers = (): MemberProfile[] => {
+  // Local-only: return empty array (single-member storage)
+  if (!isRemoteMemberStoreEnabled()) {
+    const member = readMember();
+    return member ? [stripPassword(member)] : [];
+  }
+
+  // Remote: would need a server-side API endpoint
+  // For now, return empty array and implement server-side fetch later
+  return [];
+};

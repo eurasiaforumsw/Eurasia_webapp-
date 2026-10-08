@@ -16172,3 +16172,260 @@ body {
     font-size: 0.7rem;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Academic Document Page Animations
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Marquee Infinite Scroll ── */
+@keyframes academic-marquee-scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-33.333%);
+  }
+}
+
+.academic-marquee-animate {
+  animation: academic-marquee-scroll 40s linear infinite;
+}
+
+.academic-marquee-animate:hover {
+  animation-play-state: paused;
+}
+
+@media (max-width: 768px) {
+  .academic-marquee-animate {
+    animation: academic-marquee-scroll 30s linear infinite;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .academic-marquee-animate {
+    animation: none;
+  }
+}
+
+/* ── Shimmer Loading Effect ── */
+@keyframes academic-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.academic-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(15, 19, 28, 0.8) 0%,
+    rgba(56, 189, 248, 0.15) 50%,
+    rgba(15, 19, 28, 0.8) 100%
+  );
+  background-size: 200% 100%;
+  animation: academic-shimmer 2s ease-in-out infinite;
+}
+
+/* ── Skeleton Loader ── */
+.academic-skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--surface-2, #0A0D12);
+  border-radius: 12px;
+}
+
+.academic-skeleton::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(56, 189, 248, 0.08) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: academic-shimmer 1.8s ease-in-out infinite;
+}
+
+/* ── Fade In Up ── */
+@keyframes academic-fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(32px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.academic-fade-in-up {
+  animation: academic-fade-in-up 600ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+/* ── Stagger Animation Helper ── */
+.academic-stagger-item:nth-child(1) { animation-delay: 0ms; }
+.academic-stagger-item:nth-child(2) { animation-delay: 80ms; }
+.academic-stagger-item:nth-child(3) { animation-delay: 160ms; }
+.academic-stagger-item:nth-child(4) { animation-delay: 240ms; }
+.academic-stagger-item:nth-child(5) { animation-delay: 320ms; }
+.academic-stagger-item:nth-child(6) { animation-delay: 400ms; }
+.academic-stagger-item:nth-child(7) { animation-delay: 480ms; }
+.academic-stagger-item:nth-child(8) { animation-delay: 560ms; }
+.academic-stagger-item:nth-child(9) { animation-delay: 640ms; }
+
+/* ── Scale Pulse ── */
+@keyframes academic-pulse-scale {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.8;
+  }
+}
+
+.academic-pulse {
+  animation: academic-pulse-scale 2s ease-in-out infinite;
+}
+
+/* ── Glow Effect ── */
+@keyframes academic-glow-pulse {
+  0%, 100% {
+    opacity: 0.4;
+    filter: blur(20px);
+  }
+  50% {
+    opacity: 0.7;
+    filter: blur(24px);
+  }
+}
+
+.academic-glow-animate {
+  animation: academic-glow-pulse 3s ease-in-out infinite;
+}
+
+/* ── Smooth Scroll Behavior ── */
+html.academic-smooth-scroll {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.academic-smooth-scroll {
+    scroll-behavior: auto;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Responsive Grid Layouts
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.academic-grid-responsive {
+  display: grid;
+  gap: clamp(1rem, 3vw, 1.5rem);
+}
+
+/* Mobile: Stack */
+@media (max-width: 639px) {
+  .academic-grid-responsive {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Tablet: 2-column */
+@media (min-width: 640px) and (max-width: 1023px) {
+  .academic-grid-responsive {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Desktop: 3-column */
+@media (min-width: 1024px) {
+  .academic-grid-responsive {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Accessibility Enhancements
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Focus States */
+.academic-focus-ring:focus-visible {
+  outline: 2px solid rgba(56, 189, 248, 0.8);
+  outline-offset: 3px;
+  border-radius: 8px;
+}
+
+/* Skip to Content Link */
+.academic-skip-link {
+  position: absolute;
+  top: -100px;
+  left: 16px;
+  z-index: 9999;
+  padding: 12px 20px;
+  background: #38BDF8;
+  color: #05070C;
+  font-weight: 600;
+  border-radius: 8px;
+  text-decoration: none;
+  transition: top 0.3s ease;
+}
+
+.academic-skip-link:focus {
+  top: 16px;
+}
+
+/* Screen Reader Only */
+.academic-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Performance & Optimization
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* GPU Acceleration for Animations */
+.academic-gpu-accelerate {
+  transform: translateZ(0);
+  will-change: transform, opacity;
+}
+
+/* Reduce Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  .academic-fade-in-up,
+  .academic-pulse,
+  .academic-glow-animate,
+  .academic-shimmer {
+    animation: none !important;
+  }
+  
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* High Contrast Mode Support */
+@media (prefers-contrast: high) {
+  .academic-focus-ring:focus-visible {
+    outline-width: 3px;
+    outline-color: currentColor;
+  }
+}
