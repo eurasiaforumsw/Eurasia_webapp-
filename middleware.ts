@@ -69,6 +69,7 @@ export async function middleware(request: NextRequest) {
     if (
       pathname === '/api/admin/auth/login' ||
       pathname === '/api/admin/auth/register' ||
+      pathname === '/api/members' ||  // Allow POST /api/members (registration)
       pathname === '/api/members/login' ||
       pathname === '/api/members/register' ||
       pathname === '/api/members/verify-email' ||
