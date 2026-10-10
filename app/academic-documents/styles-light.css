@@ -52,12 +52,13 @@
   min-height: 100vh;
 }
 
-/* Hero Section - Light gradient */
+/* Hero Section - Warmer, richer gradient */
 .academic-hero {
-  background: linear-gradient(180deg, var(--surface-1) 0%, var(--surface-0) 100%);
+  background: linear-gradient(180deg, #f8f9fb 0%, #ffffff 100%);
   padding-block: clamp(64px, 10vh, 120px) clamp(48px, 6vh, 80px);
   position: relative;
   overflow: hidden;
+  border-bottom: 1px solid var(--border-light);
 }
 
 .academic-hero::before {
@@ -67,7 +68,7 @@
   left: 50%;
   width: 150%;
   height: 100%;
-  background: radial-gradient(ellipse at center, rgba(37, 99, 235, 0.04) 0%, transparent 70%);
+  background: radial-gradient(ellipse at center, rgba(37, 99, 235, 0.08) 0%, transparent 70%);
   transform: translateX(-50%);
   pointer-events: none;
 }
@@ -144,89 +145,30 @@
   font-weight: 500;
 }
 
-/* Author Marquee - NO BORDERS, clean spacing */
+/* Author Marquee - Simplified, cleaner spacing */
 .author-marquee {
-  margin-top: 64px;
-  padding-block: 48px;
+  margin-top: 80px;
+  padding-block: 0;
   background: transparent;
   border: none !important;
   box-shadow: none !important;
   position: relative;
 }
 
-.author-marquee__header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  max-width: 1280px;
-  margin-inline: auto;
-  padding-inline: var(--spacing-inline);
-  margin-bottom: 32px;
-}
-
-.author-marquee__title {
-  font-size: clamp(20px, 2.5vw, 28px);
-  font-weight: 700;
-  color: var(--text-primary);
-  margin: 0;
-}
-
-.author-marquee__controls {
-  display: flex;
-  gap: 12px;
-}
-
-.author-marquee__control-btn {
-  padding: 8px 16px;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text-secondary);
-  background: transparent;
-  border: 1px solid var(--border-light);
-  border-radius: var(--radius-pill);
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.author-marquee__control-btn:hover {
-  background: var(--surface-2);
-  border-color: var(--border-medium);
-  color: var(--text-primary);
-}
-
-.author-marquee__control-btn--active {
-  background: var(--accent);
-  color: white;
-  border-color: var(--accent);
-}
-
-.author-marquee__track-wrapper {
-  position: relative;
+.author-marquee__inner {
   overflow: hidden;
-  mask-image: linear-gradient(
-    to right,
-    transparent 0%,
-    black 5%,
-    black 95%,
-    transparent 100%
-  );
-  -webkit-mask-image: linear-gradient(
-    to right,
-    transparent 0%,
-    black 5%,
-    black 95%,
-    transparent 100%
-  );
+  position: relative;
 }
 
 .author-marquee__track {
   display: flex;
-  gap: 24px;
-  animation: marquee-scroll 40s linear infinite;
+  gap: 40px;
+  animation: marquee-scroll 60s linear infinite;
   will-change: transform;
+  padding-block: 20px;
 }
 
-.author-marquee__track:hover {
+.author-marquee__track.is-paused {
   animation-play-state: paused;
 }
 
@@ -239,94 +181,87 @@
   }
 }
 
-/* Author Card - NO BORDERS */
-.author-card {
+/* Author Item - Larger, cleaner design */
+.author-marquee__item {
   flex: 0 0 auto;
-  width: 280px;
-  background: var(--surface-1);
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  background: white;
+  border: 1px solid var(--border-light);
   border-radius: var(--radius-lg);
   padding: 24px;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  border: none !important;
   box-shadow: var(--shadow-sm);
+  min-width: 360px;
 }
 
-.author-card:hover {
-  background: white;
+.author-marquee__item:hover {
+  border-color: var(--accent);
   box-shadow: var(--shadow-hover);
   transform: translateY(-4px);
+  background: #fafbfc;
 }
 
-.author-card__header {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 16px;
-}
-
-.author-card__avatar {
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-warm) 100%);
+.author-marquee__avatar {
+  width: 160px;
+  height: 160px;
+  border-radius: 12px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 24px;
-  font-weight: 700;
-  color: white;
-  flex-shrink: 0;
-  border: none !important;
 }
 
-.author-card__info {
+.author-marquee__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+}
+
+.author-marquee__avatar-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--accent) 0%, #1d4ed8 100%);
+  color: white;
+}
+
+.author-marquee__avatar-placeholder svg {
+  width: 80px;
+  height: 80px;
+}
+
+.author-marquee__info {
   flex: 1;
   min-width: 0;
 }
 
-.author-card__name {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin-bottom: 4px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.author-card__role {
-  font-size: 13px;
-  color: var(--text-tertiary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.author-card__stats {
-  display: flex;
-  gap: 20px;
-  padding-top: 16px;
-  border-top: 1px solid var(--border-light);
-}
-
-.author-card__stat {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.author-card__stat-value {
-  font-size: 20px;
+.author-marquee__name {
+  font-size: 18px;
   font-weight: 700;
-  color: var(--accent);
+  line-height: 1.3;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-height: 2.6em;
 }
 
-.author-card__stat-label {
-  font-size: 12px;
-  color: var(--text-tertiary);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+.author-marquee__meta {
+  font-size: 14px;
+  color: var(--text-secondary);
+  font-weight: 500;
 }
 
 /* Sticky Filters - Light theme */
@@ -736,11 +671,24 @@
 
   .author-marquee {
     margin-top: 48px;
-    padding-block: 32px;
   }
 
-  .author-card {
-    width: 240px;
+  .author-marquee__item {
+    min-width: 320px;
+  }
+
+  .author-marquee__avatar {
+    width: 120px;
+    height: 120px;
+  }
+
+  .author-marquee__avatar-placeholder svg {
+    width: 60px;
+    height: 60px;
+  }
+
+  .author-marquee__name {
+    font-size: 16px;
   }
 
   .academic-grid {
