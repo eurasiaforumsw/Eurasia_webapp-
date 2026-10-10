@@ -65,12 +65,18 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/api/content') ||
     pathname.startsWith('/api/members')
   ) {
-    // Allow login and register endpoints without auth
+    // Allow public endpoints without auth
     if (
       pathname === '/api/admin/auth/login' ||
       pathname === '/api/admin/auth/register' ||
       pathname === '/api/members/login' ||
-      pathname === '/api/members/register'
+      pathname === '/api/members/register' ||
+      pathname === '/api/members/verify-email' ||
+      pathname === '/api/members/resend-verification' ||
+      pathname === '/api/members/forgot-password' ||
+      pathname === '/api/members/reset-password' ||
+      pathname === '/api/content/public' ||
+      pathname.startsWith('/api/engagement/') // Allow engagement tracking for anonymous users
     ) {
       return NextResponse.next();
     }
