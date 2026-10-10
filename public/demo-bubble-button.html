@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bubble Button Demo - EFSW</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 40px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: linear-gradient(135deg, #05070C 0%, #0F131C 100%);
+      min-height: 100vh;
+      color: #F8FAFC;
+    }
+
+    .demo-container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .demo-header {
+      text-align: center;
+      margin-bottom: 60px;
+    }
+
+    .demo-header h1 {
+      font-size: clamp(2rem, 5vw, 3rem);
+      margin-bottom: 16px;
+      background: linear-gradient(135deg, #38BDF8 0%, #0EA5E9 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .demo-header p {
+      color: #94a3b8;
+      font-size: 1.125rem;
+    }
+
+    .demo-section {
+      background: #0F131C;
+      border: 1px solid rgba(56, 189, 248, 0.12);
+      border-radius: 16px;
+      padding: 40px;
+      margin-bottom: 32px;
+    }
+
+    .demo-section h2 {
+      font-size: 1.5rem;
+      margin-bottom: 24px;
+      color: #38BDF8;
+    }
+
+    .button-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      align-items: center;
+    }
+
+    .code-block {
+      background: #05070C;
+      border: 1px solid rgba(56, 189, 248, 0.1);
+      border-radius: 12px;
+      padding: 20px;
+      margin-top: 24px;
+      overflow-x: auto;
+    }
+
+    .code-block code {
+      font-family: 'SF Mono', Monaco, monospace;
+      font-size: 0.875rem;
+      color: #6EE7B7;
+      line-height: 1.6;
+    }
+
+    .label {
+      display: block;
+      font-size: 0.875rem;
+      color: #64748B;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 600;
+    }
+
+    /**
+     * Bubble Effect Button
+     * Animated button with bubble effect on hover
+     * Theme colors: Cyan (#38BDF8) matching admin console
+     */
+    .button-bubble {
+      position: relative;
+      padding: 0.75rem 1.5rem;
+      border-radius: 10px;
+      border: none;
+      color: #0f131c;
+      font-size: 0.9375rem;
+      font-weight: 600;
+      cursor: pointer;
+      background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%);
+      transition: all 0.2s ease;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(56, 189, 248, 0.25);
+    }
+
+    .button-bubble:active {
+      transform: scale(0.96);
+    }
+
+    .button-bubble:before,
+    .button-bubble:after {
+      position: absolute;
+      content: "";
+      width: 150%;
+      left: 50%;
+      height: 100%;
+      transform: translateX(-50%);
+      z-index: -1;
+      background-repeat: no-repeat;
+    }
+
+    .button-bubble:hover:before {
+      top: -70%;
+      background-image:
+        radial-gradient(circle, #38bdf8 20%, transparent 20%),
+        radial-gradient(circle, transparent 20%, #38bdf8 20%, transparent 30%),
+        radial-gradient(circle, #38bdf8 20%, transparent 20%),
+        radial-gradient(circle, #38bdf8 20%, transparent 20%),
+        radial-gradient(circle, transparent 10%, #38bdf8 15%, transparent 20%),
+        radial-gradient(circle, #38bdf8 20%, transparent 20%),
+        radial-gradient(circle, #38bdf8 20%, transparent 20%),
+        radial-gradient(circle, #38bdf8 20%, transparent 20%),
+        radial-gradient(circle, #38bdf8 20%, transparent 20%);
+      background-size: 10% 10%, 20% 20%, 15% 15%, 20% 20%, 18% 18%, 10% 10%, 15% 15%, 10% 10%, 18% 18%;
+      background-position: 50% 120%;
+      animation: topBubbles 0.6s ease;
+    }
+
+    @keyframes topBubbles {
+      0% {
+        background-position: 5% 90%, 10% 90%, 10% 90%, 15% 90%, 25% 90%, 25% 90%, 40% 90%, 55% 90%, 70% 90%;
+      }
+      50% {
+        background-position: 0% 80%, 0% 20%, 10% 40%, 20% 0%, 30% 30%, 22% 50%, 50% 50%, 65% 20%, 90% 30%;
+      }
+      100% {
+        background-position: 0% 70%, 0% 10%, 10% 30%, 20% -10%, 30% 20%, 22% 40%, 50% 40%, 65% 10%, 90% 20%;
+        background-size: 0% 0%, 0% 0%, 0% 0%, 0% 0%, 0% 0%, 0% 0%;
+      }
+    }
+
+    .button-bubble:hover::after {
+      bottom: -70%;
+      background-image:
+        radial-gradient(circle, #38bdf8 20%, transparent 20%),
+        radial-gradient(circle, #38bdf8 20%, transparent 20%),
+        radial-gradient(circle, transparent 10%, #38bdf8 15%, transparent 20%),
+        radial-gradient(circle, #38bdf8 20%, transparent 20%),
+        radial-gradient(circle, #38bdf8 20%, transparent 20%),
+        radial-gradient(circle, #38bdf8 20%, transparent 20%),
+        radial-gradient(circle, #38bdf8 20%, transparent 20%);
+      background-size: 15% 15%, 20% 20%, 18% 18%, 20% 20%, 15% 15%, 20% 20%, 18% 18%;
+      background-position: 50% 0%;
+      animation: bottomBubbles 0.6s ease;
+    }
+
+    @keyframes bottomBubbles {
+      0% {
+        background-position: 10% -10%, 30% 10%, 55% -10%, 70% -10%, 85% -10%, 70% -10%, 70% 0%;
+      }
+      50% {
+        background-position: 0% 80%, 20% 80%, 45% 60%, 60% 100%, 75% 70%, 95% 60%, 105% 0%;
+      }
+      100% {
+        background-position: 0% 90%, 20% 90%, 45% 70%, 60% 110%, 75% 80%, 95% 70%, 110% 10%;
+        background-size: 0% 0%, 0% 0%, 0% 0%, 0% 0%, 0% 0%, 0% 0%;
+      }
+    }
+
+    .button-bubble:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(56, 189, 248, 0.35);
+    }
+
+    /* Success variant */
+    .button-bubble--success {
+      background: linear-gradient(135deg, #6ee7b7 0%, #34d399 100%);
+      box-shadow: 0 4px 12px rgba(110, 231, 183, 0.25);
+    }
+
+    .button-bubble--success:hover {
+      box-shadow: 0 6px 16px rgba(110, 231, 183, 0.35);
+    }
+
+    .button-bubble--success:hover:before {
+      background-image:
+        radial-gradient(circle, #6ee7b7 20%, transparent 20%),
+        radial-gradient(circle, transparent 20%, #6ee7b7 20%, transparent 30%),
+        radial-gradient(circle, #6ee7b7 20%, transparent 20%),
+        radial-gradient(circle, #6ee7b7 20%, transparent 20%),
+        radial-gradient(circle, transparent 10%, #6ee7b7 15%, transparent 20%),
+        radial-gradient(circle, #6ee7b7 20%, transparent 20%),
+        radial-gradient(circle, #6ee7b7 20%, transparent 20%),
+        radial-gradient(circle, #6ee7b7 20%, transparent 20%),
+        radial-gradient(circle, #6ee7b7 20%, transparent 20%);
+    }
+
+    .button-bubble--success:hover::after {
+      background-image:
+        radial-gradient(circle, #6ee7b7 20%, transparent 20%),
+        radial-gradient(circle, #6ee7b7 20%, transparent 20%),
+        radial-gradient(circle, transparent 10%, #6ee7b7 15%, transparent 20%),
+        radial-gradient(circle, #6ee7b7 20%, transparent 20%),
+        radial-gradient(circle, #6ee7b7 20%, transparent 20%),
+        radial-gradient(circle, #6ee7b7 20%, transparent 20%),
+        radial-gradient(circle, #6ee7b7 20%, transparent 20%);
+    }
+
+    /* Warning variant */
+    .button-bubble--warning {
+      background: linear-gradient(135deg, #fcd34d 0%, #fbbf24 100%);
+      color: #0f131c;
+      box-shadow: 0 4px 12px rgba(252, 211, 77, 0.25);
+    }
+
+    .button-bubble--warning:hover {
+      box-shadow: 0 6px 16px rgba(252, 211, 77, 0.35);
+    }
+
+    .button-bubble--warning:hover:before {
+      background-image:
+        radial-gradient(circle, #fcd34d 20%, transparent 20%),
+        radial-gradient(circle, transparent 20%, #fcd34d 20%, transparent 30%),
+        radial-gradient(circle, #fcd34d 20%, transparent 20%),
+        radial-gradient(circle, #fcd34d 20%, transparent 20%),
+        radial-gradient(circle, transparent 10%, #fcd34d 15%, transparent 20%),
+        radial-gradient(circle, #fcd34d 20%, transparent 20%),
+        radial-gradient(circle, #fcd34d 20%, transparent 20%),
+        radial-gradient(circle, #fcd34d 20%, transparent 20%),
+        radial-gradient(circle, #fcd34d 20%, transparent 20%);
+    }
+
+    .button-bubble--warning:hover::after {
+      background-image:
+        radial-gradient(circle, #fcd34d 20%, transparent 20%),
+        radial-gradient(circle, #fcd34d 20%, transparent 20%),
+        radial-gradient(circle, transparent 10%, #fcd34d 15%, transparent 20%),
+        radial-gradient(circle, #fcd34d 20%, transparent 20%),
+        radial-gradient(circle, #fcd34d 20%, transparent 20%),
+        radial-gradient(circle, #fcd34d 20%, transparent 20%),
+        radial-gradient(circle, #fcd34d 20%, transparent 20%);
+    }
+
+    /* Danger variant */
+    .button-bubble--danger {
+      background: linear-gradient(135deg, #f87171 0%, #ef4444 100%);
+      color: white;
+      box-shadow: 0 4px 12px rgba(248, 113, 113, 0.25);
+    }
+
+    .button-bubble--danger:hover {
+      box-shadow: 0 6px 16px rgba(248, 113, 113, 0.35);
+    }
+
+    .button-bubble--danger:hover:before {
+      background-image:
+        radial-gradient(circle, #f87171 20%, transparent 20%),
+        radial-gradient(circle, transparent 20%, #f87171 20%, transparent 30%),
+        radial-gradient(circle, #f87171 20%, transparent 20%),
+        radial-gradient(circle, #f87171 20%, transparent 20%),
+        radial-gradient(circle, transparent 10%, #f87171 15%, transparent 20%),
+        radial-gradient(circle, #f87171 20%, transparent 20%),
+        radial-gradient(circle, #f87171 20%, transparent 20%),
+        radial-gradient(circle, #f87171 20%, transparent 20%),
+        radial-gradient(circle, #f87171 20%, transparent 20%);
+    }
+
+    .button-bubble--danger:hover::after {
+      background-image:
+        radial-gradient(circle, #f87171 20%, transparent 20%),
+        radial-gradient(circle, #f87171 20%, transparent 20%),
+        radial-gradient(circle, transparent 10%, #f87171 15%, transparent 20%),
+        radial-gradient(circle, #f87171 20%, transparent 20%),
+        radial-gradient(circle, #f87171 20%, transparent 20%),
+        radial-gradient(circle, #f87171 20%, transparent 20%),
+        radial-gradient(circle, #f87171 20%, transparent 20%);
+    }
+  </style>
+</head>
+<body>
+  <div class="demo-container">
+    <div class="demo-header">
+      <h1>🫧 Bubble Button Effect</h1>
+      <p>ปุ่มแบบ Animated พร้อม Bubble Effect เมื่อ Hover</p>
+    </div>
+
+    <!-- Primary Buttons -->
+    <div class="demo-section">
+      <h2>Primary Buttons (Cyan)</h2>
+      <span class="label">สำหรับ Action หลัก</span>
+      <div class="button-group">
+        <button class="button-bubble">บันทึกข้อมูล</button>
+        <button class="button-bubble">📝 สร้างใหม่</button>
+        <button class="button-bubble">🔍 ค้นหา</button>
+      </div>
+      <div class="code-block">
+        <code>&lt;button class="button-bubble"&gt;บันทึกข้อมูล&lt;/button&gt;</code>
+      </div>
+    </div>
+
+    <!-- Success Buttons -->
+    <div class="demo-section">
+      <h2>Success Buttons (Green)</h2>
+      <span class="label">สำหรับ Confirm, Approve</span>
+      <div class="button-group">
+        <button class="button-bubble button-bubble--success">✓ ยืนยัน</button>
+        <button class="button-bubble button-bubble--success">✓ อนุมัติ</button>
+        <button class="button-bubble button-bubble--success">✓ เผยแพร่</button>
+      </div>
+      <div class="code-block">
+        <code>&lt;button class="button-bubble button-bubble--success"&gt;✓ ยืนยัน&lt;/button&gt;</code>
+      </div>
+    </div>
+
+    <!-- Warning Buttons -->
+    <div class="demo-section">
+      <h2>Warning Buttons (Amber)</h2>
+      <span class="label">สำหรับ Draft, Pending</span>
+      <div class="button-group">
+        <button class="button-bubble button-bubble--warning">⚠ บันทึกแบบร่าง</button>
+        <button class="button-bubble button-bubble--warning">⏸ พักชั่วคราว</button>
+        <button class="button-bubble button-bubble--warning">📋 รออนุมัติ</button>
+      </div>
+      <div class="code-block">
+        <code>&lt;button class="button-bubble button-bubble--warning"&gt;⚠ บันทึกแบบร่าง&lt;/button&gt;</code>
+      </div>
+    </div>
+
+    <!-- Danger Buttons -->
+    <div class="demo-section">
+      <h2>Danger Buttons (Red)</h2>
+      <span class="label">สำหรับ Delete, Cancel</span>
+      <div class="button-group">
+        <button class="button-bubble button-bubble--danger">✕ ลบ</button>
+        <button class="button-bubble button-bubble--danger">✕ ยกเลิก</button>
+        <button class="button-bubble button-bubble--danger">🗑 ลบถาวร</button>
+      </div>
+      <div class="code-block">
+        <code>&lt;button class="button-bubble button-bubble--danger"&gt;✕ ลบ&lt;/button&gt;</code>
+      </div>
+    </div>
+
+    <!-- React Component -->
+    <div class="demo-section">
+      <h2>วิธีใช้ใน React/Next.js</h2>
+      <div class="code-block">
+        <code>import BubbleButton from '@/components/ui/BubbleButton';
+
+// Primary
+&lt;BubbleButton variant="primary" onClick={handleSave}&gt;
+  บันทึกข้อมูล
+&lt;/BubbleButton&gt;
+
+// Success
+&lt;BubbleButton variant="success" type="submit"&gt;
+  ✓ ยืนยัน
+&lt;/BubbleButton&gt;
+
+// Warning
+&lt;BubbleButton variant="warning"&gt;
+  ⚠ บันทึกแบบร่าง
+&lt;/BubbleButton&gt;
+
+// Danger
+&lt;BubbleButton variant="danger" onClick={handleDelete}&gt;
+  ✕ ลบ
+&lt;/BubbleButton&gt;</code>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Add click feedback
+    document.querySelectorAll('.button-bubble').forEach(btn => {
+      btn.addEventListener('click', () => {
+        console.log('Button clicked:', btn.textContent);
+      });
+    });
+  </script>
+</body>
+</html>
