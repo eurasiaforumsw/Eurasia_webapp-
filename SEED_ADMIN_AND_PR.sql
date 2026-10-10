@@ -20,93 +20,123 @@
 -- NOTES:
 --   - All passwords are bcrypt hashed (12 rounds)
 --   - All accounts are pre-verified and active
---   - UUIDs are generated automatically
+--   - IDs use email as TEXT (matches members table schema)
 --   - Created at timestamps use current time
 -- ============================================================================
 
 -- Insert Admin Account 1
 INSERT INTO members (
+  id,
   email,
+  full_name,
   password_hash,
   role,
   status,
   email_verified_at,
-  first_name,
-  last_name,
   membership_type,
+  country,
+  organization,
+  position,
+  expertise,
+  bio,
   created_at,
   updated_at
 ) VALUES (
   'admin@efsw.local',
+  'admin@efsw.local',
+  'System Administrator',
   '$2a$12$bSjN2DKzUO6gMY1OInerpOvuD2B8GnoEPdPE97Npa2ZFJappmsZwO',
   'admin',
   'active',
   NOW(),
-  'System',
-  'Administrator',
   'institutional',
+  'Thailand',
+  'EFSW',
+  'System Administrator',
+  'Platform Management',
+  'System administrator account',
   NOW(),
   NOW()
 );
 
 -- Insert Admin Account 2
 INSERT INTO members (
+  id,
   email,
+  full_name,
   password_hash,
   role,
   status,
   email_verified_at,
-  first_name,
-  last_name,
   membership_type,
+  country,
+  organization,
+  position,
+  expertise,
+  bio,
   created_at,
   updated_at
 ) VALUES (
   'admin2@efsw.local',
+  'admin2@efsw.local',
+  'Secondary Administrator',
   '$2a$12$chSKYvYg6bIy7ouWLhWFCOZv9VbEwyfn7nqSSqOjbr0oEBAMTRVFu',
   'admin',
   'active',
   NOW(),
-  'Secondary',
-  'Administrator',
   'institutional',
+  'Thailand',
+  'EFSW',
+  'Administrator',
+  'Platform Management',
+  'Secondary administrator account',
   NOW(),
   NOW()
 );
 
 -- Insert PR/News Editor Account
 INSERT INTO members (
+  id,
   email,
+  full_name,
   password_hash,
   role,
   status,
   email_verified_at,
-  first_name,
-  last_name,
   membership_type,
+  country,
+  organization,
+  position,
+  expertise,
+  bio,
   created_at,
   updated_at
 ) VALUES (
   'news@efsw.local',
+  'news@efsw.local',
+  'News Editor',
   '$2a$12$xjQ/noryZsiHWZAmIyNlzuNyq0OSCOMN8Q/Jw3.Jthkm/QF4VThh.',
   'pr',
   'active',
   NOW(),
-  'News',
-  'Editor',
   'professional',
+  'Thailand',
+  'EFSW',
+  'PR & News Editor',
+  'Content Management, News Publishing',
+  'PR and news editor with access to content management',
   NOW(),
   NOW()
 );
 
 -- Verify the inserts
 SELECT
+  id,
   email,
+  full_name,
   role,
   status,
   email_verified_at,
-  first_name,
-  last_name,
   created_at
 FROM members
 WHERE email IN ('admin@efsw.local', 'admin2@efsw.local', 'news@efsw.local')
