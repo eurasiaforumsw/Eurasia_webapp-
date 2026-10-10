@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import "@/styles/admin-layout.css";
 import {
   AdminActivity,
   AdminContentItem,
@@ -365,35 +366,37 @@ export default function AdminDashboardPage() {
   const draftContentCount = content.filter((c) => c.status === "draft").length;
 
   return (
-    <div className="efsw-admin-shell flex min-h-screen bg-surface-deep text-text-primary">
+    <div className="admin-shell">
       {/* Toast Notification */}
       {toast && (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-2xl border border-teal/40 bg-surface-raised/95 px-5 py-3 text-xs font-bold text-teal-light shadow-2xl backdrop-blur-md animate-fade-in">
-          <span className="h-2 w-2 rounded-full bg-teal animate-pulse" />
+        <div className="toast-notification">
+          <span className="toast-indicator" />
           <span>{toast}</span>
         </div>
       )}
 
-      {/* Modular Sidebar */}
-      <AdminSidebar
-        currentView={view}
-        onSelectView={setView}
-        session={session}
-        pendingMembersCount={pendingMembersCount}
-        draftContentCount={draftContentCount}
-        onSignOut={handleSignOut}
-        mobileNavOpen={mobileNavOpen}
-        onCloseMobileNav={() => setMobileNavOpen(false)}
-      />
-
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0">
-        <AdminTopbar
+      {/* CSS Grid Layout: Sidebar + Main */}
+      <div className="admin-layout">
+        {/* Collapsible Sidebar */}
+        <AdminSidebar
           currentView={view}
-          onOpenMobileNav={() => setMobileNavOpen(true)}
+          onSelectView={setView}
+          session={session}
+          pendingMembersCount={pendingMembersCount}
+          draftContentCount={draftContentCount}
+          onSignOut={handleSignOut}
+          mobileNavOpen={mobileNavOpen}
+          onCloseMobileNav={() => setMobileNavOpen(false)}
         />
 
-        <main className="flex-1 p-6 md:p-8 max-w-7xl w-full mx-auto">
+        {/* Main Content Area */}
+        <div className="admin-main">
+          <AdminTopbar
+            currentView={view}
+            onOpenMobileNav={() => setMobileNavOpen(true)}
+          />
+
+          <main className="admin-content">
           {view === "overview" && (
             <AdminOverviewView
               members={members}
@@ -470,6 +473,7 @@ export default function AdminDashboardPage() {
             />
           )}
         </main>
+        </div>
       </div>
 
       {/* Isolated Modals & Drawers */}

@@ -15,6 +15,7 @@ import {
   TrendingUp,
   Mail,
   Globe2,
+  Settings,
 } from "lucide-react";
 import { AdminActivity, AdminContentItem, AdminMember } from "@/lib/admin-data";
 import { AdminView } from "../AdminSidebar";
@@ -108,131 +109,222 @@ export const AdminOverviewView = memo(function AdminOverviewView({
       .join("") || "·";
 
   return (
-    <div style={{ display: "grid", gap: "0.85rem" }}>
-      {/* ── KPI summary cards ──────────────────────────────────── */}
-      <div className="efsw-admin-summary-grid">
-        <div className="efsw-admin-summary-card">
-          <div className="efsw-admin-summary-card__head">
-            <span className="efsw-admin-summary-card__label">Total members</span>
-            <span className="efsw-admin-summary-card__icon"><UsersRound size={17} /></span>
+    <div style={{ display: "grid", gap: "1.5rem" }}>
+      {/* Welcome header with user greeting */}
+      <div className="efsw-admin-welcome-header">
+        <div className="efsw-admin-welcome-header__content">
+          <div className="efsw-admin-welcome-header__badge">
+            <Sparkles size={14} />
+            <span>Dashboard</span>
           </div>
-          <div className="efsw-admin-summary-card__value">{totalMembers}</div>
-          <div className="efsw-admin-summary-card__meta">
-            <strong>{newThisWeek}</strong> new this week ·{" "}
-            <strong>{countryCount}</strong> {countryCount === 1 ? "country" : "countries"}
+          <h1 className="efsw-admin-welcome-header__title">
+            Welcome to EFSW Control Centre
+          </h1>
+          <p className="efsw-admin-welcome-header__subtitle">
+            Monitor member activity, manage content, and track engagement across the platform
+          </p>
+        </div>
+        <div className="efsw-admin-welcome-header__actions">
+          <button
+            type="button"
+            onClick={onOpenNewContent}
+            className="efsw-admin-btn-primary"
+          >
+            <FileText size={16} />
+            <span>Create Content</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => onNavigate("analytics")}
+            className="efsw-admin-btn-secondary"
+          >
+            <TrendingUp size={16} />
+            <span>View Analytics</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Quick stats - improved visual hierarchy */}
+      <div className="efsw-admin-stats-grid">
+        <div className="efsw-admin-stat-card">
+          <div className="efsw-admin-stat-card__icon-wrapper">
+            <UsersRound size={24} strokeWidth={2} />
+          </div>
+          <div className="efsw-admin-stat-card__content">
+            <span className="efsw-admin-stat-card__label">Total Members</span>
+            <div className="efsw-admin-stat-card__value">{totalMembers.toLocaleString()}</div>
+            <div className="efsw-admin-stat-card__meta">
+              <span className="efsw-admin-stat-badge efsw-admin-stat-badge--success">
+                +{newThisWeek} this week
+              </span>
+              <span className="efsw-admin-stat-card__detail">
+                {countryCount} {countryCount === 1 ? "country" : "countries"}
+              </span>
+            </div>
           </div>
         </div>
 
-        <div className="efsw-admin-summary-card is-warning">
-          <div className="efsw-admin-summary-card__head">
-            <span className="efsw-admin-summary-card__label">Pending review</span>
-            <span className="efsw-admin-summary-card__icon"><Clock size={17} /></span>
+        <div className="efsw-admin-stat-card efsw-admin-stat-card--warning">
+          <div className="efsw-admin-stat-card__icon-wrapper">
+            <Clock size={24} strokeWidth={2} />
           </div>
-          <div className="efsw-admin-summary-card__value">{pendingCount}</div>
-          <div className="efsw-admin-summary-card__meta">
-            <button
-              type="button"
-              className="efsw-admin-text-action"
-              onClick={() => onNavigate("members")}
-            >
-              Open queue <ArrowUpRight size={13} />
-            </button>
-          </div>
-        </div>
-
-        <div className="efsw-admin-summary-card">
-          <div className="efsw-admin-summary-card__head">
-            <span className="efsw-admin-summary-card__label">Published content</span>
-            <span className="efsw-admin-summary-card__icon"><FileText size={17} /></span>
-          </div>
-          <div className="efsw-admin-summary-card__value">
-            {publishedNews + publishedDocs}
-            <span className="efsw-admin-summary-card__delta">{draftContentCount} drafts</span>
-          </div>
-          <div className="efsw-admin-summary-card__meta">
-            <strong>{publishedNews}</strong> news · <strong>{publishedDocs}</strong> documents
+          <div className="efsw-admin-stat-card__content">
+            <span className="efsw-admin-stat-card__label">Pending Review</span>
+            <div className="efsw-admin-stat-card__value">{pendingCount}</div>
+            <div className="efsw-admin-stat-card__meta">
+              <button
+                type="button"
+                className="efsw-admin-stat-card__action"
+                onClick={() => onNavigate("members")}
+              >
+                Review now <ArrowUpRight size={14} />
+              </button>
+            </div>
           </div>
         </div>
 
-        <div className="efsw-admin-summary-card">
-          <div className="efsw-admin-summary-card__head">
-            <span className="efsw-admin-summary-card__label">Active sessions</span>
-            <span className="efsw-admin-summary-card__icon"><ShieldCheck size={17} /></span>
+        <div className="efsw-admin-stat-card">
+          <div className="efsw-admin-stat-card__icon-wrapper">
+            <FileText size={24} strokeWidth={2} />
           </div>
-          <div className="efsw-admin-summary-card__value">{activeCount}</div>
-          <div className="efsw-admin-summary-card__meta">
-            {suspendedCount > 0
-              ? <><strong>{suspendedCount}</strong> suspended</>
-              : <>All accounts in good standing</>}
+          <div className="efsw-admin-stat-card__content">
+            <span className="efsw-admin-stat-card__label">Published Content</span>
+            <div className="efsw-admin-stat-card__value">
+              {(publishedNews + publishedDocs).toLocaleString()}
+              {draftContentCount > 0 && (
+                <span className="efsw-admin-stat-card__badge">{draftContentCount}</span>
+              )}
+            </div>
+            <div className="efsw-admin-stat-card__meta">
+              <span className="efsw-admin-stat-card__detail">
+                {publishedNews} news · {publishedDocs} documents
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="efsw-admin-stat-card">
+          <div className="efsw-admin-stat-card__icon-wrapper">
+            <ShieldCheck size={24} strokeWidth={2} />
+          </div>
+          <div className="efsw-admin-stat-card__content">
+            <span className="efsw-admin-stat-card__label">Active Members</span>
+            <div className="efsw-admin-stat-card__value">{activeCount.toLocaleString()}</div>
+            <div className="efsw-admin-stat-card__meta">
+              {suspendedCount > 0 ? (
+                <span className="efsw-admin-stat-badge efsw-admin-stat-badge--danger">
+                  {suspendedCount} suspended
+                </span>
+              ) : (
+                <span className="efsw-admin-stat-card__detail">All in good standing</span>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* ── Welcome band ───────────────────────────────────────── */}
-      <section
-        className="efsw-admin-panel"
-        style={{
-          display: "grid",
-          gridTemplateColumns: "minmax(0, 1fr) auto",
-          alignItems: "center",
-          gap: "1.5rem",
-          padding: "1.5rem 1.75rem",
-          background: "linear-gradient(120deg, var(--admin-green-soft) 0%, var(--admin-surface) 100%)",
-        }}
-      >
-        <div>
-          <span className="efsw-admin-eyebrow" style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem" }}>
-            <Sparkles size={12} /> Operations
-          </span>
-          <h2
-            style={{
-              margin: "0.4rem 0 0.3rem",
-              fontFamily: "var(--font-display)",
-              fontSize: "clamp(1.4rem, 2vw, 1.85rem)",
-              fontWeight: 650,
-              lineHeight: 1.05,
-            }}
-          >
-            Welcome back to the EFSW control centre
-          </h2>
-          <p
-            style={{
-              margin: 0,
-              color: "var(--admin-muted)",
-              fontSize: "0.82rem",
-              maxWidth: "52rem",
-            }}
-          >
-            Approve new members, publish trilingual research, and keep the regional
-            directory in sync with R2 and Supabase.
-          </p>
-        </div>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "0.65rem" }}>
+      {/* Quick actions panel */}
+      <section className="efsw-admin-quick-actions-panel">
+        <header className="efsw-admin-panel__head">
+          <div>
+            <span className="efsw-admin-eyebrow">Quick actions</span>
+            <h2>Common tasks</h2>
+          </div>
+        </header>
+        <div className="efsw-admin-quick-actions-grid">
           <button
             type="button"
             onClick={onOpenNewContent}
-            className="efsw-admin-primary"
+            className="efsw-admin-quick-action-card"
           >
-            <FileText size={13} /> New content
+            <div className="efsw-admin-quick-action-card__icon">
+              <FileText size={20} />
+            </div>
+            <div className="efsw-admin-quick-action-card__content">
+              <h3>Create Content</h3>
+              <p>Write and publish news or documents</p>
+            </div>
+            <ArrowUpRight className="efsw-admin-quick-action-card__arrow" size={16} />
           </button>
+
+          <button
+            type="button"
+            onClick={() => onNavigate("members")}
+            className="efsw-admin-quick-action-card"
+          >
+            <div className="efsw-admin-quick-action-card__icon">
+              <UsersRound size={20} />
+            </div>
+            <div className="efsw-admin-quick-action-card__content">
+              <h3>Manage Members</h3>
+              <p>Review and approve registrations</p>
+            </div>
+            <ArrowUpRight className="efsw-admin-quick-action-card__arrow" size={16} />
+          </button>
+
           <button
             type="button"
             onClick={() => onNavigate("layout")}
-            className="efsw-admin-outline-action"
+            className="efsw-admin-quick-action-card"
           >
-            <Layout size={13} /> Customise layout
+            <div className="efsw-admin-quick-action-card__icon">
+              <Layout size={20} />
+            </div>
+            <div className="efsw-admin-quick-action-card__content">
+              <h3>Edit Layout</h3>
+              <p>Customize website appearance</p>
+            </div>
+            <ArrowUpRight className="efsw-admin-quick-action-card__arrow" size={16} />
           </button>
+
           <button
             type="button"
             onClick={() => onNavigate("broadcast")}
-            className="efsw-admin-outline-action"
+            className="efsw-admin-quick-action-card"
           >
-            <Mail size={13} /> Broadcast
+            <div className="efsw-admin-quick-action-card__icon">
+              <Mail size={20} />
+            </div>
+            <div className="efsw-admin-quick-action-card__content">
+              <h3>Send Broadcast</h3>
+              <p>Email campaigns to members</p>
+            </div>
+            <ArrowUpRight className="efsw-admin-quick-action-card__arrow" size={16} />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onNavigate("analytics")}
+            className="efsw-admin-quick-action-card"
+          >
+            <div className="efsw-admin-quick-action-card__icon">
+              <TrendingUp size={20} />
+            </div>
+            <div className="efsw-admin-quick-action-card__content">
+              <h3>View Reports</h3>
+              <p>Analytics and insights</p>
+            </div>
+            <ArrowUpRight className="efsw-admin-quick-action-card__arrow" size={16} />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onNavigate("settings")}
+            className="efsw-admin-quick-action-card"
+          >
+            <div className="efsw-admin-quick-action-card__icon">
+              <Settings size={20} />
+            </div>
+            <div className="efsw-admin-quick-action-card__content">
+              <h3>Settings</h3>
+              <p>Organization preferences</p>
+            </div>
+            <ArrowUpRight className="efsw-admin-quick-action-card__arrow" size={16} />
           </button>
         </div>
       </section>
 
-      {/* ── Two-column panels ───────────────────────────────────── */}
+      {/* Two-column panels - Activity & Recent members */}
       <div className="efsw-admin-overview-grid">
         <section className="efsw-admin-panel" aria-labelledby="overview-activity">
           <header className="efsw-admin-panel__head">

@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useEffect, useRef, useCallback } from "react";
+import { memo, useEffect, useRef, useCallback, useState, useMemo } from "react";
 import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
 import {
@@ -15,6 +15,8 @@ import {
   Mail,
   MessageSquare,
   TrendingUp,
+  ChevronLeft,
+  Search,
 } from "lucide-react";
 import { AdminSession } from "@/lib/admin-auth";
 
@@ -30,6 +32,8 @@ interface AdminSidebarProps {
   mobileNavOpen: boolean;
   onCloseMobileNav: () => void;
 }
+
+const SIDEBAR_COLLAPSED_KEY = "efsw-admin-sidebar-collapsed";
 
 interface NavItem {
   id: AdminView;
@@ -54,6 +58,11 @@ export const AdminSidebar = memo(function AdminSidebar({
   const firstFocusableRef = useRef<HTMLButtonElement>(null);
   const lastFocusableRef = useRef<HTMLButtonElement>(null);
   const itemRefs = useRef<Map<AdminView, HTMLButtonElement>>(new Map());
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // New state for collapsible and search
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const allNavItems: NavItem[] = [
     {
@@ -142,6 +151,17 @@ export const AdminSidebar = memo(function AdminSidebar({
     return false; // Member role shouldn't reach here (blocked by middleware)
   });
 
+  // Filter by search query
+  const filteredNavItems = useMemo(() => {
+    if (!searchQuery.trim()) return navItems;
+    const query = searchQuery.toLowerCase();
+    return navItems.filter(
+      (item) =>
+        item.label.toLowerCase().includes(query) ||
+        item.subtitle.toLowerCase().includes(query)
+    );
+  }, [navItems, searchQuery]);
+
   // Keyboard navigation handlers
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent, currentIndex: number) => {
@@ -150,27 +170,27 @@ export const AdminSidebar = memo(function AdminSidebar({
       switch (e.key) {
         case "ArrowDown":
           e.preventDefault();
-          const nextIndex = (currentIndex + 1) % navItems.length;
-          itemRefs.current.get(navItems[nextIndex].id)?.focus();
+          const nextIndex = (currentIndex + 1) % filteredNavItems.length;
+          itemRefs.current.get(filteredNavItems[nextIndex].id)?.focus();
           handled = true;
           break;
 
         case "ArrowUp":
           e.preventDefault();
-          const prevIndex = currentIndex === 0 ? navItems.length - 1 : currentIndex - 1;
-          itemRefs.current.get(navItems[prevIndex].id)?.focus();
+          const prevIndex = currentIndex === 0 ? filteredNavItems.length - 1 : currentIndex - 1;
+          itemRefs.current.get(filteredNavItems[prevIndex].id)?.focus();
           handled = true;
           break;
 
         case "Home":
           e.preventDefault();
-          itemRefs.current.get(navItems[0].id)?.focus();
+          itemRefs.current.get(filteredNavItems[0].id)?.focus();
           handled = true;
           break;
 
         case "End":
           e.preventDefault();
-          itemRefs.current.get(navItems[navItems.length - 1].id)?.focus();
+          itemRefs.current.get(filteredNavItems[filteredNavItems.length - 1].id)?.focus();
           handled = true;
           break;
 
@@ -185,13 +205,28 @@ export const AdminSidebar = memo(function AdminSidebar({
 
       return handled;
     },
-    [navItems, mobileNavOpen, onCloseMobileNav]
+    [filteredNavItems, mobileNavOpen, onCloseMobileNav]
   );
 
   // Global keyboard shortcuts (Cmd/Ctrl + 1-8)
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key >= "1" && e.key <= "8") {
+      // Cmd/Ctrl + B to toggle collapse
+      if ((e.metaKey || e.ctrlKey) && e.key === "b") {
+        e.preventDefault();
+        setIsCollapsed((prev) => !prev);
+        return;
+      }
+
+      // Cmd/Ctrl + K to focus search
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+        return;
+      }
+
+      // Cmd/Ctrl + 1-8 for navigation
+      if ((e.metaKey || e.ctrlKey) && e.key >= "1" && e.key <= "9") {
         const index = parseInt(e.key, 10) - 1;
         if (index < navItems.length) {
           e.preventDefault();
@@ -258,40 +293,77 @@ export const AdminSidebar = memo(function AdminSidebar({
 
       <aside
         ref={navRef}
-        className={`fixed top-0 bottom-0 left-0 z-50 flex w-72 flex-col bg-surface-deep transition-transform duration-300 lg:static lg:translate-x-0 ${
+        className={`fixed top-0 bottom-0 left-0 z-50 flex flex-col bg-surface-deep transition-all duration-300 lg:static lg:translate-x-0 ${
           mobileNavOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
+        } ${isCollapsed ? "w-20" : "w-72"}`}
         aria-label="Admin navigation"
       >
         {/* Brand Header */}
-        <div className="flex items-center justify-between p-5">
-          <Link
-            href="/"
-            className="flex items-center gap-3 text-text-primary hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-teal focus:ring-offset-2 focus:ring-offset-surface-deep rounded-lg"
-            aria-label="Return to main site"
-          >
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-teal to-teal-vivid text-lg font-bold text-white shadow-lg shadow-teal/20">
+        <div className="flex items-center justify-between p-5 border-b border-surface-raised/50">
+          {!isCollapsed ? (
+            <>
+              <Link
+                href="/"
+                className="flex items-center gap-3 text-text-primary hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-teal focus:ring-offset-2 focus:ring-offset-surface-deep rounded-lg transition-opacity"
+                aria-label="Return to main site"
+              >
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-teal to-teal-vivid text-lg font-bold text-white shadow-lg shadow-teal/20">
+                  E
+                </div>
+                <div>
+                  <div className="font-display text-sm font-bold tracking-tight text-text-primary">
+                    EFSW Console
+                  </div>
+                  <div className="text-[11px] font-medium text-text-muted">
+                    Admin Management
+                  </div>
+                </div>
+              </Link>
+
+              <button
+                ref={firstFocusableRef}
+                onClick={onCloseMobileNav}
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-text-muted hover:bg-surface-raised hover:text-text-primary focus:outline-none focus:ring-2 focus:ring-teal focus:ring-offset-2 focus:ring-offset-surface-deep lg:hidden transition-colors"
+                aria-label="Close sidebar"
+              >
+                <X size={18} />
+              </button>
+            </>
+          ) : (
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-teal to-teal-vivid text-lg font-bold text-white shadow-lg shadow-teal/20 mx-auto">
               E
             </div>
-            <div>
-              <div className="font-display text-sm font-bold tracking-tight text-text-primary">
-                EFSW Console
-              </div>
-              <div className="text-[11px] font-medium text-text-muted">
-                Admin Management
-              </div>
-            </div>
-          </Link>
+          )}
+        </div>
 
+        {/* Collapse Toggle - Desktop Only */}
+        <div className="hidden lg:flex items-center justify-end px-3 py-2 border-b border-surface-raised/30">
           <button
-            ref={firstFocusableRef}
-            onClick={onCloseMobileNav}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-text-muted hover:bg-surface-raised hover:text-text-primary focus:outline-none focus:ring-2 focus:ring-teal focus:ring-offset-2 focus:ring-offset-surface-deep lg:hidden"
-            aria-label="Close sidebar"
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className="flex h-7 w-7 items-center justify-center rounded-lg text-text-muted hover:bg-surface-raised hover:text-text-primary focus:outline-none focus:ring-2 focus:ring-teal transition-all"
+            aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            title={`${isCollapsed ? "Expand" : "Collapse"} (⌘B)`}
           >
-            <X size={18} />
+            <ChevronLeft size={16} className={`transition-transform duration-300 ${isCollapsed ? "rotate-180" : ""}`} />
           </button>
         </div>
+
+        {/* Search Bar */}
+        {!isCollapsed && (
+          <div className="px-3 py-3 border-b border-surface-raised/30">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" size={14} />
+              <input
+                ref={searchInputRef}
+                type="text"
+                placeholder="Search menu... (⌘K)"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 bg-surface-raised rounded-lg text-xs text-text-primary placeholder:text-text-muted border border-transparent focus:border-teal focus:outline-none focus:ring-2 focus:ring-teal/20 transition-all"
+              />
+            </div>
+          </div>
+        )}
 
         {/* Navigation list */}
         <nav
@@ -299,7 +371,7 @@ export const AdminSidebar = memo(function AdminSidebar({
           role="navigation"
           aria-label="Main admin sections"
         >
-          {navItems.map((item, index) => {
+          {filteredNavItems.map((item, index) => {
             const Icon = item.icon;
             const isActive = currentView === item.id;
             const isMac = typeof window !== "undefined" && navigator.platform.toUpperCase().indexOf("MAC") >= 0;
@@ -316,15 +388,15 @@ export const AdminSidebar = memo(function AdminSidebar({
                   onCloseMobileNav();
                 }}
                 onKeyDown={(e) => handleKeyDown(e, index)}
-                className={`group relative flex w-full items-center justify-between rounded-lg px-3.5 py-3 text-left transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-teal focus:ring-offset-2 focus:ring-offset-surface-deep ${
+                className={`group relative flex w-full items-center justify-between rounded-lg px-3.5 py-3 text-left transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-teal focus:ring-offset-2 focus:ring-offset-surface-deep ${
                   isActive
-                    ? "font-semibold"
-                    : "text-text-secondary hover:bg-surface-raised hover:text-text-primary"
-                }`}
+                    ? "font-semibold shadow-md"
+                    : "text-text-secondary hover:bg-surface-raised hover:text-text-primary hover:shadow-sm"
+                } ${isCollapsed ? "justify-center" : ""}`}
                 style={
                   isActive
                     ? {
-                        borderLeft: "2px solid var(--admin-green)",
+                        borderLeft: isCollapsed ? "none" : "3px solid var(--admin-green)",
                         background: "var(--admin-green-soft)",
                         color: "var(--admin-ink)",
                       }
@@ -333,96 +405,134 @@ export const AdminSidebar = memo(function AdminSidebar({
                 aria-current={isActive ? "page" : undefined}
                 aria-label={`${item.label}: ${item.subtitle}`}
                 aria-keyshortcuts={`${isMac ? "Meta" : "Control"}+${item.shortcut}`}
-                title={`${item.label} (${modKey}+${item.shortcut})`}
+                title={isCollapsed ? `${item.label} (${modKey}+${item.shortcut})` : undefined}
               >
-                <div className="flex items-center gap-3 min-w-0">
-                  <Icon
-                    size={19}
-                    className={`flex-shrink-0 transition-colors ${
-                      isActive ? "text-teal" : "text-text-muted group-hover:text-teal"
-                    }`}
-                    aria-hidden="true"
-                  />
-                  <div className="truncate">
-                    <div className="text-sm font-medium leading-tight">{item.label}</div>
-                    <div
-                      className={`text-[11px] leading-tight mt-0.5 truncate ${
-                        isActive ? "" : "text-text-muted"
+                <div className={`flex items-center gap-3 min-w-0 ${isCollapsed ? "justify-center" : ""}`}>
+                  <div className="relative">
+                    <Icon
+                      size={19}
+                      className={`flex-shrink-0 transition-all duration-200 ${
+                        isActive ? "text-teal scale-110" : "text-text-muted group-hover:text-teal group-hover:scale-105"
                       }`}
-                      style={isActive ? { color: "var(--admin-green)" } : undefined}
-                    >
-                      {item.subtitle}
-                    </div>
+                      aria-hidden="true"
+                    />
+                    {item.badge && isCollapsed && (
+                      <span
+                        className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-amber-500 border-2 border-surface-deep"
+                        aria-label={`${item.badge} notifications`}
+                      />
+                    )}
                   </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  {item.badge && (
-                    <span
-                      className={`inline-flex items-center justify-center rounded-full px-2 py-0.5 text-xs font-bold ${
-                        isActive
-                          ? "bg-teal/15 text-teal"
-                          : "bg-amber-500/20 text-amber-300 border border-amber-500/30"
-                      }`}
-                      aria-label={`${item.badge} pending items`}
-                    >
-                      {item.badge}
-                    </span>
+                  {!isCollapsed && (
+                    <div className="truncate">
+                      <div className="text-sm font-medium leading-tight">{item.label}</div>
+                      <div
+                        className={`text-[11px] leading-tight mt-0.5 truncate transition-colors ${
+                          isActive ? "" : "text-text-muted"
+                        }`}
+                        style={isActive ? { color: "var(--admin-green)" } : undefined}
+                      >
+                        {item.subtitle}
+                      </div>
+                    </div>
                   )}
-
-                  {/* Keyboard shortcut hint - visible on hover/focus */}
-                  <span
-                    className="hidden lg:inline-flex opacity-0 group-hover:opacity-100 group-focus:opacity-100 transition-opacity text-[10px] font-mono text-text-muted bg-surface-raised px-1.5 py-0.5 rounded border border-surface-raised"
-                    aria-hidden="true"
-                  >
-                    {modKey}+{item.shortcut}
-                  </span>
                 </div>
+
+                {!isCollapsed && (
+                  <div className="flex items-center gap-2">
+                    {item.badge && (
+                      <span
+                        className={`inline-flex items-center justify-center rounded-full px-2 py-0.5 text-xs font-bold transition-all ${
+                          isActive
+                            ? "bg-teal/15 text-teal"
+                            : "bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                        }`}
+                        aria-label={`${item.badge} pending items`}
+                      >
+                        {item.badge}
+                      </span>
+                    )}
+
+                    {/* Keyboard shortcut hint - visible on hover/focus */}
+                    <span
+                      className="hidden lg:inline-flex opacity-0 group-hover:opacity-100 group-focus:opacity-100 transition-opacity duration-200 text-[10px] font-mono text-text-muted bg-surface-raised px-1.5 py-0.5 rounded border border-surface-raised"
+                      aria-hidden="true"
+                    >
+                      {modKey}+{item.shortcut}
+                    </span>
+                  </div>
+                )}
               </button>
             );
           })}
+
+          {filteredNavItems.length === 0 && !isCollapsed && (
+            <div className="text-center py-8 text-text-muted text-xs">
+              No menu items found
+            </div>
+          )}
         </nav>
 
         {/* Sidebar Footer / User Profile */}
-        <div className="mx-3 mb-3 rounded-lg bg-surface-base p-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3 min-w-0">
+        <div className={`mx-3 mb-3 rounded-lg bg-surface-base p-3 ${isCollapsed ? "flex flex-col items-center gap-3" : ""}`}>
+          {!isCollapsed ? (
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3 min-w-0">
+                <div
+                  className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-surface-raised font-bold text-teal text-xs"
+                  aria-hidden="true"
+                >
+                  {session?.name ? session.name.charAt(0).toUpperCase() : "A"}
+                </div>
+                <div className="truncate min-w-0">
+                  <div className="truncate text-xs font-bold text-text-primary">
+                    {session?.name || "Administrator"}
+                  </div>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <span
+                      className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                        session?.role === "super-admin"
+                          ? "bg-teal/15 text-teal"
+                          : session?.role === "content-editor"
+                          ? "bg-blue-500/15 text-blue-400"
+                          : "bg-gray-500/15 text-gray-400"
+                      }`}
+                    >
+                      {session?.role === "super-admin" ? "Admin" : session?.role === "content-editor" ? "PR Editor" : "Member"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                ref={lastFocusableRef}
+                onClick={onSignOut}
+                className="flex h-8 w-8 flex-shrink-0 items-center justify-center p-2 rounded-lg text-text-muted hover:bg-red-500/10 hover:text-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-surface-base transition-colors"
+                aria-label="Log out"
+                title="Log out"
+              >
+                <LogOut size={16} />
+              </button>
+            </div>
+          ) : (
+            <>
               <div
-                className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-surface-raised font-bold text-teal text-xs"
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-surface-raised font-bold text-teal text-xs"
                 aria-hidden="true"
               >
                 {session?.name ? session.name.charAt(0).toUpperCase() : "A"}
               </div>
-              <div className="truncate min-w-0">
-                <div className="truncate text-xs font-bold text-text-primary">
-                  {session?.name || "Administrator"}
-                </div>
-                <div className="flex items-center gap-1.5 mt-0.5">
-                  <span
-                    className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold ${
-                      session?.role === "admin"
-                        ? "bg-teal/15 text-teal"
-                        : session?.role === "pr"
-                        ? "bg-blue-500/15 text-blue-400"
-                        : "bg-gray-500/15 text-gray-400"
-                    }`}
-                  >
-                    {session?.role === "admin" ? "Admin" : session?.role === "pr" ? "PR Editor" : "Member"}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <button
-              ref={lastFocusableRef}
-              onClick={onSignOut}
-              className="flex h-8 w-8 flex-shrink-0 items-center justify-center p-2 rounded-lg text-text-muted hover:bg-red-500/10 hover:text-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-surface-base transition-colors"
-              aria-label="Log out"
-              title="Log out"
-            >
-              <LogOut size={16} />
-            </button>
-          </div>
+              <button
+                ref={lastFocusableRef}
+                onClick={onSignOut}
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-text-muted hover:bg-red-500/10 hover:text-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors"
+                aria-label="Log out"
+                title="Log out"
+              >
+                <LogOut size={16} />
+              </button>
+            </>
+          )}
         </div>
       </aside>
     </>
