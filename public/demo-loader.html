@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Loading Components Demo - EFSW</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 40px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: linear-gradient(135deg, #05070C 0%, #0F131C 100%);
+      min-height: 100vh;
+      color: #F8FAFC;
+    }
+
+    .demo-container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .demo-header {
+      text-align: center;
+      margin-bottom: 60px;
+    }
+
+    .demo-header h1 {
+      font-size: clamp(2rem, 5vw, 3rem);
+      margin-bottom: 16px;
+      background: linear-gradient(135deg, #38BDF8 0%, #0EA5E9 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .demo-header p {
+      color: #94a3b8;
+      font-size: 1.125rem;
+    }
+
+    .demo-section {
+      background: #0F131C;
+      border: 1px solid rgba(56, 189, 248, 0.12);
+      border-radius: 16px;
+      padding: 40px;
+      margin-bottom: 32px;
+    }
+
+    .demo-section h2 {
+      font-size: 1.5rem;
+      margin-bottom: 24px;
+      color: #38BDF8;
+    }
+
+    .demo-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 32px;
+      margin-top: 24px;
+    }
+
+    .demo-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      padding: 24px;
+      background: #05070C;
+      border: 1px solid rgba(56, 189, 248, 0.1);
+      border-radius: 12px;
+    }
+
+    .demo-label {
+      font-size: 0.875rem;
+      color: #64748B;
+      text-align: center;
+    }
+
+    .code-block {
+      background: #05070C;
+      border: 1px solid rgba(56, 189, 248, 0.1);
+      border-radius: 12px;
+      padding: 20px;
+      margin-top: 24px;
+      overflow-x: auto;
+    }
+
+    .code-block code {
+      font-family: 'SF Mono', Monaco, monospace;
+      font-size: 0.875rem;
+      color: #6EE7B7;
+      line-height: 1.6;
+    }
+
+    /* Import loader styles */
+    .loader {
+      width: 84px;
+      aspect-ratio: 1;
+      background:
+        linear-gradient(#38bdf8 0 0) left/50% 100% no-repeat,
+        conic-gradient(
+          from -90deg at 32px 9.47px,
+          #0f131c 135deg,
+          #0ea5e9 0 270deg,
+          #38bdf8 0
+        );
+      background-blend-mode: multiply;
+      -webkit-mask: linear-gradient(
+          to bottom right,
+          #0000 8px,
+          #000 0 52px,
+          #0000 0
+        ),
+        conic-gradient(from -90deg at right 6px bottom 6px, #000 90deg, #0000 0);
+      mask: linear-gradient(to bottom right, #0000 8px, #000 0 52px, #0000 0),
+        conic-gradient(from -90deg at right 6px bottom 6px, #000 90deg, #0000 0);
+      background-size: 50% 50%;
+      -webkit-mask-size: 50% 50%;
+      mask-size: 50% 50%;
+      -webkit-mask-composite: source-in;
+      mask-composite: intersect;
+      animation: loader-spin 1.8s infinite cubic-bezier(0.5, 0.2, 0.5, 1);
+      box-shadow: 0 0 15px rgba(56, 189, 248, 0.6);
+      transform: perspective(1000px) rotateY(15deg);
+    }
+
+    @keyframes loader-spin {
+      0% {
+        background-position: 0% 0%, 0 0;
+        transform: perspective(1000px) rotateY(15deg) scale(1);
+        box-shadow: 0 0 15px rgba(56, 189, 248, 0.6);
+      }
+      25% {
+        background-position: 100% 0%, 0 0;
+      }
+      50% {
+        background-position: 100% 100%, 0 0;
+        transform: perspective(1000px) rotateY(15deg) scale(1.08);
+        box-shadow: 0 0 25px rgba(56, 189, 248, 0.8);
+      }
+      75% {
+        background-position: 0% 100%, 0 0;
+      }
+      100% {
+        background-position: 0% 0%, 0 0;
+        transform: perspective(1000px) rotateY(15deg) scale(1);
+        box-shadow: 0 0 15px rgba(56, 189, 248, 0.6);
+      }
+    }
+
+    .loader--sm { width: 48px; }
+    .loader--md { width: 84px; }
+    .loader--lg { width: 120px; }
+
+    .loader-dots {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .loader-dots__dot {
+      width: 0.5rem;
+      height: 0.5rem;
+      background: #38bdf8;
+      border-radius: 50%;
+      animation: loader-dots-bounce 1.4s ease-in-out infinite;
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.4);
+    }
+
+    .loader-dots__dot:nth-child(1) { animation-delay: 0s; }
+    .loader-dots__dot:nth-child(2) { animation-delay: 0.2s; }
+    .loader-dots__dot:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes loader-dots-bounce {
+      0%, 80%, 100% {
+        transform: scale(0.8);
+        opacity: 0.5;
+      }
+      40% {
+        transform: scale(1.2);
+        opacity: 1;
+      }
+    }
+
+    .loader-progress {
+      width: 100%;
+      height: 4px;
+      background: rgba(56, 189, 248, 0.1);
+      border-radius: 999px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .loader-progress__bar {
+      height: 100%;
+      background: linear-gradient(90deg, #38bdf8 0%, #0ea5e9 100%);
+      border-radius: 999px;
+      animation: loader-progress-slide 1.5s ease-in-out infinite;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+    }
+
+    @keyframes loader-progress-slide {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(400%); }
+    }
+
+    .skeleton {
+      background: linear-gradient(
+        90deg,
+        rgba(56, 189, 248, 0.05) 0%,
+        rgba(56, 189, 248, 0.12) 50%,
+        rgba(56, 189, 248, 0.05) 100%
+      );
+      background-size: 200% 100%;
+      animation: skeleton-shimmer 1.5s ease-in-out infinite;
+      border-radius: 0.5rem;
+    }
+
+    @keyframes skeleton-shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    .skeleton--text { height: 1em; width: 100%; margin: 0.5em 0; }
+    .skeleton--title { height: 1.5em; width: 60%; margin: 0.75em 0; }
+    .skeleton--avatar { width: 3rem; height: 3rem; border-radius: 50%; }
+    .skeleton--card { height: 150px; width: 100%; border-radius: 1rem; }
+
+    .loader-inline {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 1em;
+      height: 1em;
+      vertical-align: middle;
+    }
+
+    .loader-inline__spinner {
+      display: block;
+      width: 100%;
+      height: 100%;
+      border: 2px solid currentColor;
+      border-right-color: transparent;
+      border-radius: 50%;
+      animation: loader-inline-spin 0.6s linear infinite;
+    }
+
+    @keyframes loader-inline-spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .demo-button {
+      padding: 0.75rem 1.5rem;
+      background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%);
+      color: #0f131c;
+      border: none;
+      border-radius: 10px;
+      font-size: 0.9375rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      box-shadow: 0 4px 12px rgba(56, 189, 248, 0.25);
+      transition: transform 0.2s;
+    }
+
+    .demo-button:hover {
+      transform: translateY(-2px);
+    }
+
+    .demo-button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+  <div class="demo-container">
+    <div class="demo-header">
+      <h1>⏳ Loading Components</h1>
+      <p>Beautiful loading states matching EFSW design system</p>
+    </div>
+
+    <!-- 3D Loader Sizes -->
+    <div class="demo-section">
+      <h2>3D Animated Loader</h2>
+      <p style="color: #94a3b8; margin-bottom: 24px;">Main loader with 3D perspective effect and cyan glow</p>
+
+      <div class="demo-grid">
+        <div class="demo-item">
+          <div class="loader loader--sm"></div>
+          <span class="demo-label">Small (48px)</span>
+        </div>
+        <div class="demo-item">
+          <div class="loader loader--md"></div>
+          <span class="demo-label">Medium (84px)</span>
+        </div>
+        <div class="demo-item">
+          <div class="loader loader--lg"></div>
+          <span class="demo-label">Large (120px)</span>
+        </div>
+      </div>
+
+      <div class="code-block">
+        <code>import Loader from '@/components/ui/Loader';
+
+&lt;Loader size="md" /&gt;</code>
+      </div>
+    </div>
+
+    <!-- Dots Loader -->
+    <div class="demo-section">
+      <h2>Dots Loader</h2>
+      <p style="color: #94a3b8; margin-bottom: 24px;">Simple bouncing dots for inline loading</p>
+
+      <div class="demo-item" style="max-width: 300px; margin: 0 auto;">
+        <div class="loader-dots">
+          <span class="loader-dots__dot"></span>
+          <span class="loader-dots__dot"></span>
+          <span class="loader-dots__dot"></span>
+        </div>
+        <span class="demo-label">Loading...</span>
+      </div>
+
+      <div class="code-block">
+        <code>&lt;div className="loader-dots"&gt;
+  &lt;span className="loader-dots__dot"&gt;&lt;/span&gt;
+  &lt;span className="loader-dots__dot"&gt;&lt;/span&gt;
+  &lt;span className="loader-dots__dot"&gt;&lt;/span&gt;
+&lt;/div&gt;</code>
+      </div>
+    </div>
+
+    <!-- Progress Bar -->
+    <div class="demo-section">
+      <h2>Progress Bar Loader</h2>
+      <p style="color: #94a3b8; margin-bottom: 24px;">Sliding progress bar for page transitions</p>
+
+      <div style="max-width: 600px; margin: 0 auto;">
+        <div class="loader-progress">
+          <div class="loader-progress__bar" style="width: 30%;"></div>
+        </div>
+      </div>
+
+      <div class="code-block">
+        <code>&lt;div className="loader-progress"&gt;
+  &lt;div className="loader-progress__bar"&gt;&lt;/div&gt;
+&lt;/div&gt;</code>
+      </div>
+    </div>
+
+    <!-- Skeleton Loaders -->
+    <div class="demo-section">
+      <h2>Skeleton Loaders</h2>
+      <p style="color: #94a3b8; margin-bottom: 24px;">Content placeholders while data loads</p>
+
+      <div class="demo-grid">
+        <div class="demo-item">
+          <div class="skeleton skeleton--avatar"></div>
+          <span class="demo-label">Avatar</span>
+        </div>
+        <div class="demo-item">
+          <div class="skeleton skeleton--title"></div>
+          <span class="demo-label">Title</span>
+        </div>
+        <div class="demo-item">
+          <div class="skeleton skeleton--text"></div>
+          <span class="demo-label">Text Line</span>
+        </div>
+      </div>
+
+      <div style="margin-top: 32px;">
+        <div class="skeleton skeleton--card"></div>
+      </div>
+
+      <div class="code-block">
+        <code>&lt;div className="skeleton skeleton--avatar"&gt;&lt;/div&gt;
+&lt;div className="skeleton skeleton--title"&gt;&lt;/div&gt;
+&lt;div className="skeleton skeleton--text"&gt;&lt;/div&gt;
+&lt;div className="skeleton skeleton--card"&gt;&lt;/div&gt;</code>
+      </div>
+    </div>
+
+    <!-- Button with Inline Loader -->
+    <div class="demo-section">
+      <h2>Inline Loader (Buttons)</h2>
+      <p style="color: #94a3b8; margin-bottom: 24px;">Small spinner for button loading states</p>
+
+      <div style="display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;">
+        <button class="demo-button" disabled>
+          <span class="loader-inline">
+            <span class="loader-inline__spinner"></span>
+          </span>
+          Processing...
+        </button>
+        <button class="demo-button" disabled>
+          <span class="loader-inline">
+            <span class="loader-inline__spinner"></span>
+          </span>
+          Saving...
+        </button>
+      </div>
+
+      <div class="code-block">
+        <code>import { LoaderInline } from '@/components/ui/Loader';
+
+&lt;button disabled&gt;
+  &lt;LoaderInline /&gt;
+  Processing...
+&lt;/button&gt;</code>
+      </div>
+    </div>
+
+    <!-- Usage Guide -->
+    <div class="demo-section">
+      <h2>Usage Guide</h2>
+      <div style="color: #94a3b8; line-height: 1.8;">
+        <p><strong style="color: #38BDF8;">When to use each loader:</strong></p>
+        <ul style="margin: 16px 0; padding-left: 24px;">
+          <li><strong>3D Loader:</strong> Full-page loading, major actions, data fetching</li>
+          <li><strong>Dots Loader:</strong> Inline text loading (e.g., "Loading comments...")</li>
+          <li><strong>Progress Bar:</strong> Page transitions, file uploads, multi-step progress</li>
+          <li><strong>Skeleton:</strong> Content placeholders (cards, lists, profiles)</li>
+          <li><strong>Inline Spinner:</strong> Button loading states, small actions</li>
+        </ul>
+
+        <p style="margin-top: 24px;"><strong style="color: #38BDF8;">React Components:</strong></p>
+        <div class="code-block" style="margin-top: 12px;">
+          <code>// Main 3D loader
+&lt;Loader size="md" /&gt;
+
+// Fullscreen overlay
+&lt;LoaderOverlay message="Loading content..." /&gt;
+
+// Button inline
+&lt;LoaderInline /&gt;</code>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
