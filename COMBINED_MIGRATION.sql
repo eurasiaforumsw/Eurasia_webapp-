@@ -247,10 +247,11 @@ CREATE POLICY "Anyone can insert share records"
 CREATE OR REPLACE VIEW content_engagement_summary AS
 SELECT
     c.id AS content_id,
-    c.title_th,
-    c.title_en,
-    c.content_type,
-    c.published_at,
+    c.title,
+    c.kind,
+    c.locale,
+    c.status,
+    c.created_at,
 
     -- Like stats
     COUNT(DISTINCT cl.id) AS total_likes,
@@ -286,7 +287,7 @@ LEFT JOIN content_likes cl ON c.id = cl.content_id
 LEFT JOIN member_interests mi ON c.id = mi.content_id
 LEFT JOIN content_views cv ON c.id = cv.content_id
 LEFT JOIN content_shares cs ON c.id = cs.content_id
-GROUP BY c.id, c.title_th, c.title_en, c.content_type, c.published_at;
+GROUP BY c.id, c.title, c.kind, c.locale, c.status, c.created_at;
 
 -- ============================================================================
 -- FUNCTION: GET MEMBER ENGAGEMENT STATS
