@@ -16,6 +16,10 @@ const VIEW_TITLES: Record<AdminView, { title: string; subtitle: string }> = {
     title: "System overview and statistics",
     subtitle: "Real-time metrics, member activities, and platform health",
   },
+  analytics: {
+    title: "Analytics & Performance",
+    subtitle: "Content engagement, traffic insights, and growth metrics",
+  },
   members: {
     title: "Manage network members",
     subtitle: "Member applications, credentials verification, and directory",

@@ -14,10 +14,11 @@ import {
   X,
   Mail,
   MessageSquare,
+  TrendingUp,
 } from "lucide-react";
 import { AdminSession } from "@/lib/admin-auth";
 
-export type AdminView = "overview" | "members" | "content" | "layout" | "messages" | "broadcast" | "activity" | "settings";
+export type AdminView = "overview" | "analytics" | "members" | "content" | "layout" | "messages" | "broadcast" | "activity" | "settings";
 
 interface AdminSidebarProps {
   currentView: AdminView;
@@ -64,12 +65,20 @@ export const AdminSidebar = memo(function AdminSidebar({
       shortcut: "1",
     },
     {
+      id: "analytics" as AdminView,
+      label: "Analytics",
+      subtitle: "Performance & Insights",
+      icon: TrendingUp,
+      badge: null,
+      shortcut: "2",
+    },
+    {
       id: "members" as AdminView,
       label: "Members",
       subtitle: "Directory & Verifications",
       icon: UsersRound,
       badge: pendingMembersCount > 0 ? `${pendingMembersCount}` : null,
-      shortcut: "2",
+      shortcut: "3",
     },
     {
       id: "content" as AdminView,
@@ -77,7 +86,7 @@ export const AdminSidebar = memo(function AdminSidebar({
       subtitle: "News & Documents",
       icon: FileText,
       badge: draftContentCount > 0 ? `${draftContentCount}` : null,
-      shortcut: "3",
+      shortcut: "4",
     },
     {
       id: "layout" as AdminView,
@@ -85,7 +94,7 @@ export const AdminSidebar = memo(function AdminSidebar({
       subtitle: "Hero, Leadership, Sections",
       icon: Layout,
       badge: null,
-      shortcut: "4",
+      shortcut: "5",
     },
     {
       id: "messages" as AdminView,
@@ -93,7 +102,7 @@ export const AdminSidebar = memo(function AdminSidebar({
       subtitle: "In-app messaging",
       icon: MessageSquare,
       badge: null,
-      shortcut: "5",
+      shortcut: "6",
     },
     {
       id: "broadcast" as AdminView,
@@ -101,7 +110,7 @@ export const AdminSidebar = memo(function AdminSidebar({
       subtitle: "Email campaigns",
       icon: Mail,
       badge: null,
-      shortcut: "6",
+      shortcut: "7",
     },
     {
       id: "activity" as AdminView,
@@ -109,7 +118,7 @@ export const AdminSidebar = memo(function AdminSidebar({
       subtitle: "Audit & Logs",
       icon: Activity,
       badge: null,
-      shortcut: "7",
+      shortcut: "8",
     },
     {
       id: "settings" as AdminView,
@@ -117,7 +126,7 @@ export const AdminSidebar = memo(function AdminSidebar({
       subtitle: "Settings & Profile",
       icon: Settings,
       badge: null,
-      shortcut: "8",
+      shortcut: "9",
     },
   ];
 

@@ -38,6 +38,7 @@ import { AdminMessagesView } from "@/components/admin/views/AdminMessagesView";
 import { AdminBroadcastView } from "@/components/admin/views/AdminBroadcastView";
 import { AdminActivityView } from "@/components/admin/views/AdminActivityView";
 import { AdminSettingsView } from "@/components/admin/views/AdminSettingsView";
+import { AnalyticsDashboard } from "@/components/admin/AnalyticsDashboard";
 import { MemberDetailDrawer } from "@/components/admin/modals/MemberDetailDrawer";
 import { ContentEditorModal } from "@/components/admin/modals/ContentEditorModal";
 import { LeaderEditorModal } from "@/components/admin/modals/LeaderEditorModal";
@@ -404,6 +405,10 @@ export default function AdminDashboardPage() {
                 setIsContentModalOpen(true);
               }}
             />
+          )}
+
+          {view === "analytics" && (
+            <AnalyticsDashboard />
           )}
 
           {view === "members" && (
