@@ -24,6 +24,8 @@ import {
   saveAdminContentCategories,
   saveAdminContentRemote,
   saveAdminLayout,
+  saveAdminLayoutRemote,
+  syncAdminLayout,
   saveAdminSettings,
   setAdminMemberStatus,
   syncAdminContent,
@@ -107,6 +109,14 @@ export default function AdminDashboardPage() {
         syncAdminContent()
           .then((merged) => {
             setContent(merged);
+          })
+          .catch(() => {
+            // Silent — local data remains available.
+          });
+
+        syncAdminLayout()
+          .then((merged) => {
+            setLayout(merged);
           })
           .catch(() => {
             // Silent — local data remains available.
@@ -275,9 +285,11 @@ export default function AdminDashboardPage() {
 
   // Layout actions
   const handleSaveLayout = useCallback(
-    (updatedLayout: AdminLayoutConfig) => {
-      saveAdminLayout(updatedLayout);
+    async (updatedLayout: AdminLayoutConfig) => {
       setLayout(updatedLayout);
+      await saveAdminLayoutRemote(updatedLayout, (errorMsg) => {
+        notify(`Database error: ${errorMsg}`);
+      });
       logActivity("Saved website layout", "Hero, Leadership, Organization history & Section Visibility", "success");
       notify("Website layout saved");
     },
@@ -296,8 +308,10 @@ export default function AdminDashboardPage() {
         deanProfiles: nextProfiles,
       };
 
-      saveAdminLayout(updatedLayout);
       setLayout(updatedLayout);
+      saveAdminLayoutRemote(updatedLayout, (errorMsg) => {
+        notify(`Database error: ${errorMsg}`);
+      });
       setIsLeaderModalOpen(false);
       setLeaderEditorProfile(null);
       logActivity(isNew ? "Added leader" : "Updated leader", leader.name, "success");
@@ -318,8 +332,10 @@ export default function AdminDashboardPage() {
             ...layout,
             deanProfiles: nextProfiles,
           };
-          saveAdminLayout(updatedLayout);
           setLayout(updatedLayout);
+          saveAdminLayoutRemote(updatedLayout, (errorMsg) => {
+            notify(`Database error: ${errorMsg}`);
+          });
           setIsLeaderModalOpen(false);
           setLeaderEditorProfile(null);
           setConfirmDelete(null);

@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useMemo } from "react";
+import { memo, useMemo, useState, useEffect } from "react";
 import {
   UsersRound,
   FileText,
@@ -16,6 +16,7 @@ import {
   Mail,
   Globe2,
   Settings,
+  CalendarCheck,
 } from "lucide-react";
 import { AdminActivity, AdminContentItem, AdminMember } from "@/lib/admin-data";
 import { AdminView } from "../AdminSidebar";
@@ -26,6 +27,12 @@ interface AdminOverviewViewProps {
   activity: AdminActivity[];
   onNavigate: (view: AdminView) => void;
   onOpenNewContent: () => void;
+}
+
+interface EventRegistrationStats {
+  totalActiveEvents: number;
+  totalRegistrationsThisMonth: number;
+  isLoading: boolean;
 }
 
 const recentRegistrations = (members: AdminMember[]) =>
@@ -41,6 +48,49 @@ export const AdminOverviewView = memo(function AdminOverviewView({
   onNavigate,
   onOpenNewContent,
 }: AdminOverviewViewProps) {
+  const [eventStats, setEventStats] = useState<EventRegistrationStats>({
+    totalActiveEvents: 0,
+    totalRegistrationsThisMonth: 0,
+    isLoading: true,
+  });
+
+  // Fetch event registration stats
+  useEffect(() => {
+    let mounted = true;
+
+    async function fetchEventStats() {
+      try {
+        const response = await fetch('/api/admin/events/registration-stats');
+        if (!response.ok) {
+          console.warn('Failed to fetch event stats');
+          if (mounted) {
+            setEventStats({ totalActiveEvents: 0, totalRegistrationsThisMonth: 0, isLoading: false });
+          }
+          return;
+        }
+        const data = await response.json();
+        if (mounted) {
+          setEventStats({
+            totalActiveEvents: data.totalActiveEvents || 0,
+            totalRegistrationsThisMonth: data.totalRegistrationsThisMonth || 0,
+            isLoading: false,
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching event stats:', error);
+        if (mounted) {
+          setEventStats({ totalActiveEvents: 0, totalRegistrationsThisMonth: 0, isLoading: false });
+        }
+      }
+    }
+
+    fetchEventStats();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   const pendingCount = members.filter((m) => m.status === "pending").length;
   const activeCount = members.filter((m) => m.status === "active").length;
   const suspendedCount = members.filter((m) => m.status === "suspended").length;
@@ -218,6 +268,38 @@ export const AdminOverviewView = memo(function AdminOverviewView({
               ) : (
                 <span className="efsw-admin-stat-card__detail">All in good standing</span>
               )}
+            </div>
+          </div>
+        </div>
+
+        {/* NEW: Event Registrations Card */}
+        <div className="efsw-admin-stat-card efsw-admin-stat-card--accent">
+          <div className="efsw-admin-stat-card__icon-wrapper">
+            <CalendarCheck size={24} strokeWidth={2} />
+          </div>
+          <div className="efsw-admin-stat-card__content">
+            <span className="efsw-admin-stat-card__label">Event Registrations</span>
+            <div className="efsw-admin-stat-card__value">
+              {eventStats.isLoading ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', height: '2rem' }}>
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-teal border-t-transparent" />
+                </div>
+              ) : (
+                eventStats.totalRegistrationsThisMonth.toLocaleString()
+              )}
+            </div>
+            <div className="efsw-admin-stat-card__meta">
+              <span className="efsw-admin-stat-card__detail">
+                {eventStats.isLoading ? '—' : `${eventStats.totalActiveEvents} active ${eventStats.totalActiveEvents === 1 ? 'event' : 'events'}`}
+              </span>
+              <button
+                type="button"
+                className="efsw-admin-stat-card__action"
+                onClick={() => onNavigate("content")}
+                disabled={eventStats.isLoading}
+              >
+                Manage <ArrowUpRight size={14} />
+              </button>
             </div>
           </div>
         </div>

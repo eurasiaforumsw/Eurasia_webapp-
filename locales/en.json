@@ -312,6 +312,7 @@
   "article": {
     "backToNews": "Back to newsroom",
     "backToDocuments": "Back to documents",
+    "backToEvents": "Back to events",
     "minRead": "{minutes} min read",
     "share": "Share",
     "shareStory": "Share this story",
@@ -330,6 +331,7 @@
     "readNext": "Read next",
     "moreDocuments": "More documents",
     "viewDocument": "View document",
+    "gallery": "Gallery",
     "ctaLabel": "Get in touch",
     "newsCtaHeadline": "Questions about this story?",
     "newsCtaBody": "The EFSW editorial team can help with context, interviews, and follow-up.",

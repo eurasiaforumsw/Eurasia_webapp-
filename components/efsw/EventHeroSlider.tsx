@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowUpRight, Calendar, ChevronLeft, ChevronRight, MapPin } from "lucide-react";
 import { type AdminContentItem } from "@/lib/admin-data";
+import CoverImage from "@/components/content/CoverImage";
 
 /* Event hero slider — the full-bleed image band that opens the events
    section. Each slide auto-advances on a timer and wipes in from the
@@ -207,7 +208,12 @@ export function EventHeroSlider({ events }: { events: AdminContentItem[] }) {
                 aria-label={`Open event: ${item.title}`}
               >
                 {item.coverImage ? (
-                  <img src={item.coverImage} alt="" aria-hidden="true" loading={i === 0 ? "eager" : "lazy"} />
+                  <CoverImage
+                    src={item.coverImage}
+                    alt=""
+                    crop={item.coverImageCrop}
+                    loading={i === 0 ? "eager" : "lazy"}
+                  />
                 ) : (
                   <span className="efsw-event-hero__placeholder" />
                 )}

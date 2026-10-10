@@ -17,6 +17,8 @@ import {
   Users,
   AlertTriangle,
   Info,
+  Crop,
+  Images,
 } from "lucide-react";
 import {
   AdminContentCategory,
@@ -33,6 +35,10 @@ import {
   EFSW_MEMBERSHIP_TYPES,
   EFSW_TARGET_GROUPS,
 } from "@/lib/target-groups";
+import CoverImageCropper from "@/components/admin/content/CoverImageCropper";
+import GalleryManager, { GalleryImage } from "@/components/admin/content/GalleryManager";
+
+type Area = { width: number; height: number; x: number; y: number };
 
 // Lazy load TipTap editor (50 kB saving)
 const TipTapEditor = dynamic(
@@ -133,6 +139,10 @@ export const ContentEditorModal = memo(function ContentEditorModal({
   const [audienceMode, setAudienceMode] = useState<"all" | "members-only">(
     initialItem?.targetMembershipTypes?.length || initialItem?.targetGroups?.length ? "members-only" : "all",
   );
+  const [showCropModal, setShowCropModal] = useState(false);
+  const [cropData, setCropData] = useState<any>(null);
+  const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
+  const [hasGallery, setHasGallery] = useState(false);
   const { addToast } = useToast();
 
   useEffect(() => {
@@ -151,8 +161,113 @@ export const ContentEditorModal = memo(function ContentEditorModal({
         setCoverImageStatus("remote");
       }
       setCoverImageError(null);
+      setShowCropModal(false);
+      setGalleryImages([]);
+      setHasGallery(false);
+
+      // Load existing gallery and crop data if editing
+      if (next.id) {
+        loadGalleryImages(next.id);
+        loadCropData(next.id);
+      }
     }
   }, [initialItem, isOpen]);
+
+  const loadGalleryImages = async (contentId: string) => {
+    try {
+      const res = await fetch(`/api/content/${contentId}/gallery`);
+      if (res.ok) {
+        const { images } = await res.json();
+        if (images && images.length > 0) {
+          setGalleryImages(
+            images.map((img: any, idx: number) => ({
+              id: img.id,
+              url: img.image_url,
+              alt: img.caption || "",
+              order: idx,
+            }))
+          );
+          setHasGallery(true);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to load gallery images:", err);
+    }
+  };
+
+  const loadCropData = async (contentId: string) => {
+    try {
+      const res = await fetch(`/api/content/${contentId}/cover-crop`);
+      if (res.ok) {
+        const { crop } = await res.json();
+        if (crop) {
+          setCropData(crop);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to load crop data:", err);
+    }
+  };
+
+  const handleSaveCrop = async (cropSettings: any, croppedAreaPixels: Area) => {
+    if (!formData.id) {
+      addToast({
+        type: "warning",
+        title: "Save content first",
+        description: "Please save the content before cropping the cover image.",
+      });
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/content/${formData.id}/cover-crop`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(cropSettings),
+      });
+
+      if (!res.ok) {
+        const { error } = await res.json();
+        throw new Error(error || "Failed to save crop");
+      }
+
+      setCropData(cropSettings);
+      setShowCropModal(false);
+      addToast({
+        type: "success",
+        title: "Crop saved",
+        description: "Cover image crop settings have been saved.",
+      });
+    } catch (err) {
+      addToast({
+        type: "error",
+        title: "Crop save failed",
+        description: err instanceof Error ? err.message : "Could not save crop settings.",
+      });
+    }
+  };
+
+  const handleGalleryChange = (images: GalleryImage[]) => {
+    setGalleryImages(images);
+  };
+
+  const handleGalleryUploadStart = () => {
+    setIsCompressing(true);
+  };
+
+  const handleGalleryUploadComplete = () => {
+    setIsCompressing(false);
+  };
+
+  const handleGalleryUploadError = (error: string) => {
+    addToast({
+      type: "error",
+      title: "Gallery upload failed",
+      description: error,
+    });
+    setIsCompressing(false);
+  };
+
 
   const handleImageUpload = async (file: File) => {
     if (!file.type.startsWith("image/")) {
@@ -239,7 +354,7 @@ export const ContentEditorModal = memo(function ContentEditorModal({
       addToast({
         type: "error",
         title: "Display window is invalid",
-        description: "“Show from” must be earlier than “hide after”.",
+        description: '"Show from" must be earlier than "hide after".',
       });
       return;
     }
@@ -258,12 +373,47 @@ export const ContentEditorModal = memo(function ContentEditorModal({
       updatedAt: new Date().toISOString(),
     };
 
+    // Save gallery images if enabled
+    if (hasGallery && updated.id) {
+      saveGalleryImages(updated.id);
+    }
+
     onSave(updated);
     addToast({
       type: "success",
       title: formData.id ? "Content updated" : "Content created",
       description: `${KIND_LABELS[updated.kind]} saved to the library.`,
     });
+  };
+
+  const saveGalleryImages = async (contentId: string) => {
+    try {
+      // Upload new images (those with file objects)
+      for (const image of galleryImages) {
+        if (image.file) {
+          const formData = new FormData();
+          formData.append("file", image.file);
+          formData.append("caption", image.alt || "");
+          formData.append("displayOrder", image.order.toString());
+
+          const res = await fetch(`/api/content/${contentId}/gallery`, {
+            method: "POST",
+            body: formData,
+          });
+
+          if (!res.ok) {
+            const { error } = await res.json();
+            throw new Error(error || "Gallery upload failed");
+          }
+        }
+      }
+    } catch (err) {
+      addToast({
+        type: "error",
+        title: "Gallery save failed",
+        description: err instanceof Error ? err.message : "Could not save gallery images.",
+      });
+    }
   };
 
   const handleDelete = () => {
@@ -883,7 +1033,126 @@ export const ContentEditorModal = memo(function ContentEditorModal({
                 placeholder="A short description of the image"
               />
             </label>
+
+            {/* Crop Button */}
+            {formData.coverImage && coverImageStatus === "remote" && (
+              <button
+                type="button"
+                onClick={() => setShowCropModal(true)}
+                className="efsw-admin-text-action"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  padding: "0.75rem 1rem",
+                  background: "var(--admin-surface)",
+                  border: "1px solid var(--admin-line)",
+                  borderRadius: "0.5rem",
+                  color: "var(--admin-ink)",
+                  fontSize: "0.85rem",
+                  fontWeight: 600,
+                }}
+              >
+                <Crop size={16} />
+                {cropData ? "Edit crop settings" : "Crop cover image"}
+              </button>
+            )}
           </fieldset>
+
+          {/* ── Gallery Section ──────────────────────────────── */}
+          {(formData.kind === "news" || formData.kind === "event") && (
+            <fieldset
+              style={{
+                display: "grid",
+                gap: "1rem",
+                margin: "1.6rem 0 0",
+                padding: 0,
+                border: 0,
+              }}
+            >
+              <legend
+                style={{
+                  margin: 0,
+                  padding: 0,
+                  fontFamily: "var(--font-display)",
+                  fontSize: "1.1rem",
+                  fontWeight: 650,
+                }}
+              >
+                Image Gallery
+              </legend>
+
+              <label
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.75rem",
+                  cursor: "pointer",
+                  padding: "0.85rem 1rem",
+                  background: "var(--admin-surface)",
+                  border: "1px solid var(--admin-line)",
+                  borderRadius: "0.5rem",
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={hasGallery}
+                  onChange={(e) => {
+                    setHasGallery(e.target.checked);
+                    if (!e.target.checked) {
+                      setGalleryImages([]);
+                    }
+                  }}
+                  style={{ width: "1.25rem", height: "1.25rem", cursor: "pointer" }}
+                />
+                <div>
+                  <div style={{ fontWeight: 600, color: "var(--admin-ink)", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                    <Images size={16} />
+                    Enable image gallery
+                  </div>
+                  <div style={{ fontSize: "0.875rem", color: "var(--admin-muted)" }}>
+                    Add additional images beyond the cover image
+                  </div>
+                </div>
+              </label>
+
+              {hasGallery && (
+                <div
+                  style={{
+                    padding: "1.5rem",
+                    background: "var(--admin-surface-deep)",
+                    border: "1px solid var(--admin-line)",
+                    borderRadius: "0.5rem",
+                  }}
+                >
+                  {formData.id ? (
+                    <GalleryManager
+                      images={galleryImages}
+                      onChange={handleGalleryChange}
+                      maxImages={20}
+                      onUploadStart={handleGalleryUploadStart}
+                      onUploadComplete={handleGalleryUploadComplete}
+                      onUploadError={handleGalleryUploadError}
+                    />
+                  ) : (
+                    <div
+                      style={{
+                        padding: "2rem",
+                        textAlign: "center",
+                        color: "var(--admin-muted)",
+                        fontSize: "0.875rem",
+                      }}
+                    >
+                      <Info size={24} style={{ margin: "0 auto 0.75rem" }} />
+                      <p style={{ margin: 0 }}>
+                        Please save the content first before adding gallery images.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </fieldset>
+          )}
 
           {/* ── Display window + Audience ──────────────────────── */}
           <fieldset
@@ -945,7 +1214,7 @@ export const ContentEditorModal = memo(function ContentEditorModal({
               }}
             >
               Leave either field empty to leave that side of the window open.
-              Once “Hide after” passes, the item is automatically excluded from the public feed.
+              Once "Hide after" passes, the item is automatically excluded from the public feed.
             </p>
 
             {/* Audience mode switch */}
@@ -1251,6 +1520,16 @@ export const ContentEditorModal = memo(function ContentEditorModal({
           </div>
         </form>
       </div>
+
+      {/* Cover Image Cropper Modal */}
+      {showCropModal && formData.coverImage && (
+        <CoverImageCropper
+          imageUrl={formData.coverImage}
+          initialCrop={cropData}
+          onSave={handleSaveCrop}
+          onCancel={() => setShowCropModal(false)}
+        />
+      )}
     </div>
   );
 });

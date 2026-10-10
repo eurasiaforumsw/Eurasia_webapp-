@@ -16,6 +16,14 @@ export type AdminContentStatus = "draft" | "published" | "archived";
 export type ContentLocale = "en" | "th" | "ko";
 export const CONTENT_LOCALES: ContentLocale[] = ["en", "th", "ko"];
 
+export type CoverImageCrop = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  scale: number;
+};
+
 export type AdminContentItem = {
   id: string;
   kind: AdminContentKind;
@@ -24,6 +32,7 @@ export type AdminContentItem = {
   summary: string;
   body: string;
   coverImage?: string;
+  coverImageCrop?: CoverImageCrop;  // Crop settings for cover image
   imageCaption?: string;
   author?: string;
   tags?: string[];
@@ -911,6 +920,9 @@ async function fetchRemoteContent(): Promise<AdminContentItem[] | null> {
       summary: (row.summary as string) ?? "",
       body: (row.body as string) ?? "",
       coverImage: (row.cover_image as string) ?? undefined,
+      coverImageCrop: row.cover_image_crop
+        ? (row.cover_image_crop as CoverImageCrop)
+        : undefined,
       imageCaption: (row.image_caption as string) ?? undefined,
       author: (row.author as string) ?? undefined,
       tags: Array.isArray(row.tags) ? (row.tags as string[]) : [],
@@ -1049,6 +1061,7 @@ async function pushContentRow(item: AdminContentItem): Promise<void> {
     summary: item.summary,
     body: item.body,
     cover_image: item.coverImage || null,
+    cover_image_crop: item.coverImageCrop || null,
     image_caption: item.imageCaption || null,
     author: item.author || null,
     tags: item.tags ?? [],
@@ -1424,3 +1437,64 @@ export const saveAdminLayout = (layout: AdminLayoutConfig) => {
   write(ADMIN_LAYOUT_KEY, layout);
   return layout;
 };
+
+/**
+ * Save layout config to Supabase (async, with fallback to localStorage)
+ */
+export async function saveAdminLayoutRemote(
+  layout: AdminLayoutConfig,
+  onError?: (message: string) => void
+): Promise<AdminLayoutConfig> {
+  // 1) Optimistic local write
+  const next = saveAdminLayout(layout);
+
+  // 2) Push to Supabase
+  if (!USE_REMOTE) {
+    return next;
+  }
+
+  try {
+    const response = await fetch("/api/layout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ config: layout }),
+    });
+
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.error || "Failed to save layout");
+    }
+  } catch (err: any) {
+    onError?.(err?.message || "Failed to save to database");
+  }
+
+  return next;
+}
+
+/**
+ * Sync layout config from Supabase to localStorage
+ */
+export async function syncAdminLayout(): Promise<AdminLayoutConfig> {
+  if (!USE_REMOTE) {
+    return getAdminLayout();
+  }
+
+  try {
+    const response = await fetch("/api/layout");
+    if (!response.ok) {
+      throw new Error("Failed to fetch layout config");
+    }
+
+    const data = await response.json();
+    if (data.config) {
+      // Merge remote config with local, remote wins on conflict
+      write(ADMIN_LAYOUT_KEY, data.config);
+      return data.config;
+    }
+  } catch (err) {
+    console.error("syncAdminLayout error:", err);
+  }
+
+  // Fallback to local
+  return getAdminLayout();
+}

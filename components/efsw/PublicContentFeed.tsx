@@ -19,9 +19,11 @@ import {
   initialContent,
   type AdminContentItem,
   type AdminContentKind,
+  type CoverImageCrop,
 } from "@/lib/admin-data";
 import { getSessionMember, type MemberProfile } from "@/lib/member-auth";
 import { EngagementRow } from "@/components/efsw/EngagementRow";
+import CoverImage from "@/components/content/CoverImage";
 
 export type PublicContentItem = {
   id: string;
@@ -30,6 +32,7 @@ export type PublicContentItem = {
   summary: string;
   body?: string;
   coverImage?: string;
+  coverImageCrop?: CoverImageCrop;
   imageCaption?: string;
   author?: string;
   tags?: string[];
@@ -164,6 +167,7 @@ export default function PublicContentFeed({
           summary: source.summary,
           body: source.body,
           coverImage: source.coverImage,
+          coverImageCrop: source.coverImageCrop,
           imageCaption: source.imageCaption,
           author: source.author,
           tags: source.tags,
@@ -331,7 +335,12 @@ export default function PublicContentFeed({
                 >
                   <div className="efsw-news-feature__media">
                     {featuredItem.coverImage ? (
-                      <img src={featuredItem.coverImage} alt={featuredItem.imageCaption || featuredItem.title} loading="eager" />
+                      <CoverImage
+                        src={featuredItem.coverImage}
+                        alt={featuredItem.imageCaption || featuredItem.title}
+                        crop={featuredItem.coverImageCrop}
+                        loading="eager"
+                      />
                     ) : (
                       <div className="efsw-news-card__placeholder"><ImageIcon size={30} /><span>{kind === "event" ? "EFSW Event" : "EFSW News"}</span></div>
                     )}
@@ -424,7 +433,12 @@ export default function PublicContentFeed({
                         <Link href={`${detailBase}/${item.id}`} className="efsw-news-story__link-cover" aria-label={item.title} />
                         <div className="efsw-news-story__media">
                           {item.coverImage ? (
-                            <img src={item.coverImage} alt={item.imageCaption || item.title} loading="lazy" />
+                            <CoverImage
+                              src={item.coverImage}
+                              alt={item.imageCaption || item.title}
+                              crop={item.coverImageCrop}
+                              loading="lazy"
+                            />
                           ) : (
                             <div className="efsw-news-card__placeholder">
                               <ImageIcon size={20} />

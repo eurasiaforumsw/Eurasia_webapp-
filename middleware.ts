@@ -104,7 +104,8 @@ export async function middleware(request: NextRequest) {
   if (
     pathname.startsWith('/api/admin/') ||
     pathname.startsWith('/api/content') ||
-    pathname.startsWith('/api/members')
+    pathname.startsWith('/api/members') ||
+    pathname.startsWith('/api/layout')
   ) {
     // Allow public endpoints without auth
     if (
@@ -118,7 +119,8 @@ export async function middleware(request: NextRequest) {
       pathname === '/api/members/forgot-password' ||
       pathname === '/api/members/reset-password' ||
       pathname === '/api/content/public' ||
-      pathname.startsWith('/api/engagement/') // Allow engagement tracking for anonymous users
+      pathname.startsWith('/api/engagement/') || // Allow engagement tracking for anonymous users
+      (pathname === '/api/layout' && request.method === 'GET') // Allow public to read layout
     ) {
       return NextResponse.next();
     }
@@ -207,6 +209,7 @@ export const config = {
     '/api/admin/:path*',
     '/api/content/:path*',
     '/api/members/:path*',
+    '/api/layout/:path*',
     '/member/:path*',
   ],
 };

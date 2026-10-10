@@ -312,6 +312,7 @@
   "article": {
     "backToNews": "กลับไปห้องข่าว",
     "backToDocuments": "กลับไปหน้าเอกสาร",
+    "backToEvents": "กลับไปหน้ากิจกรรม",
     "minRead": "อ่าน {minutes} นาที",
     "share": "แชร์",
     "shareStory": "แชร์ข่าวนี้",
@@ -330,6 +331,7 @@
     "readNext": "อ่านต่อ",
     "moreDocuments": "เอกสารอื่น",
     "viewDocument": "ดูเอกสาร",
+    "gallery": "แกลเลอรีภาพ",
     "ctaLabel": "ติดต่อเรา",
     "newsCtaHeadline": "มีคำถามเกี่ยวกับข่าวนี้ไหม?",
     "newsCtaBody": "ทีมบรรณาธิการ EFSW พร้อมให้ข้อมูลเพิ่มเติม การสัมภาษณ์ และการติดตามผล",

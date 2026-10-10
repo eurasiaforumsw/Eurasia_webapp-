@@ -312,6 +312,7 @@
   "article": {
     "backToNews": "뉴스룸으로 돌아가기",
     "backToDocuments": "문서 목록으로 돌아가기",
+    "backToEvents": "이벤트 목록으로 돌아가기",
     "minRead": "읽는 시간 {minutes}분",
     "share": "공유",
     "shareStory": "이 기사 공유하기",
@@ -330,6 +331,7 @@
     "readNext": "다음 기사",
     "moreDocuments": "다른 문서",
     "viewDocument": "문서 보기",
+    "gallery": "갤러리",
     "ctaLabel": "문의하기",
     "newsCtaHeadline": "이 기사에 대해 질문이 있으신가요?",
     "newsCtaBody": "EFSW 편집팀이 배경 설명, 인터뷰, 후속 취재를 도와드립니다.",

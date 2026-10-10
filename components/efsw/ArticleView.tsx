@@ -16,6 +16,8 @@ import { Button } from "@/components/ui/button";
 import ShareBar from "@/components/efsw/ShareBar";
 import TranslateControl from "@/components/efsw/TranslateControl";
 import { SiteNav } from "@/components/efsw/SiteNav";
+import CoverImage from "@/components/content/CoverImage";
+import ImageGallery from "@/components/content/ImageGallery";
 import { useTranslatedFields } from "@/hooks/useTranslatedFields";
 import { useI18n } from "@/contexts/I18nContext";
 import {
@@ -31,7 +33,7 @@ import { EngagementRow, RecordView } from "@/components/efsw/EngagementRow";
 export type ArticleSeed = Pick<
   AdminContentItem,
   "id" | "category" | "title" | "summary" | "body"
-> & Partial<Pick<AdminContentItem, "coverImage" | "imageCaption" | "author" | "tags" | "updatedAt" | "startsAt" | "endsAt" | "venue" | "format" | "registrationUrl">>;
+> & Partial<Pick<AdminContentItem, "coverImage" | "coverImageCrop" | "imageCaption" | "author" | "tags" | "updatedAt" | "startsAt" | "endsAt" | "venue" | "format" | "registrationUrl">>;
 
 type ArticleViewProps = {
   kind: AdminContentKind;
@@ -114,12 +116,21 @@ const parseBody = (body?: string): Block[] => {
   });
 };
 
+type GalleryImage = {
+  id: string;
+  url: string;
+  alt?: string;
+  width?: number;
+  height?: number;
+};
+
 export default function ArticleView({ kind, slug, seed, backHref }: ArticleViewProps) {
   const { t } = useI18n();
   const [article, setArticle] = useState<ArticleSeed>(seed);
   const [related, setRelated] = useState<AdminContentItem[]>([]);
   const [progress, setProgress] = useState(0);
   const [member, setMember] = useState<MemberProfile | null>(null);
+  const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
 
   // Track the current member so engagement actions know who to credit.
   useEffect(() => {
@@ -150,6 +161,36 @@ export default function ArticleView({ kind, slug, seed, backHref }: ArticleViewP
     window.addEventListener("storage", handleStorage);
     return () => window.removeEventListener("storage", handleStorage);
   }, [kind, slug]);
+
+  // Load gallery images for this content
+  useEffect(() => {
+    const loadGallery = async () => {
+      try {
+        const res = await fetch(`/api/content/${article.id}/gallery`);
+        if (res.ok) {
+          const { images } = await res.json();
+          if (images && images.length > 0) {
+            setGalleryImages(
+              images.map((img: any) => ({
+                id: img.id,
+                url: img.image_url,
+                alt: img.caption || "",
+              }))
+            );
+          } else {
+            setGalleryImages([]);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load gallery:", err);
+        setGalleryImages([]);
+      }
+    };
+
+    if (article.id) {
+      loadGallery();
+    }
+  }, [article.id]);
 
   // Reading-progress rail across the top of the viewport.
   // Driven by a scroll-driven CSS animation when the browser supports it
@@ -284,7 +325,13 @@ export default function ArticleView({ kind, slug, seed, backHref }: ArticleViewP
 
           <figure className="efsw-article__hero">
             {article.coverImage ? (
-              <img src={article.coverImage} alt={article.imageCaption || article.title} />
+              <CoverImage
+                src={article.coverImage}
+                alt={article.imageCaption || article.title}
+                crop={article.coverImageCrop}
+                className="efsw-article__hero-image"
+                loading="eager"
+              />
             ) : (
               <div className="efsw-article__hero-placeholder">
                 <ImageIcon size={34} strokeWidth={1.4} aria-hidden />
@@ -332,6 +379,16 @@ export default function ArticleView({ kind, slug, seed, backHref }: ArticleViewP
               <div className="efsw-article__share-inline">
                 <ShareBar title={shown.title} summary={shown.summary} heading={t(kind === "news" ? "article.shareStory" : "article.shareDocument")} path={`${backHref}/${slug}`} />
               </div>
+
+              {/* Image Gallery — show if there are gallery images */}
+              {galleryImages.length > 0 && (
+                <div className="efsw-article__gallery">
+                  <h2 className="efsw-article__gallery-heading">
+                    {t("article.gallery")} ({galleryImages.length})
+                  </h2>
+                  <ImageGallery images={galleryImages} />
+                </div>
+              )}
 
               <div className="efsw-article__cta">
                 <div>
