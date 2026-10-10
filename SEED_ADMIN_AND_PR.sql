@@ -24,49 +24,13 @@
 --   - Uses INSERT ... ON CONFLICT to update existing accounts
 -- ============================================================================
 
--- Update existing admin@efsw.local or create new
--- (This account already exists, so we'll just update its role)
+-- Update existing admin@efsw.local (this account already exists)
 UPDATE members
 SET role = 'admin',
     email_verified_at = NOW(),
     status = 'active',
     updated_at = NOW()
 WHERE email = 'admin@efsw.local';
-
--- Insert Admin Account 2
-INSERT INTO members (
-  id,
-  email,
-  full_name,
-  password_hash,
-  role,
-  status,
-  email_verified_at,
-  membership_type,
-  country,
-  organization,
-  position,
-  expertise,
-  bio,
-  created_at,
-  updated_at
-) VALUES (
-  'admin@efsw.local',
-  'admin@efsw.local',
-  'System Administrator',
-  '$2a$12$bSjN2DKzUO6gMY1OInerpOvuD2B8GnoEPdPE97Npa2ZFJappmsZwO',
-  'admin',
-  'active',
-  NOW(),
-  'institutional',
-  'Thailand',
-  'EFSW',
-  'System Administrator',
-  'Platform Management',
-  'System administrator account',
-  NOW(),
-  NOW()
-);
 
 -- Insert Admin Account 2 (or update if exists)
 INSERT INTO members (
