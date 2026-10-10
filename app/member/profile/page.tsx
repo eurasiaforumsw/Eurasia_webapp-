@@ -6,11 +6,13 @@ import {
   ArrowUpRight,
   BadgeCheck,
   BookOpen,
+  Bookmark,
   Briefcase,
   Camera,
   Check,
   CheckCircle2,
   ChevronRight,
+  Eye,
   Globe,
   GraduationCap,
   Heart,
@@ -19,6 +21,7 @@ import {
   MapPin,
   Pencil,
   Save,
+  Share2,
   ShieldCheck,
   Sparkles,
   Trash2,
@@ -292,6 +295,19 @@ export default function MemberProfilePage() {
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [avatarError, setAvatarError] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [engagementStats, setEngagementStats] = useState<{
+    totalLikes: number;
+    totalSaves: number;
+    totalViews: number;
+    totalShares: number;
+    recentActivity: Array<{
+      action_type: string;
+      content_id: string | null;
+      created_at: string;
+      metadata: any;
+    }>;
+  } | null>(null);
+  const [statsLoading, setStatsLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -302,6 +318,19 @@ export default function MemberProfilePage() {
     }
     setMember(current);
     setDraft(toDraft(current));
+
+    // Fetch engagement stats
+    setStatsLoading(true);
+    fetch(`/api/engagement/stats?memberId=${current.id}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.stats) {
+          setEngagementStats(data.stats);
+        }
+      })
+      .catch(err => console.error('Failed to load engagement stats:', err))
+      .finally(() => setStatsLoading(false));
+
     refreshSessionMember()
       .then((fresh) => {
         if (fresh) {
@@ -654,6 +683,96 @@ export default function MemberProfilePage() {
             <div className="efsw-profile__progress" role="progressbar" aria-valuenow={completion} aria-valuemin={0} aria-valuemax={100}>
               <div className="efsw-profile__progress-bar" style={{ width: `${completion}%` }} />
             </div>
+
+            {/* Engagement Stats Dashboard */}
+            <section className="efsw-profile__engagement-stats">
+              <header className="efsw-profile__engagement-header">
+                <h2>Your Engagement</h2>
+                <p>Activity and interactions across the platform</p>
+              </header>
+
+              {statsLoading ? (
+                <div className="efsw-profile__stats-loading">
+                  <div className="efsw-profile__loading-dot" />
+                  <span>Loading statistics...</span>
+                </div>
+              ) : engagementStats ? (
+                <div className="efsw-profile__stats-grid">
+                  <div className="efsw-profile__stat-card">
+                    <div className="efsw-profile__stat-icon efsw-profile__stat-icon--likes">
+                      <Heart size={20} />
+                    </div>
+                    <div className="efsw-profile__stat-content">
+                      <span className="efsw-profile__stat-value">{engagementStats.totalLikes}</span>
+                      <span className="efsw-profile__stat-label">Content liked</span>
+                    </div>
+                  </div>
+
+                  <div className="efsw-profile__stat-card">
+                    <div className="efsw-profile__stat-icon efsw-profile__stat-icon--saves">
+                      <Bookmark size={20} />
+                    </div>
+                    <div className="efsw-profile__stat-content">
+                      <span className="efsw-profile__stat-value">{engagementStats.totalSaves}</span>
+                      <span className="efsw-profile__stat-label">Items saved</span>
+                    </div>
+                  </div>
+
+                  <div className="efsw-profile__stat-card">
+                    <div className="efsw-profile__stat-icon efsw-profile__stat-icon--views">
+                      <Eye size={20} />
+                    </div>
+                    <div className="efsw-profile__stat-content">
+                      <span className="efsw-profile__stat-value">{engagementStats.totalViews}</span>
+                      <span className="efsw-profile__stat-label">Content viewed</span>
+                    </div>
+                  </div>
+
+                  <div className="efsw-profile__stat-card">
+                    <div className="efsw-profile__stat-icon efsw-profile__stat-icon--shares">
+                      <Share2 size={20} />
+                    </div>
+                    <div className="efsw-profile__stat-content">
+                      <span className="efsw-profile__stat-value">{engagementStats.totalShares}</span>
+                      <span className="efsw-profile__stat-label">Items shared</span>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="efsw-profile__stats-empty">
+                  <Sparkles size={24} opacity={0.3} />
+                  <p>No engagement data yet. Start exploring content to see your stats here.</p>
+                </div>
+              )}
+
+              {engagementStats?.recentActivity && engagementStats.recentActivity.length > 0 && (
+                <div className="efsw-profile__recent-activity">
+                  <h3>Recent Activity</h3>
+                  <ul className="efsw-profile__activity-list">
+                    {engagementStats.recentActivity.slice(0, 5).map((activity, idx) => (
+                      <li key={idx} className="efsw-profile__activity-item">
+                        <span className="efsw-profile__activity-type">
+                          {activity.action_type === 'like' && <Heart size={14} />}
+                          {activity.action_type === 'save' && <Bookmark size={14} />}
+                          {activity.action_type === 'view' && <Eye size={14} />}
+                          {activity.action_type === 'share' && <Share2 size={14} />}
+                          {activity.action_type.replace('_', ' ')}
+                        </span>
+                        <span className="efsw-profile__activity-time">
+                          {new Date(activity.created_at).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </section>
+
           </div>
         </div>
       </section>

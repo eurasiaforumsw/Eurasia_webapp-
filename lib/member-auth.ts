@@ -46,15 +46,6 @@ export const isRemoteMemberStoreEnabled = () =>
   Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL) &&
   Boolean(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
 
-const hashPassword = async (password: string) => {
-  if (typeof window !== "undefined" && window.crypto?.subtle) {
-    const bytes = new TextEncoder().encode(password);
-    const digest = await window.crypto.subtle.digest("SHA-256", bytes);
-    return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
-  }
-  return btoa(unescape(encodeURIComponent(password)));
-};
-
 const readMember = (): StoredMember | null => {
   if (!canUseStorage()) return null;
   const raw = window.localStorage.getItem(MEMBER_STORAGE_KEY);
@@ -84,6 +75,32 @@ const stripPassword = (member: StoredMember): MemberProfile => {
 /* ══════════════════════════════════════════
    Remote (Supabase) calls — degrade gracefully
    ══════════════════════════════════════════ */
+
+const remoteRegisterWithPassword = async (
+  payload: Omit<MemberProfile, "id" | "joinedAt" | "status"> & {
+    id: string;
+    joinedAt: string;
+    status: "pending";
+    password: string;
+  },
+): Promise<{ member?: MemberProfile; error?: string; conflict?: boolean }> => {
+  try {
+    const res = await fetch("/api/members", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const body = (await res.json().catch(() => ({}))) as {
+      member?: MemberProfile;
+      error?: string;
+      conflict?: boolean;
+    };
+    if (!res.ok) return { error: body.error || `HTTP ${res.status}`, conflict: body.conflict };
+    return { member: body.member };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Network error" };
+  }
+};
 
 const remoteRegister = async (
   member: StoredMember,
@@ -210,6 +227,8 @@ export const getSessionMember = (): MemberProfile | null => {
  * Register a new member. When Supabase is configured the profile is inserted
  * into the `members` table and the returned row is mirrored into localStorage;
  * otherwise the profile stays local-only.
+ *
+ * Password is sent PLAIN to the server — bcrypt hashing happens server-side.
  */
 export const registerMember = async (
   input: Omit<MemberProfile, "id" | "joinedAt" | "status"> & { password: string },
@@ -218,59 +237,56 @@ export const registerMember = async (
 
   const { password, ...profileInput } = input;
   const normalizedEmail = normalizeEmail(profileInput.email);
-  const passwordHash = await hashPassword(password);
-  const local: StoredMember = {
+
+  // Generate temporary ID for the registration payload
+  const tempId = `efsw-${Date.now().toString(36)}`;
+
+  const registrationPayload = {
     ...profileInput,
     email: normalizedEmail,
-    id: `efsw-${Date.now().toString(36)}`,
+    id: tempId,
     joinedAt: new Date().toISOString(),
-    status: "pending",
-    passwordHash,
+    status: "pending" as const,
+    password, // Send PLAIN password — server will bcrypt it
   };
 
   if (isRemoteMemberStoreEnabled()) {
     const existing = await remoteFetchByEmail(normalizedEmail);
     if (existing) throw new Error("This email is already registered. Please sign in instead.");
-    const result = await remoteRegister(local);
-    if (result.error) throw new Error(result.error);
-    const stored: StoredMember = { ...(result.member ?? local), passwordHash };
-    writeMember(stored);
-    window.localStorage.setItem(MEMBER_SESSION_KEY, "active");
-    return stripPassword(stored);
-  }
-
-  const inBrowser = readMember();
-  if (inBrowser) {
-    throw new Error("A member profile already exists in this browser. Sign in with the same email.");
-  }
-  writeMember(local);
-  window.localStorage.setItem(MEMBER_SESSION_KEY, "active");
-  return stripPassword(local);
-};
-
-/**
- * Sign in with email + password. Uses the server-side verify endpoint when
- * Supabase is configured (the password hash never round-trips to the client),
- * and falls back to the local browser copy otherwise.
- */
-export const loginMember = async (email: string, password: string): Promise<MemberProfile> => {
-  const normalized = normalizeEmail(email);
-  const passwordHash = await hashPassword(password);
-
-  if (isRemoteMemberStoreEnabled()) {
-    const result = await remoteLogin(normalized, password);
+    const result = await remoteRegisterWithPassword(registrationPayload);
     if (result.error) throw new Error(result.error);
     const profile = result.member!;
-    writeMember({ ...profile, passwordHash });
+    // Store profile in localStorage (no password hash stored client-side)
+    writeMember({ ...profile, passwordHash: "" });
     window.localStorage.setItem(MEMBER_SESSION_KEY, "active");
     return profile;
   }
 
-  const local = readMember();
-  if (!local || local.email !== normalized) throw new Error("No member account was found for this email.");
-  if (local.passwordHash !== passwordHash) throw new Error("Incorrect password.");
-  window.localStorage.setItem(MEMBER_SESSION_KEY, "active");
-  return stripPassword(local);
+  // Local-only fallback (not recommended for production)
+  throw new Error("Local-only registration is not supported. Please configure Supabase.");
+};
+
+/**
+ * Sign in with email + password. Uses the server-side verify endpoint when
+ * Supabase is configured (password sent PLAIN over HTTPS, verified with bcrypt),
+ * and falls back to local browser copy otherwise.
+ */
+export const loginMember = async (email: string, password: string): Promise<MemberProfile> => {
+  const normalized = normalizeEmail(email);
+
+  if (isRemoteMemberStoreEnabled()) {
+    // Send PLAIN password to server — it will bcrypt.compare() there
+    const result = await remoteLogin(normalized, password);
+    if (result.error) throw new Error(result.error);
+    const profile = result.member!;
+    // Store profile without password hash client-side
+    writeMember({ ...profile, passwordHash: "" });
+    window.localStorage.setItem(MEMBER_SESSION_KEY, "active");
+    return profile;
+  }
+
+  // Local-only fallback (not recommended for production)
+  throw new Error("Local-only login is not supported. Please configure Supabase.");
 };
 
 /**

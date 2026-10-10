@@ -100,15 +100,39 @@ export async function middleware(request: NextRequest) {
   }
 
   // ============================================
-  // MEMBER ROUTES (Existing localStorage pattern)
+  // MEMBER PAGE ROUTES PROTECTION
   // ============================================
   if (pathname.startsWith('/member')) {
-    // Allow login and register pages
-    if (pathname === '/member/login' || pathname === '/member/register') {
+    // Allow public member pages without auth
+    if (
+      pathname === '/member/login' ||
+      pathname === '/member/register' ||
+      pathname === '/member/forgot-password' ||
+      pathname === '/member/reset-password'
+    ) {
       return NextResponse.next();
     }
 
-    // Member routes still use client-side auth (can be upgraded later)
+    // Get JWT token from cookie
+    const memberToken = request.cookies.get('member_token')?.value;
+
+    // No token = BLOCK immediately
+    if (!memberToken) {
+      const loginUrl = new URL('/member/login', request.url);
+      loginUrl.searchParams.set('redirect', pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+
+    // Invalid token = BLOCK immediately
+    const payload = await verifyToken(memberToken);
+    if (!payload) {
+      const loginUrl = new URL('/member/login', request.url);
+      loginUrl.searchParams.set('redirect', pathname);
+      loginUrl.searchParams.set('error', 'session_expired');
+      return NextResponse.redirect(loginUrl);
+    }
+
+    // Valid token = allow access
     return NextResponse.next();
   }
 

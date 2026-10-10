@@ -3,18 +3,24 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Heart, BookmarkX, ArrowUpRight } from "lucide-react";
-import { getInterests, toggleInterest, type Interest } from "@/lib/member-engagement";
 import { getSessionMember } from "@/lib/member-auth";
 import { initialContent, getAdminContent, type AdminContentItem } from "@/lib/admin-data";
 import { EngagementRow } from "@/components/efsw/EngagementRow";
 
 /* /user/interest - saved-content page.
  *
- * Renders every news/event/document the current member hearted, with a
- * click-to-open route and an inline un-heart action. Falls back to the
- * shared AdminContent list (loaded from localStorage / API). For
- * anonymous visitors the page explains the login requirement.
+ * Renders every news/event/document the current member saved, fetched from
+ * the database via API. Includes click-to-open route and inline unsave action.
+ * For anonymous visitors the page explains the login requirement.
  */
+
+type Interest = {
+  id: string;
+  memberId: string;
+  contentId: string;
+  createdAt: string;
+  notes: string | null;
+};
 
 const contentLink = (item: AdminContentItem): string => {
   if (item.kind === "event") return `/events/${item.id}`;
@@ -35,24 +41,42 @@ export default function InterestPage() {
   const [items, setItems] = useState<AdminContentItem[]>([]);
   const [interests, setInterests] = useState<Interest[]>([]);
   const [memberId, setMemberId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  /* Hydrate once: combine admin-managed content list with the localStorage
-     memberId + interest rows. Re-runs on storage / engagement events so
-     un-hearting from the page removes the row immediately. */
+  /* Fetch saved items from database on mount */
   useEffect(() => {
-    const refresh = () => {
+    const loadData = async () => {
+      setLoading(true);
+      setError(null);
+
+      // Load content items
       setItems(getAdminContent() || initialContent);
-      setInterests(getInterests());
+
+      // Get member ID
       const member = getSessionMember();
-      setMemberId(member?.id ?? null);
+      const currentMemberId = member?.id ?? null;
+      setMemberId(currentMemberId);
+
+      // Fetch interests from API if logged in
+      if (currentMemberId) {
+        try {
+          const response = await fetch(`/api/engagement/interest?memberId=${currentMemberId}`);
+          if (!response.ok) {
+            throw new Error(`Failed to fetch interests: ${response.statusText}`);
+          }
+          const data = await response.json();
+          setInterests(data.interests || []);
+        } catch (err) {
+          console.error("Error fetching interests:", err);
+          setError(err instanceof Error ? err.message : "Failed to load saved items");
+        }
+      }
+
+      setLoading(false);
     };
-    refresh();
-    window.addEventListener("storage", refresh);
-    window.addEventListener("efsw:engagement-changed", refresh as EventListener);
-    return () => {
-      window.removeEventListener("storage", refresh);
-      window.removeEventListener("efsw:engagement-changed", refresh as EventListener);
-    };
+
+    loadData();
   }, []);
 
   const memberInterests = useMemo(
@@ -68,9 +92,30 @@ export default function InterestPage() {
       .sort((a, b) => Date.parse(b.row.createdAt) - Date.parse(a.row.createdAt));
   }, [memberInterests, items]);
 
-  const handleUnheart = (contentId: string) => {
+  const handleUnheart = async (contentId: string) => {
     if (!memberId) return;
-    toggleInterest(memberId, contentId);
+
+    try {
+      const response = await fetch("/api/engagement/interest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ memberId, contentId }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to unsave: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+
+      // If unsaved successfully, remove from local state
+      if (!data.saved) {
+        setInterests((prev) => prev.filter((interest) => interest.contentId !== contentId));
+      }
+    } catch (err) {
+      console.error("Error unsaving item:", err);
+      alert("Failed to remove item. Please try again.");
+    }
   };
 
   if (!memberId) {
@@ -96,6 +141,34 @@ export default function InterestPage() {
             Log in
           </Link>
         </div>
+      </main>
+    );
+  }
+
+  if (loading) {
+    return (
+      <main className="efsw-interest-page">
+        <header className="efsw-interest-page__head">
+          <div>
+            <h1 className="efsw-interest-page__title">Saved items</h1>
+            <p className="efsw-interest-page__lede">Loading your saved content...</p>
+          </div>
+        </header>
+      </main>
+    );
+  }
+
+  if (error) {
+    return (
+      <main className="efsw-interest-page">
+        <header className="efsw-interest-page__head">
+          <div>
+            <h1 className="efsw-interest-page__title">Saved items</h1>
+            <p className="efsw-interest-page__lede" style={{ color: "#ef4444" }}>
+              {error}
+            </p>
+          </div>
+        </header>
       </main>
     );
   }

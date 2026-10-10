@@ -12,7 +12,8 @@
       "Bash(mkdir efsw-shot *)",
       "Bash('/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' --headless --disable-gpu --hide-scrollbars --window-size=1440,1000 --screenshot=/tmp/efsw-shot/voices.png --virtual-time-budget=9000 'http://localhost:2031/#voices')",
       "Read(//tmp/**)",
-      "Bash('/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' --headless=new --disable-gpu --hide-scrollbars --no-first-run --no-default-browser-check --remote-debugging-port=9223 --user-data-dir=/tmp/efsw-chrome-prof --window-size=1440,1000 about:blank)"
+      "Bash('/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' --headless=new --disable-gpu --hide-scrollbars --no-first-run --no-default-browser-check --remote-debugging-port=9223 --user-data-dir=/tmp/efsw-chrome-prof --window-size=1440,1000 about:blank)",
+      "Bash(npm run *)"
     ]
   }
 }

@@ -80,11 +80,15 @@ type ShareBarProps = {
   variant?: "block" | "inline";
   /** Path of the page being shared, used to build an href before hydration. */
   path?: string;
+  /** Content ID for tracking shares in the database. */
+  contentId?: string;
+  /** Member ID if user is logged in. */
+  memberId?: string;
 };
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? "").replace(/\/$/, "");
 
-export default function ShareBar({ title, summary, heading, variant = "block", path }: ShareBarProps) {
+export default function ShareBar({ title, summary, heading, variant = "block", path, contentId, memberId }: ShareBarProps) {
   const { t } = useI18n();
   // Seeded server-side so the anchors ship with a real href (focusable, and
   // usable without JS); replaced with the live URL once mounted.
@@ -96,6 +100,23 @@ export default function ShareBar({ title, summary, heading, variant = "block", p
     setPageUrl(window.location.href);
     setCanNativeShare(typeof navigator !== "undefined" && typeof navigator.share === "function");
   }, []);
+
+  const trackShare = (platform: string) => {
+    if (!contentId) return;
+
+    // Fire and forget - don't block the share action
+    fetch("/api/engagement/share", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contentId,
+        platform,
+        memberId: memberId || undefined,
+      }),
+    }).catch(() => {
+      // Silently fail - tracking is non-critical
+    });
+  };
 
   useEffect(() => {
     if (!copied) return;
@@ -110,6 +131,7 @@ export default function ShareBar({ title, summary, heading, variant = "block", p
   const handleNativeShare = async () => {
     try {
       await navigator.share({ title, text: summary, url: pageUrl });
+      trackShare("native");
     } catch {
       // A dismissed share sheet rejects; nothing to recover from.
     }
@@ -119,9 +141,14 @@ export default function ShareBar({ title, summary, heading, variant = "block", p
     try {
       await navigator.clipboard.writeText(pageUrl);
       setCopied(true);
+      trackShare("copy_link");
     } catch {
       setCopied(false);
     }
+  };
+
+  const handleShareClick = (platform: string) => {
+    trackShare(platform);
   };
 
   return (
@@ -137,6 +164,7 @@ export default function ShareBar({ title, summary, heading, variant = "block", p
             rel="noopener noreferrer"
             aria-label={t("article.shareOn", { service: target.label })}
             title={t("article.shareOn", { service: target.label })}
+            onClick={() => handleShareClick(target.id)}
           >
             <BrandGlyph path={target.glyph} label={target.label} />
           </a>
@@ -147,6 +175,7 @@ export default function ShareBar({ title, summary, heading, variant = "block", p
           href={mailtoHref}
           aria-label={t("article.shareByEmail")}
           title={t("article.shareByEmail")}
+          onClick={() => handleShareClick("email")}
         >
           <Mail size={17} strokeWidth={1.9} aria-hidden />
         </a>

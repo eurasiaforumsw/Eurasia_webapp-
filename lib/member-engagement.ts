@@ -19,6 +19,28 @@ const LIKES_KEY = "efsw.engagement.likes";
 const VIEWS_KEY = "efsw.engagement.views";
 const SESSION_TOKEN_KEY = "efsw.engagement.session";
 
+/* Helper to extract memberId from JWT cookie or localStorage session. */
+const getMemberId = (): string | null => {
+  if (typeof window === "undefined") return null;
+  try {
+    // Check localStorage session first (member-auth.ts stores this)
+    const member = window.localStorage.getItem("efsw.member");
+    if (member) {
+      const parsed = JSON.parse(member);
+      return parsed.id || null;
+    }
+  } catch {
+    /* ignore */
+  }
+  return null;
+};
+
+/* Check if API is available by looking for Supabase env vars. */
+const isAPIEnabled = (): boolean =>
+  typeof window !== "undefined" &&
+  Boolean((window as any).__NEXT_DATA__?.props?.pageProps?.env?.SUPABASE_URL ||
+    process.env.NEXT_PUBLIC_SUPABASE_URL);
+
 export type Interest = {
   memberId: string;
   contentId: string;
@@ -98,7 +120,8 @@ export const getInterests = (): Interest[] => read<Interest[]>(INTERESTS_KEY, []
 export const isInterested = (memberId: string, contentId: string): boolean =>
   getInterests().some((row) => row.memberId === memberId && row.contentId === contentId);
 
-export const toggleInterest = (memberId: string, contentId: string): boolean => {
+export const toggleInterest = async (memberId: string, contentId: string): Promise<boolean> => {
+  // Optimistic update: update localStorage immediately
   const list = getInterests();
   const idx = list.findIndex((row) => row.memberId === memberId && row.contentId === contentId);
   let nowInterested: boolean;
@@ -110,11 +133,55 @@ export const toggleInterest = (memberId: string, contentId: string): boolean => 
     nowInterested = true;
   }
   write(INTERESTS_KEY, list);
+
+  // Background sync to API
+  if (isAPIEnabled()) {
+    try {
+      const res = await fetch("/api/engagement/interest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ memberId, contentId }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        // Update localStorage with server response for consistency
+        const serverList = getInterests();
+        const serverIdx = serverList.findIndex((row) => row.memberId === memberId && row.contentId === contentId);
+        if (data.saved && serverIdx < 0) {
+          serverList.push({ memberId, contentId, createdAt: new Date().toISOString() });
+          write(INTERESTS_KEY, serverList);
+        } else if (!data.saved && serverIdx >= 0) {
+          serverList.splice(serverIdx, 1);
+          write(INTERESTS_KEY, serverList);
+        }
+        return data.saved;
+      }
+    } catch {
+      /* ignore — localStorage is source of truth for now */
+    }
+  }
+
   return nowInterested;
 };
 
-export const interestCount = (contentId: string, all?: Interest[]): number =>
-  (all ?? getInterests()).filter((row) => row.contentId === contentId).length;
+export const interestCount = async (contentId: string, all?: Interest[]): Promise<number> => {
+  // Try fetching from API first
+  if (isAPIEnabled() && !all) {
+    try {
+      const res = await fetch(`/api/engagement?contentId=${encodeURIComponent(contentId)}`, {
+        cache: "no-store",
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return data.saveCount || 0;
+      }
+    } catch {
+      /* fall through to localStorage */
+    }
+  }
+  // Fallback to localStorage
+  return (all ?? getInterests()).filter((row) => row.contentId === contentId).length;
+};
 
 /* ─── Likes (thumb-up) ──────────────────────────────────────────────────── */
 
@@ -123,7 +190,8 @@ export const getLikes = (): Like[] => read<Like[]>(LIKES_KEY, []);
 export const isLiked = (memberId: string, contentId: string): boolean =>
   getLikes().some((row) => row.memberId === memberId && row.contentId === contentId);
 
-export const toggleLike = (memberId: string, contentId: string): boolean => {
+export const toggleLike = async (memberId: string, contentId: string): Promise<boolean> => {
+  // Optimistic update: update localStorage immediately
   const list = getLikes();
   const idx = list.findIndex((row) => row.memberId === memberId && row.contentId === contentId);
   let nowLiked: boolean;
@@ -135,22 +203,82 @@ export const toggleLike = (memberId: string, contentId: string): boolean => {
     nowLiked = true;
   }
   write(LIKES_KEY, list);
+
+  // Background sync to API
+  if (isAPIEnabled()) {
+    try {
+      const res = await fetch("/api/engagement/like", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ memberId, contentId }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        // Update localStorage with server response for consistency
+        const serverList = getLikes();
+        const serverIdx = serverList.findIndex((row) => row.memberId === memberId && row.contentId === contentId);
+        if (data.liked && serverIdx < 0) {
+          serverList.push({ memberId, contentId, createdAt: new Date().toISOString() });
+          write(LIKES_KEY, serverList);
+        } else if (!data.liked && serverIdx >= 0) {
+          serverList.splice(serverIdx, 1);
+          write(LIKES_KEY, serverList);
+        }
+        return data.liked;
+      }
+    } catch {
+      /* ignore — localStorage is source of truth for now */
+    }
+  }
+
   return nowLiked;
 };
 
-export const likeCount = (contentId: string, all?: Like[]): number =>
-  (all ?? getLikes()).filter((row) => row.contentId === contentId).length;
+export const likeCount = async (contentId: string, all?: Like[]): Promise<number> => {
+  // Try fetching from API first
+  if (isAPIEnabled() && !all) {
+    try {
+      const res = await fetch(`/api/engagement?contentId=${encodeURIComponent(contentId)}`, {
+        cache: "no-store",
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return data.likeCount || 0;
+      }
+    } catch {
+      /* fall through to localStorage */
+    }
+  }
+  // Fallback to localStorage
+  return (all ?? getLikes()).filter((row) => row.contentId === contentId).length;
+};
 
 /* ─── Views (page visits) ──────────────────────────────────────────────── */
 
 export const getViews = (): ViewRecord[] => read<ViewRecord[]>(VIEWS_KEY, []);
 
-export const viewCount = (contentId: string, all?: ViewRecord[]): number =>
-  (all ?? getViews()).filter((row) => row.contentId === contentId).length;
+export const viewCount = async (contentId: string, all?: ViewRecord[]): Promise<number> => {
+  // Try fetching from API first
+  if (isAPIEnabled() && !all) {
+    try {
+      const res = await fetch(`/api/engagement?contentId=${encodeURIComponent(contentId)}`, {
+        cache: "no-store",
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return data.viewCount || 0;
+      }
+    } catch {
+      /* fall through to localStorage */
+    }
+  }
+  // Fallback to localStorage
+  return (all ?? getViews()).filter((row) => row.contentId === contentId).length;
+};
 
 /* `recordView` adds a row if this visitor hasn't seen the item in this
    session yet. Returns true if the count was incremented. */
-export const recordView = (visitorId: string, contentId: string): boolean => {
+export const recordView = async (visitorId: string, contentId: string): Promise<boolean> => {
   const list = getViews();
   // De-dupe within a 30-minute window for the same visitor + content.
   const recent = list.find(
@@ -158,8 +286,24 @@ export const recordView = (visitorId: string, contentId: string): boolean => {
       && Date.now() - Date.parse(row.viewedAt) < 30 * 60 * 1000,
   );
   if (recent) return false;
+
+  // Optimistic update: add to localStorage immediately
   list.push({ visitorId, contentId, viewedAt: new Date().toISOString() });
   write(VIEWS_KEY, list);
+
+  // Background sync to API
+  if (isAPIEnabled()) {
+    try {
+      await fetch("/api/engagement/view", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ visitorId, contentId }),
+      });
+    } catch {
+      /* ignore — localStorage is source of truth for now */
+    }
+  }
+
   return true;
 };
 
@@ -167,17 +311,43 @@ export const getSessionVisitorId = (): string => ensureSessionId();
 
 /* ─── Aggregated counts (the shape most callers want) ──────────────────── */
 
-export const engagementCounts = (
+export const engagementCounts = async (
   contentId: string,
   memberId: string | null,
-): EngagementCounts => {
+): Promise<EngagementCounts> => {
+  // Try to fetch from API first for more accurate counts
+  if (isAPIEnabled()) {
+    try {
+      const params = new URLSearchParams({ contentId });
+      if (memberId) params.append("memberId", memberId);
+
+      const res = await fetch(`/api/engagement?${params.toString()}`, {
+        cache: "no-store",
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        return {
+          views: data.viewCount || 0,
+          likes: data.likeCount || 0,
+          interests: data.saveCount || 0,
+          isInterested: data.userEngagement?.saved || false,
+          isLiked: data.userEngagement?.liked || false,
+        };
+      }
+    } catch {
+      /* fall through to localStorage */
+    }
+  }
+
+  // Fallback to localStorage
   const interests = getInterests();
   const likes = getLikes();
   const views = getViews();
   return {
-    views: viewCount(contentId, views),
-    likes: likeCount(contentId, likes),
-    interests: interestCount(contentId, interests),
+    views: views.filter((row) => row.contentId === contentId).length,
+    likes: likes.filter((row) => row.contentId === contentId).length,
+    interests: interests.filter((row) => row.contentId === contentId).length,
     isInterested: memberId ? interests.some((row) => row.contentId === contentId && row.memberId === memberId) : false,
     isLiked: memberId ? likes.some((row) => row.contentId === contentId && row.memberId === memberId) : false,
   };
@@ -193,17 +363,37 @@ export const useEngagementCounts = (
   contentId: string,
   memberId: string | null,
 ): EngagementCounts => {
-  const [value_, setValue] = useState<EngagementCounts>(() => engagementCounts(contentId, memberId));
+  const [value_, setValue] = useState<EngagementCounts>({
+    views: 0,
+    likes: 0,
+    interests: 0,
+    isInterested: false,
+    isLiked: false,
+  });
+
   useEffect(() => {
-    setValue(engagementCounts(contentId, memberId));
-    const refresh = () => setValue(engagementCounts(contentId, memberId));
+    let mounted = true;
+
+    const fetchCounts = async () => {
+      const counts = await engagementCounts(contentId, memberId);
+      if (mounted) setValue(counts);
+    };
+
+    fetchCounts();
+
+    const refresh = () => {
+      fetchCounts();
+    };
+
     window.addEventListener("storage", refresh);
     window.addEventListener("efsw:engagement-changed", refresh as EventListener);
     return () => {
+      mounted = false;
       window.removeEventListener("storage", refresh);
       window.removeEventListener("efsw:engagement-changed", refresh as EventListener);
     };
   }, [contentId, memberId]);
+
   return value_;
 };
 

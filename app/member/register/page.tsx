@@ -146,11 +146,12 @@ export default function MemberRegisterPage() {
     setError("");
     setSubmitting(true);
     try {
+      // Send PLAIN password to registerMember — it will be bcrypt-hashed server-side
       await registerMember({
         fullName: fields.fullName,
         email: fields.email,
         country: fields.country,
-        password: fields.password,
+        password: fields.password, // PLAIN password over HTTPS
         membershipType: fields.membershipType,
         organization: fields.organization,
         position: fields.position,

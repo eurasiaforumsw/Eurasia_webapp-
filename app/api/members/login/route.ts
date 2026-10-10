@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
+import { SignJWT } from "jose";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -125,10 +126,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No member account was found for this email." }, { status: 401 });
     }
 
-    const { createHash } = await import("crypto");
-    const passwordHash = createHash("sha256").update(password).digest("hex");
+    // Verify password using bcrypt
+    const bcrypt = await import("bcrypt");
+    const isValidPassword = await bcrypt.compare(password, member.password_hash);
 
-    if (member.password_hash !== passwordHash) {
+    if (!isValidPassword) {
       recordAttempt(email, false);
       return NextResponse.json({ error: "Incorrect password." }, { status: 401 });
     }
@@ -142,7 +144,19 @@ export async function POST(request: NextRequest) {
     }
 
     recordAttempt(email, true);
-    return NextResponse.json({
+
+    // Create JWT token
+    const secret = new TextEncoder().encode(process.env.JWT_SECRET);
+    const token = await new SignJWT({ memberId: member.id, email: member.email })
+      .setProtectedHeader({ alg: "HS256" })
+      .setExpirationTime("7d")
+      .setIssuedAt()
+      .sign(secret);
+
+    // Create response with member data
+    const response = NextResponse.json({
+      success: true,
+      message: "Login successful",
       member: {
         id: member.id,
         fullName: member.full_name,
@@ -170,6 +184,18 @@ export async function POST(request: NextRequest) {
         targetGroups: member.target_groups ?? undefined,
       },
     });
+
+    // Set HttpOnly cookie with JWT token
+    const isProduction = process.env.NODE_ENV === "production";
+    response.cookies.set("member_token", token, {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: "lax",
+      maxAge: 60 * 60 * 24 * 7, // 7 days in seconds
+      path: "/",
+    });
+
+    return response;
   } catch (err) {
     recordAttempt(email, false);
     const message = err instanceof Error ? err.message : "Unexpected error";
