@@ -15,7 +15,7 @@ import { useRouter } from "next/navigation";
 import { AuthorMarquee } from "@/components/academic/AuthorMarquee";
 import { StickyDocumentFilters } from "@/components/academic/StickyDocumentFilters";
 import { DocumentCard } from "@/components/academic/DocumentCard";
-import "./styles.css";
+import "./styles-light.css";
 
 // Document type definition
 type Document = {
