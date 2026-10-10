@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
+import { requireRole } from "@/lib/api-auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -223,9 +224,18 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// POST /api/content — create one item
+// POST /api/content — create one item (admin or pr role)
 export async function POST(req: NextRequest) {
   try {
+    // Check role permission - both admin and pr can create content
+    try {
+      await requireRole(req, ["admin", "pr"]);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unexpected error";
+      const status = message === "Unauthorized" ? 401 : 403;
+      return NextResponse.json({ error: message }, { status });
+    }
+
     const payload = (await req.json()) as Record<string, unknown>;
     const row = rowFromPayload(payload);
     if (!row) {
@@ -256,9 +266,18 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// PATCH /api/content/:id — partial update (status toggle, cover image, etc.)
+// PATCH /api/content/:id — partial update (admin or pr role)
 export async function PATCH(req: NextRequest) {
   try {
+    // Check role permission - both admin and pr can edit content
+    try {
+      await requireRole(req, ["admin", "pr"]);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unexpected error";
+      const status = message === "Unauthorized" ? 401 : 403;
+      return NextResponse.json({ error: message }, { status });
+    }
+
     const body = (await req.json()) as { id?: string } & Record<string, unknown>;
     if (!body.id || typeof body.id !== "string") {
       return NextResponse.json({ error: "id is required" }, { status: 400 });
@@ -287,9 +306,18 @@ export async function PATCH(req: NextRequest) {
   }
 }
 
-// DELETE /api/content?id=xxx — hard delete
+// DELETE /api/content?id=xxx — hard delete (admin or pr role)
 export async function DELETE(req: NextRequest) {
   try {
+    // Check role permission - both admin and pr can delete content
+    try {
+      await requireRole(req, ["admin", "pr"]);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unexpected error";
+      const status = message === "Unauthorized" ? 401 : 403;
+      return NextResponse.json({ error: message }, { status });
+    }
+
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
     if (!id) {

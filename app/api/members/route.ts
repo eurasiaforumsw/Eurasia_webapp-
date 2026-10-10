@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import type { EducationLevel } from "@/lib/member-auth";
+import { requireRole, verifyRequestToken } from "@/lib/api-auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -140,13 +141,30 @@ export async function GET(request: NextRequest) {
   const kind = searchParams.get("kind");
 
   try {
-    if (id) {
-      const member = await getMemberById(id);
-      return NextResponse.json({ member });
+    // Single member lookup by id or email - allow if authenticated
+    if (id || email) {
+      const payload = await verifyRequestToken(request);
+      if (!payload) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+
+      if (id) {
+        const member = await getMemberById(id);
+        return NextResponse.json({ member });
+      }
+      if (email) {
+        const member = await getMemberByEmail(email);
+        return NextResponse.json({ member });
+      }
     }
-    if (email) {
-      const member = await getMemberByEmail(email);
-      return NextResponse.json({ member });
+
+    // List all members - admin only
+    try {
+      await requireRole(request, ["admin"]);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unexpected error";
+      const status = message === "Unauthorized" ? 401 : 403;
+      return NextResponse.json({ error: message }, { status });
     }
 
     let query = supabaseAdmin!.from("members").select("*").order("joined_at", { ascending: false });
@@ -382,6 +400,15 @@ export async function DELETE(request: NextRequest) {
       { error: "Supabase is not configured on the server" },
       { status: 503 },
     );
+  }
+
+  // Only admin can delete members
+  try {
+    await requireRole(request, ["admin"]);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unexpected error";
+    const status = message === "Unauthorized" ? 401 : 403;
+    return NextResponse.json({ error: message }, { status });
   }
 
   const id = request.nextUrl.searchParams.get("id");
