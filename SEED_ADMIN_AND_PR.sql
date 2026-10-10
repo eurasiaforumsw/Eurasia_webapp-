@@ -21,10 +21,19 @@
 --   - All passwords are bcrypt hashed (12 rounds)
 --   - All accounts are pre-verified and active
 --   - IDs use email as TEXT (matches members table schema)
---   - Created at timestamps use current time
+--   - Uses INSERT ... ON CONFLICT to update existing accounts
 -- ============================================================================
 
--- Insert Admin Account 1
+-- Update existing admin@efsw.local or create new
+-- (This account already exists, so we'll just update its role)
+UPDATE members
+SET role = 'admin',
+    email_verified_at = NOW(),
+    status = 'active',
+    updated_at = NOW()
+WHERE email = 'admin@efsw.local';
+
+-- Insert Admin Account 2
 INSERT INTO members (
   id,
   email,
@@ -59,7 +68,7 @@ INSERT INTO members (
   NOW()
 );
 
--- Insert Admin Account 2
+-- Insert Admin Account 2 (or update if exists)
 INSERT INTO members (
   id,
   email,
@@ -92,9 +101,16 @@ INSERT INTO members (
   'Secondary administrator account',
   NOW(),
   NOW()
-);
+)
+ON CONFLICT (email)
+DO UPDATE SET
+  role = 'admin',
+  password_hash = EXCLUDED.password_hash,
+  email_verified_at = NOW(),
+  status = 'active',
+  updated_at = NOW();
 
--- Insert PR/News Editor Account
+-- Insert PR/News Editor Account (or update if exists)
 INSERT INTO members (
   id,
   email,
@@ -127,7 +143,14 @@ INSERT INTO members (
   'PR and news editor with access to content management',
   NOW(),
   NOW()
-);
+)
+ON CONFLICT (email)
+DO UPDATE SET
+  role = 'pr',
+  password_hash = EXCLUDED.password_hash,
+  email_verified_at = NOW(),
+  status = 'active',
+  updated_at = NOW();
 
 -- Verify the inserts
 SELECT
