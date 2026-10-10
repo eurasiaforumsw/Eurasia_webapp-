@@ -54,7 +54,7 @@ export const AdminSidebar = memo(function AdminSidebar({
   const lastFocusableRef = useRef<HTMLButtonElement>(null);
   const itemRefs = useRef<Map<AdminView, HTMLButtonElement>>(new Map());
 
-  const navItems: NavItem[] = [
+  const allNavItems: NavItem[] = [
     {
       id: "overview" as AdminView,
       label: "Overview",
@@ -120,6 +120,18 @@ export const AdminSidebar = memo(function AdminSidebar({
       shortcut: "8",
     },
   ];
+
+  // Filter menu items based on role
+  const navItems = allNavItems.filter((item) => {
+    if (session?.role === "admin") {
+      return true; // Admin sees everything
+    }
+    if (session?.role === "pr") {
+      // PR editors cannot access Members and Settings
+      return item.id !== "members" && item.id !== "settings";
+    }
+    return false; // Member role shouldn't reach here (blocked by middleware)
+  });
 
   // Keyboard navigation handlers
   const handleKeyDown = useCallback(
@@ -376,8 +388,18 @@ export const AdminSidebar = memo(function AdminSidebar({
                 <div className="truncate text-xs font-bold text-text-primary">
                   {session?.name || "Administrator"}
                 </div>
-                <div className="truncate text-[11px] text-text-muted">
-                  {session?.role || "Super Admin"}
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span
+                    className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                      session?.role === "admin"
+                        ? "bg-teal/15 text-teal"
+                        : session?.role === "pr"
+                        ? "bg-blue-500/15 text-blue-400"
+                        : "bg-gray-500/15 text-gray-400"
+                    }`}
+                  >
+                    {session?.role === "admin" ? "Admin" : session?.role === "pr" ? "PR Editor" : "Member"}
+                  </span>
                 </div>
               </div>
             </div>

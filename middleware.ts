@@ -34,27 +34,68 @@ export async function middleware(request: NextRequest) {
       return NextResponse.next();
     }
 
-    // Get JWT token from cookie
-    const token = request.cookies.get('admin_token')?.value;
+    // Get JWT token from cookie (check both admin_token and member_token)
+    const adminToken = request.cookies.get('admin_token')?.value;
+    const memberToken = request.cookies.get('member_token')?.value;
 
     // No token = BLOCK immediately
-    if (!token) {
+    if (!adminToken && !memberToken) {
       const loginUrl = new URL('/admin/login', request.url);
       loginUrl.searchParams.set('redirect', pathname);
       return NextResponse.redirect(loginUrl);
     }
 
-    // Invalid token = BLOCK immediately
-    const payload = await verifyToken(token);
-    if (!payload) {
-      const loginUrl = new URL('/admin/login', request.url);
-      loginUrl.searchParams.set('redirect', pathname);
-      loginUrl.searchParams.set('error', 'session_expired');
-      return NextResponse.redirect(loginUrl);
+    // Try admin token first
+    if (adminToken) {
+      const payload = await verifyToken(adminToken);
+      if (!payload) {
+        const loginUrl = new URL('/admin/login', request.url);
+        loginUrl.searchParams.set('redirect', pathname);
+        loginUrl.searchParams.set('error', 'session_expired');
+        return NextResponse.redirect(loginUrl);
+      }
+
+      // Role-based access control for admin_token
+      const role = payload.role || 'super-admin';
+
+      // If role is 'member', redirect to member profile
+      if (role === 'member') {
+        const profileUrl = new URL('/member/profile', request.url);
+        profileUrl.searchParams.set('error', 'no_access');
+        return NextResponse.redirect(profileUrl);
+      }
+
+      // Allow access for 'admin', 'pr', and 'super-admin' roles
+      return NextResponse.next();
     }
 
-    // Valid token = allow access
-    return NextResponse.next();
+    // Check member token if no admin token
+    if (memberToken) {
+      const memberPayload = await verifyToken(memberToken);
+      if (!memberPayload) {
+        const loginUrl = new URL('/admin/login', request.url);
+        loginUrl.searchParams.set('redirect', pathname);
+        loginUrl.searchParams.set('error', 'session_expired');
+        return NextResponse.redirect(loginUrl);
+      }
+
+      const role = memberPayload.role || 'member';
+
+      // Only admin and pr roles can access /admin routes
+      if (role === 'admin' || role === 'pr') {
+        return NextResponse.next();
+      }
+
+      // Regular members cannot access admin console
+      const profileUrl = new URL('/member/profile', request.url);
+      profileUrl.searchParams.set('error', 'no_access');
+      return NextResponse.redirect(profileUrl);
+    }
+
+    // Should never reach here, but redirect to login as fallback
+    const loginUrl = new URL('/admin/login', request.url);
+    loginUrl.searchParams.set('redirect', pathname);
+    return NextResponse.redirect(loginUrl);
   }
 
   // ============================================

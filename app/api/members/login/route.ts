@@ -59,6 +59,7 @@ type MemberRow = {
   password_hash: string;
   status: string;
   joined_at: string;
+  role?: string | null;
   avatar_url?: string | null;
   first_name?: string | null;
   last_name?: string | null;
@@ -145,9 +146,13 @@ export async function POST(request: NextRequest) {
 
     recordAttempt(email, true);
 
-    // Create JWT token
+    // Create JWT token with role
     const secret = new TextEncoder().encode(process.env.JWT_SECRET);
-    const token = await new SignJWT({ memberId: member.id, email: member.email })
+    const token = await new SignJWT({
+      memberId: member.id,
+      email: member.email,
+      role: member.role || 'member'
+    })
       .setProtectedHeader({ alg: "HS256" })
       .setExpirationTime("7d")
       .setIssuedAt()
