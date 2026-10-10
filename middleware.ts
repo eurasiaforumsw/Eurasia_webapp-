@@ -65,6 +65,16 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/api/content') ||
     pathname.startsWith('/api/members')
   ) {
+    // Allow login and register endpoints without auth
+    if (
+      pathname === '/api/admin/auth/login' ||
+      pathname === '/api/admin/auth/register' ||
+      pathname === '/api/members/login' ||
+      pathname === '/api/members/register'
+    ) {
+      return NextResponse.next();
+    }
+
     // Get JWT token from cookie
     const token = request.cookies.get('admin_token')?.value;
 
