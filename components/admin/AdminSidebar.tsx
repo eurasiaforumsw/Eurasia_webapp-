@@ -123,11 +123,11 @@ export const AdminSidebar = memo(function AdminSidebar({
 
   // Filter menu items based on role
   const navItems = allNavItems.filter((item) => {
-    if (session?.role === "admin") {
-      return true; // Admin sees everything
+    if (session?.role === "super-admin") {
+      return true; // Super admin sees everything
     }
-    if (session?.role === "pr") {
-      // PR editors cannot access Members and Settings
+    if (session?.role === "content-editor") {
+      // Content editors cannot access Members and Settings
       return item.id !== "members" && item.id !== "settings";
     }
     return false; // Member role shouldn't reach here (blocked by middleware)

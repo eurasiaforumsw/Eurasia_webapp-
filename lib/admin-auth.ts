@@ -1,4 +1,4 @@
-export type AdminRole = "super-admin" | "content-editor" | "member-reviewer";
+export type AdminRole = "super-admin" | "content-editor" | "member-reviewer" | "admin" | "pr";
 
 export type AdminSession = {
   id: string;
