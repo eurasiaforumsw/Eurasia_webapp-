@@ -412,57 +412,32 @@ export default function MemberRegisterPage() {
                       <>
                         <div className="efsw-signin__row">
                           <div className="efsw-signin__field">
-                            <label htmlFor="pf-org">Organization</label>
+                            <label htmlFor="pf-org">Organization <span style={{ color: "var(--efsw-ink-soft)", fontWeight: 400 }}>(optional)</span></label>
                             <input
                               id="pf-org"
                               value={fields.organization}
                               onChange={(e) => update("organization", e.target.value)}
-                              aria-invalid={!!fieldErrors.organization}
-                              aria-describedby={fieldErrors.organization ? "organization-error" : undefined}
-                              style={fieldErrors.organization ? { borderColor: "var(--efsw-danger, #e74c3c)" } : {}}
+                              placeholder="You can add this later"
                             />
-                            {fieldErrors.organization && (
-                              <div id="organization-error" role="alert" style={{ display: "flex", alignItems: "center", gap: "0.4rem", marginTop: "0.4rem", color: "var(--efsw-danger, #e74c3c)", fontSize: "0.8rem", fontWeight: 600 }}>
-                                <AlertCircle size={13} />
-                                {fieldErrors.organization}
-                              </div>
-                            )}
                           </div>
                           <div className="efsw-signin__field">
-                            <label htmlFor="pf-pos">Position</label>
+                            <label htmlFor="pf-pos">Position <span style={{ color: "var(--efsw-ink-soft)", fontWeight: 400 }}>(optional)</span></label>
                             <input
                               id="pf-pos"
                               value={fields.position}
                               onChange={(e) => update("position", e.target.value)}
-                              aria-invalid={!!fieldErrors.position}
-                              aria-describedby={fieldErrors.position ? "position-error" : undefined}
-                              style={fieldErrors.position ? { borderColor: "var(--efsw-danger, #e74c3c)" } : {}}
+                              placeholder="You can add this later"
                             />
-                            {fieldErrors.position && (
-                              <div id="position-error" role="alert" style={{ display: "flex", alignItems: "center", gap: "0.4rem", marginTop: "0.4rem", color: "var(--efsw-danger, #e74c3c)", fontSize: "0.8rem", fontWeight: 600 }}>
-                                <AlertCircle size={13} />
-                                {fieldErrors.position}
-                              </div>
-                            )}
                           </div>
                         </div>
                         <div className="efsw-signin__field">
-                          <label htmlFor="pf-exp">Area of expertise</label>
+                          <label htmlFor="pf-exp">Area of expertise <span style={{ color: "var(--efsw-ink-soft)", fontWeight: 400 }}>(optional)</span></label>
                           <input
                             id="pf-exp"
                             value={fields.expertise}
                             onChange={(e) => update("expertise", e.target.value)}
-                            placeholder="e.g. child and family welfare"
-                            aria-invalid={!!fieldErrors.expertise}
-                            aria-describedby={fieldErrors.expertise ? "expertise-error" : undefined}
-                            style={fieldErrors.expertise ? { borderColor: "var(--efsw-danger, #e74c3c)" } : {}}
+                            placeholder="e.g. child and family welfare - you can add this later"
                           />
-                          {fieldErrors.expertise && (
-                            <div id="expertise-error" role="alert" style={{ display: "flex", alignItems: "center", gap: "0.4rem", marginTop: "0.4rem", color: "var(--efsw-danger, #e74c3c)", fontSize: "0.8rem", fontWeight: 600 }}>
-                              <AlertCircle size={13} />
-                              {fieldErrors.expertise}
-                            </div>
-                          )}
                         </div>
                       </>
                     )}
@@ -471,60 +446,36 @@ export default function MemberRegisterPage() {
                       <>
                         <div className="efsw-signin__row">
                           <div className="efsw-signin__field">
-                            <label htmlFor="st-uni">University</label>
+                            <label htmlFor="st-uni">University <span style={{ color: "var(--efsw-ink-soft)", fontWeight: 400 }}>(optional)</span></label>
                             <input
                               id="st-uni"
                               value={fields.university}
                               onChange={(e) => update("university", e.target.value)}
-                              aria-invalid={!!fieldErrors.university}
-                              aria-describedby={fieldErrors.university ? "university-error" : undefined}
-                              style={fieldErrors.university ? { borderColor: "var(--efsw-danger, #e74c3c)" } : {}}
+                              placeholder="You can add this later"
                             />
-                            {fieldErrors.university && (
-                              <div id="university-error" role="alert" style={{ display: "flex", alignItems: "center", gap: "0.4rem", marginTop: "0.4rem", color: "var(--efsw-danger, #e74c3c)", fontSize: "0.8rem", fontWeight: 600 }}>
-                                <AlertCircle size={13} />
-                                {fieldErrors.university}
-                              </div>
-                            )}
                           </div>
                           <div className="efsw-signin__field">
-                            <label htmlFor="st-fac">Faculty</label>
+                            <label htmlFor="st-fac">Faculty <span style={{ color: "var(--efsw-ink-soft)", fontWeight: 400 }}>(optional)</span></label>
                             <input
                               id="st-fac"
                               value={fields.faculty}
                               onChange={(e) => update("faculty", e.target.value)}
-                              aria-invalid={!!fieldErrors.faculty}
-                              aria-describedby={fieldErrors.faculty ? "faculty-error" : undefined}
-                              style={fieldErrors.faculty ? { borderColor: "var(--efsw-danger, #e74c3c)" } : {}}
+                              placeholder="You can add this later"
                             />
-                            {fieldErrors.faculty && (
-                              <div id="faculty-error" role="alert" style={{ display: "flex", alignItems: "center", gap: "0.4rem", marginTop: "0.4rem", color: "var(--efsw-danger, #e74c3c)", fontSize: "0.8rem", fontWeight: 600 }}>
-                                <AlertCircle size={13} />
-                                {fieldErrors.faculty}
-                              </div>
-                            )}
                           </div>
                         </div>
                         <div className="efsw-signin__field">
-                          <label htmlFor="st-degree">Degree level</label>
+                          <label htmlFor="st-degree">Degree level <span style={{ color: "var(--efsw-ink-soft)", fontWeight: 400 }}>(optional)</span></label>
                           <select
                             id="st-degree"
                             value={fields.degree}
                             onChange={(e) => update("degree", e.target.value)}
-                            aria-invalid={!!fieldErrors.degree}
-                            aria-describedby={fieldErrors.degree ? "degree-error" : undefined}
-                            style={fieldErrors.degree ? { borderColor: "var(--efsw-danger, #e74c3c)" } : {}}
                           >
+                            <option value="">Select degree level</option>
                             <option value="bachelor">Bachelor&apos;s</option>
                             <option value="master">Master&apos;s</option>
                             <option value="doctorate">Doctorate</option>
                           </select>
-                          {fieldErrors.degree && (
-                            <div id="degree-error" role="alert" style={{ display: "flex", alignItems: "center", gap: "0.4rem", marginTop: "0.4rem", color: "var(--efsw-danger, #e74c3c)", fontSize: "0.8rem", fontWeight: 600 }}>
-                              <AlertCircle size={13} />
-                              {fieldErrors.degree}
-                            </div>
-                          )}
                         </div>
                       </>
                     )}
@@ -533,14 +484,12 @@ export default function MemberRegisterPage() {
                       <>
                         <div className="efsw-signin__row">
                           <div className="efsw-signin__field">
-                            <label htmlFor="in-name">Organization name</label>
+                            <label htmlFor="in-name">Organization name <span style={{ color: "var(--efsw-ink-soft)", fontWeight: 400 }}>(optional)</span></label>
                             <input
                               id="in-name"
                               value={fields.organization}
                               onChange={(e) => update("organization", e.target.value)}
-                              aria-invalid={!!fieldErrors.organization}
-                              aria-describedby={fieldErrors.organization ? "organization-error-inst" : undefined}
-                              style={fieldErrors.organization ? { borderColor: "var(--efsw-danger, #e74c3c)" } : {}}
+                              placeholder="You can add this later"
                             />
                             {fieldErrors.organization && (
                               <div id="organization-error-inst" role="alert" style={{ display: "flex", alignItems: "center", gap: "0.4rem", marginTop: "0.4rem", color: "var(--efsw-danger, #e74c3c)", fontSize: "0.8rem", fontWeight: 600 }}>
@@ -550,44 +499,28 @@ export default function MemberRegisterPage() {
                             )}
                           </div>
                           <div className="efsw-signin__field">
-                            <label htmlFor="in-type">Organization type</label>
+                            <label htmlFor="in-type">Organization type <span style={{ color: "var(--efsw-ink-soft)", fontWeight: 400 }}>(optional)</span></label>
                             <select
                               id="in-type"
                               value={fields.organizationType}
                               onChange={(e) => update("organizationType", e.target.value)}
-                              aria-invalid={!!fieldErrors.organizationType}
-                              aria-describedby={fieldErrors.organizationType ? "organizationType-error" : undefined}
-                              style={fieldErrors.organizationType ? { borderColor: "var(--efsw-danger, #e74c3c)" } : {}}
                             >
+                              <option value="">Select type</option>
                               <option value="ngo">NGO</option>
                               <option value="university">University</option>
                               <option value="government">Public body</option>
                               <option value="social-enterprise">Social enterprise</option>
                             </select>
-                            {fieldErrors.organizationType && (
-                              <div id="organizationType-error" role="alert" style={{ display: "flex", alignItems: "center", gap: "0.4rem", marginTop: "0.4rem", color: "var(--efsw-danger, #e74c3c)", fontSize: "0.8rem", fontWeight: 600 }}>
-                                <AlertCircle size={13} />
-                                {fieldErrors.organizationType}
-                              </div>
-                            )}
                           </div>
                         </div>
                         <div className="efsw-signin__field">
-                          <label htmlFor="in-contact">Contact position</label>
+                          <label htmlFor="in-contact">Contact position <span style={{ color: "var(--efsw-ink-soft)", fontWeight: 400 }}>(optional)</span></label>
                           <input
                             id="in-contact"
                             value={fields.contactPosition}
                             onChange={(e) => update("contactPosition", e.target.value)}
-                            aria-invalid={!!fieldErrors.contactPosition}
-                            aria-describedby={fieldErrors.contactPosition ? "contactPosition-error" : undefined}
-                            style={fieldErrors.contactPosition ? { borderColor: "var(--efsw-danger, #e74c3c)" } : {}}
+                            placeholder="You can add this later"
                           />
-                          {fieldErrors.contactPosition && (
-                            <div id="contactPosition-error" role="alert" style={{ display: "flex", alignItems: "center", gap: "0.4rem", marginTop: "0.4rem", color: "var(--efsw-danger, #e74c3c)", fontSize: "0.8rem", fontWeight: 600 }}>
-                              <AlertCircle size={13} />
-                              {fieldErrors.contactPosition}
-                            </div>
-                          )}
                         </div>
                       </>
                     )}
