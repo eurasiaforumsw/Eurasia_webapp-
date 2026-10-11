@@ -1,27 +1,28 @@
 /* Academic Library - Light Editorial Design */
-/* Design tokens - Light Theme */
+/* Design tokens - Light Theme with Education Authority */
 :root {
-  /* Light surfaces with subtle gradients */
-  --surface-0: #f9fafb;
-  --surface-1: #f3f4f6;
-  --surface-2: #eeeff2;
-  --surface-3: #e5e7eb;
-  --surface-4: #d9dce1;
-  --surface-5: #cccfd6;
+  /* Soft, warm backgrounds inspired by Making Software & Harvard */
+  --surface-0: #faf9f5;
+  --surface-1: #f5f3ee;
+  --surface-2: #ede8df;
+  --surface-3: #e3dcd0;
+  --surface-4: #d9d1c4;
+  --surface-5: #cfc7ba;
 
-  /* Accent colors - professional blue */
-  --accent: #2563eb;
-  --accent-muted: #dbeafe;
-  --accent-warm: #f59e0b;
+  /* Accent colors - academic authority */
+  --accent: #1f5c8e;
+  --accent-muted: #c4dde8;
+  --accent-warm: #b85c3f;
+  --accent-light: #e3f0f7;
 
-  /* Text colors - WCAG AA compliant */
-  --text-primary: #1f2937;
-  --text-secondary: #4b5563;
-  --text-tertiary: #6b7280;
+  /* Text colors - WCAG AAA compliant */
+  --text-primary: #1a1a1a;
+  --text-secondary: #3d3d3d;
+  --text-tertiary: #5a5a5a;
 
   /* Border and divider */
-  --border-light: #e5e7eb;
-  --border-medium: #d1d5db;
+  --border-light: #e0d9ce;
+  --border-medium: #d0c8bb;
 
   /* Radius */
   --radius-sm: 8px;
@@ -35,14 +36,14 @@
   --spacing-inline: clamp(24px, 4vw, 48px);
 
   /* Typography */
-  --font-display: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
 
-  /* Shadows - subtle and soft */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.08);
-  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.12);
-  --shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.15);
+  /* Shadows - softer, warmer */
+  --shadow-sm: 0 1px 2px rgba(26, 26, 26, 0.08);
+  --shadow-md: 0 2px 8px rgba(26, 26, 26, 0.12);
+  --shadow-lg: 0 4px 16px rgba(26, 26, 26, 0.15);
+  --shadow-hover: 0 8px 24px rgba(26, 26, 26, 0.18);
 }
 
 .academic-library {

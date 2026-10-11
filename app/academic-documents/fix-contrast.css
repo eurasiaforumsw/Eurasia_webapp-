@@ -1,77 +1,190 @@
-/* Academic Documents - Fix Washed Out Appearance */
-/* This file adds !important overrides to ensure proper contrast */
+/* Academic Documents - Enhanced contrast and readability */
+/* Inspired by educational institutions: Harvard, MIT, Stanford */
 
 .academic-library {
-  /* Force dark text colors */
-  --text-primary: #111827 !important;
-  --text-secondary: #374151 !important;
-  --text-tertiary: #4b5563 !important;
+  /* Ensure text is always visible */
+  --text-primary: #1a1a1a !important;
+  --text-secondary: #3d3d3d !important;
+  --text-tertiary: #5a5a5a !important;
 }
 
-.academic-library * {
-  /* Prevent global styles from washing out text */
-  color: inherit;
+/* Hero section - stronger presence */
+.academic-hero {
+  background: linear-gradient(135deg, var(--surface-0) 0%, var(--surface-2) 100%);
+  padding: var(--spacing-section) var(--spacing-inline);
+}
+
+.academic-hero__eyebrow {
+  color: var(--accent) !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+  font-size: 0.75rem !important;
 }
 
 .academic-hero__title {
-  color: #111827 !important;
-  font-weight: 800 !important;
+  color: var(--text-primary) !important;
+  font-weight: 900 !important;
+  font-size: clamp(2rem, 6vw, 3.5rem) !important;
+  line-height: 1.1 !important;
+  letter-spacing: -0.01em !important;
 }
 
 .academic-hero__description {
-  color: #374151 !important;
+  color: var(--text-secondary) !important;
   font-weight: 500 !important;
+  font-size: clamp(1rem, 2vw, 1.25rem) !important;
+  line-height: 1.6 !important;
 }
 
 .academic-hero__stat strong {
-  color: #2563eb !important;
-  font-weight: 800 !important;
+  color: var(--accent) !important;
+  font-weight: 900 !important;
+  font-size: 2.5rem !important;
 }
 
 .academic-hero__stat span {
-  color: #4b5563 !important;
+  color: var(--text-secondary) !important;
   font-weight: 600 !important;
+  font-size: 0.9rem !important;
 }
 
 .author-marquee__name {
-  color: #111827 !important;
+  color: var(--text-primary) !important;
   font-weight: 700 !important;
 }
 
 .author-marquee__meta {
-  color: #374151 !important;
+  color: var(--text-tertiary) !important;
   font-weight: 500 !important;
 }
 
+/* Document cards - stronger visual hierarchy */
+.document-card {
+  background: var(--surface-1) !important;
+  border: 1px solid var(--border-light) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.document-card:hover {
+  background: var(--surface-0) !important;
+  border-color: var(--accent) !important;
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-4px);
+}
+
 .document-card__title {
-  color: #111827 !important;
+  color: var(--text-primary) !important;
   font-weight: 700 !important;
+  font-size: 1.1rem !important;
+}
+
+.document-card__summary {
+  color: var(--text-secondary) !important;
+  font-weight: 500 !important;
+  line-height: 1.6 !important;
 }
 
 .document-card__author,
 .document-card__date,
 .document-card__meta {
-  color: #4b5563 !important;
+  color: var(--text-tertiary) !important;
   font-weight: 500 !important;
 }
 
-.filter-pill {
+.document-card__tag {
+  background: var(--accent-light) !important;
+  color: var(--accent) !important;
   font-weight: 600 !important;
 }
 
+/* Filter controls - better visibility */
+.filter-pill {
+  background: var(--surface-1) !important;
+  border: 1px solid var(--border-medium) !important;
+  color: var(--text-secondary) !important;
+  font-weight: 600 !important;
+  transition: all 0.2s ease;
+}
+
+.filter-pill:hover {
+  background: var(--surface-2) !important;
+  border-color: var(--accent) !important;
+}
+
 .filter-pill.is-active {
-  background: #2563eb !important;
+  background: var(--accent) !important;
   color: white !important;
   font-weight: 700 !important;
+  border-color: var(--accent) !important;
 }
 
-/* Ensure headings are always visible */
+/* Headings - academic weight */
 h1, h2, h3, h4, h5, h6 {
-  color: #111827 !important;
-  font-weight: 700 !important;
+  color: var(--text-primary) !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.01em !important;
 }
 
-/* Ensure body text is always visible */
+/* Body text - readable */
 p {
-  color: #374151 !important;
+  color: var(--text-secondary) !important;
+  line-height: 1.7 !important;
+}
+
+/* Buttons - strong call-to-action */
+.academic-btn {
+  font-weight: 700 !important;
+  text-transform: none !important;
+  letter-spacing: 0.02em !important;
+}
+
+.academic-btn--primary {
+  background: var(--accent) !important;
+  color: white !important;
+  box-shadow: var(--shadow-md);
+  transition: all 0.3s ease;
+}
+
+.academic-btn--primary:hover {
+  background: #164877 !important;
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+}
+
+/* Empty state - friendly messaging */
+.academic-empty {
+  color: var(--text-secondary) !important;
+}
+
+.academic-empty h3 {
+  color: var(--text-primary) !important;
+}
+
+.academic-empty p {
+  color: var(--text-tertiary) !important;
+}
+
+/* CTA section - stands out */
+.academic-cta {
+  background: linear-gradient(135deg, var(--accent) 0%, #144b70 100%);
+  color: white !important;
+}
+
+.academic-cta__inner h2 {
+  color: white !important;
+}
+
+.academic-cta__inner p {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* Footer - subtle but readable */
+.academic-footer {
+  background: var(--surface-2) !important;
+  color: var(--text-tertiary) !important;
+}
+
+.academic-footer a {
+  color: var(--accent) !important;
 }
