@@ -70,6 +70,12 @@ export type AdminContentItem = {
   seoKeywords?: string[];      // Keywords array
   ogImage?: string;            // Open Graph image URL
   canonicalUrl?: string;       // Canonical URL
+  /* academic document extras — PDF/file storage */
+  fileUrl?: string;            // URL to downloadable PDF/file (for academic content)
+  fileName?: string;           // Original filename
+  fileSize?: number;           // File size in bytes
+  fileType?: string;           // MIME type (e.g., "application/pdf")
+  pageCount?: number;          // Page count for PDFs
 };
 
 /** The default audience when nothing is specified — open to everyone. */

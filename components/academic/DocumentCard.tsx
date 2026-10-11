@@ -27,6 +27,10 @@ type DocumentCardProps = {
   viewCount: number;
   likeCount: number;
   isLiked: boolean;
+  fileUrl?: string;
+  fileName?: string;
+  fileSize?: number;
+  pageCount?: number;
   onView: () => void;
   onLike: (e: React.MouseEvent) => void;
   onDownload: (e: React.MouseEvent) => void;
@@ -63,6 +67,10 @@ export function DocumentCard({
   viewCount,
   likeCount,
   isLiked,
+  fileUrl,
+  fileName,
+  fileSize,
+  pageCount,
   onView,
   onLike,
   onDownload,
@@ -108,6 +116,11 @@ export function DocumentCard({
           <User size={13} />
           {author}
         </div>
+        {pageCount && (
+          <div className="document-card__meta" style={{ marginTop: '6px', fontSize: '12px', color: '#6b7280' }}>
+            {pageCount} pages {fileSize && `• ${(fileSize / 1024 / 1024).toFixed(1)}MB`}
+          </div>
+        )}
       </div>
 
       {tags.length > 0 && (

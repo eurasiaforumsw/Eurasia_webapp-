@@ -16,3 +16,5 @@ build/
 .hermes/
 test-suspension-panel.ts
 test-*.ts
+.vercel
+.env*

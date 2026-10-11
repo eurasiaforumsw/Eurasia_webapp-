@@ -2,12 +2,12 @@
 /* Design tokens - Light Theme */
 :root {
   /* Light surfaces with subtle gradients */
-  --surface-0: #ffffff;
-  --surface-1: #fafbfc;
-  --surface-2: #f5f7fa;
-  --surface-3: #eef1f6;
-  --surface-4: #e5e9f0;
-  --surface-5: #d8dfe9;
+  --surface-0: #f9fafb;
+  --surface-1: #f3f4f6;
+  --surface-2: #eeeff2;
+  --surface-3: #e5e7eb;
+  --surface-4: #d9dce1;
+  --surface-5: #cccfd6;
 
   /* Accent colors - professional blue */
   --accent: #2563eb;

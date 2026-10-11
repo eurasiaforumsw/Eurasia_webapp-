@@ -31,6 +31,9 @@ type Document = {
   featured?: boolean;
   fileType?: "PDF" | "DOC" | "DOCX";
   pageCount?: number;
+  fileUrl?: string;
+  fileName?: string;
+  fileSize?: number;
 };
 
 const CATEGORY_CONFIG = {
@@ -78,10 +81,13 @@ export default function AcademicDocumentsPage() {
       date: doc.publishAt || new Date().toISOString(),
       summary: doc.summary || "",
       tags: doc.tags || [],
-      downloads: Math.floor(Math.random() * 500) + 50,
+      downloads: doc.downloadCount || Math.floor(Math.random() * 500) + 50,
       featured: Math.random() > 0.7,
       fileType: "PDF" as const,
-      pageCount: Math.floor(Math.random() * 50) + 5,
+      pageCount: doc.pageCount || Math.floor(Math.random() * 50) + 5,
+      fileUrl: doc.fileUrl,
+      fileName: doc.fileName,
+      fileSize: doc.fileSize,
     }));
 
     // Add sample documents for demo purposes
@@ -98,6 +104,9 @@ export default function AcademicDocumentsPage() {
         featured: true,
         fileType: "PDF",
         pageCount: 45,
+        fileUrl: "/academic-files/rural-communities-central-asia.pdf",
+        fileName: "Social Work Practice in Rural Communities of Central Asia.pdf",
+        fileSize: 3500000,
       },
       {
         id: "doc-002",
@@ -111,6 +120,9 @@ export default function AcademicDocumentsPage() {
         featured: true,
         fileType: "PDF",
         pageCount: 78,
+        fileUrl: "/academic-files/crisis-intervention-manual.pdf",
+        fileName: "Field Manual: Crisis Intervention for Social Workers.pdf",
+        fileSize: 5200000,
       },
       {
         id: "doc-003",
@@ -124,6 +136,9 @@ export default function AcademicDocumentsPage() {
         featured: false,
         fileType: "PDF",
         pageCount: 28,
+        fileUrl: "/academic-files/child-protection-southeast-asia.pdf",
+        fileName: "Policy Brief: Child Protection Systems in Southeast Asia.pdf",
+        fileSize: 2100000,
       },
       {
         id: "doc-004",
@@ -137,6 +152,9 @@ export default function AcademicDocumentsPage() {
         featured: false,
         fileType: "PDF",
         pageCount: 62,
+        fileUrl: "/academic-files/trauma-informed-care-guide.pdf",
+        fileName: "Trauma-Informed Care: A Guide for Social Workers in Conflict Zones.pdf",
+        fileSize: 4200000,
       },
       {
         id: "doc-005",
@@ -150,6 +168,9 @@ export default function AcademicDocumentsPage() {
         featured: false,
         fileType: "PDF",
         pageCount: 92,
+        fileUrl: "/academic-files/gbv-prevention-south-asia.pdf",
+        fileName: "Research Report: Gender-Based Violence Prevention in South Asia.pdf",
+        fileSize: 6100000,
       },
       {
         id: "doc-006",
@@ -163,6 +184,9 @@ export default function AcademicDocumentsPage() {
         featured: false,
         fileType: "PDF",
         pageCount: 18,
+        fileUrl: "/academic-files/mental-health-integration-brief.pdf",
+        fileName: "Policy Brief: Mental Health Services Integration in Primary Care.pdf",
+        fileSize: 1800000,
       },
       {
         id: "doc-007",
@@ -176,6 +200,9 @@ export default function AcademicDocumentsPage() {
         featured: true,
         fileType: "PDF",
         pageCount: 55,
+        fileUrl: "/academic-files/supervision-models-best-practices.pdf",
+        fileName: "Supervision in Social Work: Models and Best Practices.pdf",
+        fileSize: 3900000,
       },
       {
         id: "doc-008",
@@ -189,6 +216,9 @@ export default function AcademicDocumentsPage() {
         featured: false,
         fileType: "PDF",
         pageCount: 68,
+        fileUrl: "/academic-files/migration-east-asia-research.pdf",
+        fileName: "Research: Migration and Social Work Practice in East Asia.pdf",
+        fileSize: 4500000,
       },
       {
         id: "doc-009",
@@ -202,6 +232,9 @@ export default function AcademicDocumentsPage() {
         featured: false,
         fileType: "PDF",
         pageCount: 22,
+        fileUrl: "/academic-files/aging-longterm-care-brief.pdf",
+        fileName: "Policy Brief: Aging Populations and Long-Term Care.pdf",
+        fileSize: 1900000,
       },
       {
         id: "doc-010",
@@ -215,6 +248,9 @@ export default function AcademicDocumentsPage() {
         featured: false,
         fileType: "PDF",
         pageCount: 82,
+        fileUrl: "/academic-files/ethical-dilemmas-casebook.pdf",
+        fileName: "Ethical Dilemmas in Social Work: A Casebook for Practice.pdf",
+        fileSize: 5300000,
       },
     ];
 
@@ -396,8 +432,20 @@ export default function AcademicDocumentsPage() {
     e.preventDefault();
     e.stopPropagation();
     incrementDownloadCount(docId);
-    // In real app, trigger actual download here
-    alert(`Download started for document: ${docId}`);
+
+    const doc = allDocuments.find(d => d.id === docId);
+    if (doc?.fileUrl) {
+      // Create download link
+      const link = document.createElement('a');
+      link.href = doc.fileUrl;
+      link.download = doc.fileName || `${doc.title}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } else {
+      // Fallback for mock data
+      alert(`Download started for document: ${docId}`);
+    }
   };
 
   return (
@@ -518,6 +566,10 @@ export default function AcademicDocumentsPage() {
                       viewCount={engagement.viewCount || 0}
                       likeCount={engagement.likeCount || 0}
                       isLiked={isLiked}
+                      fileUrl={doc.fileUrl}
+                      fileName={doc.fileName}
+                      fileSize={doc.fileSize}
+                      pageCount={doc.pageCount}
                       onView={() => handleView(doc.id)}
                       onLike={(e) => handleLike(doc.id, e)}
                       onDownload={(e) => handleDownload(doc.id, e)}
