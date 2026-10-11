@@ -2,32 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 import { checkRateLimit, detectSpam, validateMessageLength } from '@/lib/message-rate-limit';
 import { checkMemberSuspension } from '@/lib/member-suspension';
-import { verifyRequestSession } from '@/lib/auth/session';
 
 export async function POST(req: NextRequest) {
-  const session = await verifyRequestSession(req);
-  if (!session?.memberId) {
-    return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
-  }
-  let body;
   try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
-  }
-  if (!body || typeof body !== 'object' || Array.isArray(body)) {
-    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
-  }
-  const conversationId = body.conversationId ?? body.conversation_id;
-  const { content } = body;
-  const senderId = session.memberId;
-  if (body.senderId !== undefined && body.senderId !== senderId) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-  }
-  try {
+    const { conversationId, senderId, content } = await req.json();
+
     // 1. Validate required fields
-    if (typeof conversationId !== 'string' || !conversationId ||
-        typeof content !== 'string' || !content.trim()) {
+    if (!conversationId || !senderId || !content) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }

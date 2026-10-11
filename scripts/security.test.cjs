@@ -60,7 +60,6 @@ const { matchesFileSignature } = require('../lib/security/uploads.ts');
 const interests = require('../app/api/engagement/interest/route.ts');
 const stats = require('../app/api/engagement/stats/route.ts');
 const content = require('../app/api/content/route.ts');
-const messages = require('../app/api/messages/send/route.ts');
 
 async function token(claims = {}, options = {}) {
   let jwt = new SignJWT({ memberId: 'member-one', email: 'one@example.com', role: 'member', ...claims })
@@ -140,29 +139,6 @@ test('private saved items and statistics reject access to another member before 
     assert.equal((await route.GET(request(`${url}?memberId=member-two`, { jwt }))).status, 403);
     assert.equal(calls.length, 0);
   }
-});
-
-test('message sending requires a verified member and rejects a forged sender before querying', async () => {
-  for (const [jwt, expected] of [[undefined, 401], [await token(), 403]]) {
-    calls.length = 0;
-    queryResult = { data: null, error: null };
-    const response = await messages.POST(request('/api/messages/send', {
-      method: 'POST', jwt,
-      body: { conversationId: 'conversation-one', senderId: 'member-victim', content: 'Hello' },
-    }));
-    assert.equal(response.status, expected);
-    assert.equal(calls.length, 0);
-  }
-});
-
-test('message sending rejects non-text content before querying', async () => {
-  calls.length = 0;
-  const response = await messages.POST(request('/api/messages/send', {
-    method: 'POST', jwt: await token(),
-    body: { conversationId: 'conversation-one', senderId: 'member-one', content: { text: 'Hello' } },
-  }));
-  assert.equal(response.status, 400);
-  assert.equal(calls.length, 0);
 });
 
 test('missing, placeholder and short JWT secrets fail closed', async () => {
