@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
+import { verifyMemberToken } from "@/lib/auth/jwt";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -81,7 +82,12 @@ export async function POST(request: NextRequest) {
 
   try {
     const payload = (await request.json()) as Record<string, unknown>;
-    const memberId = String(payload.memberId ?? "").trim();
+    const session = await verifyMemberToken(request);
+    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (payload.memberId && payload.memberId !== session.memberId) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+    const memberId = session.memberId;
     const contentId = String(payload.contentId ?? "").trim();
     const clientIP = getClientIP(request);
 
@@ -95,9 +101,6 @@ export async function POST(request: NextRequest) {
 
     // Basic UUID validation
     const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!uuidPattern.test(memberId)) {
-      return NextResponse.json({ error: "Invalid memberId format" }, { status: 400 });
-    }
     if (!uuidPattern.test(contentId)) {
       return NextResponse.json({ error: "Invalid contentId format" }, { status: 400 });
     }
@@ -245,7 +248,13 @@ export async function GET(request: NextRequest) {
 
   try {
     const { searchParams } = request.nextUrl;
-    const memberId = searchParams.get("memberId")?.trim();
+    const session = await verifyMemberToken(request);
+    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const requestedId = searchParams.get("memberId")?.trim();
+    if (requestedId && requestedId !== session.memberId) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+    const memberId = session.memberId;
     const contentId = searchParams.get("contentId")?.trim();
 
     // Validate required fields

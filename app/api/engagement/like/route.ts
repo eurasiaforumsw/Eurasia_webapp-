@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
+import { verifyMemberToken } from "@/lib/auth/jwt";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -67,7 +68,13 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const { memberId, contentId } = body;
+  const session = await verifyMemberToken(request);
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (body.memberId && body.memberId !== session.memberId) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+  const { contentId } = body;
+  const memberId = session.memberId;
 
   if (!memberId || !contentId) {
     return NextResponse.json(
@@ -78,7 +85,7 @@ export async function POST(request: NextRequest) {
 
   // Validate UUID format
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  if (!uuidRegex.test(memberId) || !uuidRegex.test(contentId)) {
+  if (!uuidRegex.test(contentId)) {
     return NextResponse.json(
       { error: "Invalid UUID format for memberId or contentId" },
       { status: 400 }

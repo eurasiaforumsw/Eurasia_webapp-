@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import "@/styles/admin-layout.css";
+import "@/styles/admin-mobile-responsive.css";
 import {
   AdminActivity,
   AdminContentItem,
@@ -41,6 +42,7 @@ import { AdminMessagesView } from "@/components/admin/views/AdminMessagesView";
 import { AdminBroadcastView } from "@/components/admin/views/AdminBroadcastView";
 import { AdminActivityView } from "@/components/admin/views/AdminActivityView";
 import { AdminSettingsView } from "@/components/admin/views/AdminSettingsView";
+import { MessageModeration } from "@/components/admin/moderation/MessageModeration";
 import { AnalyticsDashboard } from "@/components/admin/AnalyticsDashboard";
 import { MemberDetailDrawer } from "@/components/admin/modals/MemberDetailDrawer";
 import { ContentEditorModal } from "@/components/admin/modals/ContentEditorModal";
@@ -478,6 +480,12 @@ export default function AdminDashboardPage() {
 
           {view === "messages" && (
             <AdminMessagesView members={members} />
+          )}
+
+          {view === "moderation" && (
+            <MessageModeration
+              onSuspendMember={(memberId) => handleUpdateMemberStatus(memberId, "suspended")}
+            />
           )}
 
           {view === "activity" && <AdminActivityView activity={activity} />}

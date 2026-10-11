@@ -1,215 +1,170 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { jwtVerify } from 'jose';
+import { createClient } from '@supabase/supabase-js';
+import { verifyRequestSession, verifySessionToken, CONSOLE_ROLES } from './lib/auth/session';
+import { apiRoles, isSafeOrigin, isMutation, ratePolicy, maxBodyBytes } from './lib/security/policy';
+import { consumeRateLimit } from './lib/security/rate-limit';
+import { contentSecurityPolicy } from './lib/security/headers';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+function apiError(error: string, status: number) {
+  const response = NextResponse.json({ error }, { status });
+  response.headers.set('Cache-Control', 'no-store');
+  return response;
+}
 
-/**
- * Verify JWT token and return payload if valid
- * Uses jose library which is Edge Runtime compatible
- */
-async function verifyToken(token: string): Promise<any> {
+async function bodyTooLarge(request: NextRequest, maxBytes: number): Promise<boolean> {
+  const length = request.headers.get('content-length');
+  if (length && (!/^\d+$/.test(length) || Number(length) > maxBytes)) return true;
+  if (!request.body) return false;
+  const reader = request.clone().body!.getReader();
+  let bytes = 0;
   try {
-    const secret = new TextEncoder().encode(JWT_SECRET);
-    const { payload } = await jwtVerify(token, secret);
-    return payload;
-  } catch (error) {
-    return null;
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) return false;
+      bytes += value.byteLength;
+      if (bytes > maxBytes) {
+        void reader.cancel().catch(() => {});
+        return true;
+      }
+    }
+  } finally {
+    reader.releaseLock();
   }
 }
 
-/**
- * Middleware to protect admin routes with JWT authentication
- * BLOCKS unauthorized access on the server - no client-side bypass possible
- */
+async function checkMemberSuspension(memberId: string): Promise<{
+  isSuspended: boolean;
+  details?: any;
+}> {
+  try {
+    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+    const { data, error } = await supabase
+      .rpc('is_member_suspended', { p_member_id: memberId });
+
+    if (error) {
+      console.error('Error checking suspension');
+      throw new Error('Unable to verify suspension status');
+    }
+
+    const suspension = Array.isArray(data) ? data[0] : data;
+
+    return {
+      isSuspended: suspension?.is_suspended || false,
+      details: suspension?.is_suspended ? {
+        type: suspension.suspension_type,
+        reasonCategory: suspension.reason_category,
+        reasonDetails: suspension.reason_details,
+        suspendedAt: suspension.suspended_at,
+        expiresAt: suspension.expires_at,
+      } : null,
+    };
+  } catch (error) {
+    console.error('Suspension check failed');
+    throw new Error('Unable to verify suspension status');
+  }
+}
+
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // ============================================
-  // ADMIN PAGE ROUTES PROTECTION
-  // ============================================
-  if (pathname.startsWith('/admin')) {
-    // Allow login page without auth
-    if (pathname === '/admin/login') {
-      return NextResponse.next();
+  if (pathname.startsWith('/api/')) {
+    if (pathname === '/api/admin/test-setup' && process.env.NODE_ENV === 'production') {
+      return apiError('Not found', 404);
+    }
+    if (!isSafeOrigin(request)) return apiError('Cross-site request rejected', 403);
+
+    // Trust forwarded IPs only when an explicitly configured proxy overwrites them.
+    const forwarded = process.env.SECURITY_TRUST_PROXY === 'true'
+      ? request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() : undefined;
+    const client = forwarded || request.ip || 'unknown-client';
+    const policy = ratePolicy(pathname);
+    try {
+      const rate = await consumeRateLimit(`${policy.scope}:${client}`, policy.limit, policy.windowMs);
+      if (!rate.allowed) {
+        const response = apiError('Too many requests. Please try again later.', 429);
+        response.headers.set('Retry-After', String(rate.retryAfter));
+        return response;
+      }
+    } catch {
+      // A database outage must not disable protection.
+      return apiError('Security service temporarily unavailable', 503);
     }
 
-    // Get JWT token from cookie (check both admin_token and member_token)
-    const adminToken = request.cookies.get('admin_token')?.value;
-    const memberToken = request.cookies.get('member_token')?.value;
-
-    // No token = BLOCK immediately
-    if (!adminToken && !memberToken) {
-      const loginUrl = new URL('/admin/login', request.url);
-      loginUrl.searchParams.set('redirect', pathname);
-      return NextResponse.redirect(loginUrl);
+    const roles = apiRoles(pathname, request.method);
+    if (roles !== null) {
+      const session = await verifyRequestSession(request);
+      if (!session) return apiError('Authentication required', 401);
+      if (roles.length && !roles.includes(session.role)) return apiError('Forbidden', 403);
     }
-
-    // Try admin token first
-    if (adminToken) {
-      const payload = await verifyToken(adminToken);
-      if (!payload) {
-        const loginUrl = new URL('/admin/login', request.url);
-        loginUrl.searchParams.set('redirect', pathname);
-        loginUrl.searchParams.set('error', 'session_expired');
-        return NextResponse.redirect(loginUrl);
+    if (isMutation(request.method)) {
+      try {
+        if (await bodyTooLarge(request, maxBodyBytes(pathname))) {
+          return apiError('Request body too large', 413);
+        }
+      } catch {
+        return apiError('Invalid request body', 400);
       }
-
-      // Role-based access control for admin_token
-      const role = payload.role || 'super-admin';
-
-      // If role is 'member', redirect to member profile
-      if (role === 'member') {
-        const profileUrl = new URL('/member/profile', request.url);
-        profileUrl.searchParams.set('error', 'no_access');
-        return NextResponse.redirect(profileUrl);
-      }
-
-      // Allow access for 'admin', 'pr', and 'super-admin' roles
-      return NextResponse.next();
     }
-
-    // Check member token if no admin token
-    if (memberToken) {
-      const memberPayload = await verifyToken(memberToken);
-      if (!memberPayload) {
-        const loginUrl = new URL('/admin/login', request.url);
-        loginUrl.searchParams.set('redirect', pathname);
-        loginUrl.searchParams.set('error', 'session_expired');
-        return NextResponse.redirect(loginUrl);
-      }
-
-      const role = memberPayload.role || 'member';
-
-      // Only admin and pr roles can access /admin routes
-      if (role === 'admin' || role === 'pr') {
-        return NextResponse.next();
-      }
-
-      // Regular members cannot access admin console
-      const profileUrl = new URL('/member/profile', request.url);
-      profileUrl.searchParams.set('error', 'no_access');
-      return NextResponse.redirect(profileUrl);
-    }
-
-    // Should never reach here, but redirect to login as fallback
-    const loginUrl = new URL('/admin/login', request.url);
-    loginUrl.searchParams.set('redirect', pathname);
-    return NextResponse.redirect(loginUrl);
+    const response = NextResponse.next();
+    response.headers.set('Cache-Control', 'no-store');
+    return response;
   }
 
-  // ============================================
-  // ADMIN API ROUTES PROTECTION
-  // ============================================
-  if (
-    pathname.startsWith('/api/admin/') ||
-    pathname.startsWith('/api/content') ||
-    pathname.startsWith('/api/members') ||
-    pathname.startsWith('/api/layout')
-  ) {
-    // Allow public endpoints without auth
-    if (
-      pathname === '/api/admin/auth/login' ||
-      pathname === '/api/admin/auth/register' ||
-      pathname === '/api/members' ||  // Allow POST /api/members (registration)
-      pathname === '/api/members/login' ||
-      pathname === '/api/members/register' ||
-      pathname === '/api/members/verify-email' ||
-      pathname === '/api/members/resend-verification' ||
-      pathname === '/api/members/forgot-password' ||
-      pathname === '/api/members/reset-password' ||
-      pathname === '/api/content/public' ||
-      pathname.startsWith('/api/engagement/') || // Allow engagement tracking for anonymous users
-      (pathname === '/api/layout' && request.method === 'GET') // Allow public to read layout
-    ) {
-      return NextResponse.next();
+  if (pathname === '/admin' || pathname.startsWith('/admin/')) {
+    if (pathname !== '/admin/login') {
+      const session = await verifyRequestSession(request);
+      if (!session) {
+        const loginUrl = new URL('/admin/login', request.url);
+        loginUrl.searchParams.set('redirect', pathname);
+        return NextResponse.redirect(loginUrl);
+      }
+      if (!CONSOLE_ROLES.includes(session.role)) {
+        return NextResponse.redirect(new URL('/member/profile?error=no_access', request.url));
+      }
     }
-
-    // Get JWT token from cookie
-    const token = request.cookies.get('admin_token')?.value;
-
-    // No token = BLOCK with 401
-    if (!token) {
-      return NextResponse.json(
-        { error: 'Unauthorized', message: 'Authentication required' },
-        { status: 401 }
-      );
-    }
-
-    // Invalid token = BLOCK with 401
-    const payload = await verifyToken(token);
-    if (!payload) {
-      return NextResponse.json(
-        { error: 'Unauthorized', message: 'Invalid or expired token' },
-        { status: 401 }
-      );
-    }
-
-    // Valid token = allow API access
-    return NextResponse.next();
   }
 
-  // ============================================
-  // MEMBER PAGE ROUTES PROTECTION
-  // ============================================
-  if (pathname.startsWith('/member')) {
-    // Allow public member pages without auth
-    if (
-      pathname === '/member/login' ||
-      pathname === '/member/register' ||
-      pathname === '/member/forgot-password' ||
-      pathname === '/member/reset-password'
-    ) {
-      return NextResponse.next();
-    }
-
-    // Get JWT token from cookie
+  const publicMemberPages = ['/member/login', '/member/register', '/member/forgot-password',
+    '/member/reset-password', '/member/suspended'];
+  if ((pathname === '/member' || pathname.startsWith('/member/')) &&
+      !publicMemberPages.includes(pathname) && !pathname.startsWith('/member/verify-email/')) {
     const memberToken = request.cookies.get('member_token')?.value;
-
-    // No token = BLOCK immediately
-    if (!memberToken) {
+    const session = memberToken ? await verifySessionToken(memberToken) : null;
+    if (!session?.memberId) {
       const loginUrl = new URL('/member/login', request.url);
       loginUrl.searchParams.set('redirect', pathname);
       return NextResponse.redirect(loginUrl);
     }
-
-    // Invalid token = BLOCK immediately
-    const payload = await verifyToken(memberToken);
-    if (!payload) {
-      const loginUrl = new URL('/member/login', request.url);
-      loginUrl.searchParams.set('redirect', pathname);
-      loginUrl.searchParams.set('error', 'session_expired');
-      return NextResponse.redirect(loginUrl);
+    try {
+      const suspension = await checkMemberSuspension(session.memberId);
+      if (suspension.isSuspended && suspension.details) {
+        const suspendedUrl = new URL('/member/suspended', request.url);
+        suspendedUrl.searchParams.set('type', suspension.details.type);
+        suspendedUrl.searchParams.set('reason', suspension.details.reasonCategory);
+        if (suspension.details.reasonDetails) suspendedUrl.searchParams.set('details', suspension.details.reasonDetails);
+        if (suspension.details.expiresAt) suspendedUrl.searchParams.set('expiresAt', suspension.details.expiresAt);
+        suspendedUrl.searchParams.set('suspendedAt', suspension.details.suspendedAt);
+        return NextResponse.redirect(suspendedUrl);
+      }
+    } catch {
+      return new NextResponse('Unable to verify account status. Please try again later.', { status: 503 });
     }
-
-    // Valid token = allow access
-    return NextResponse.next();
   }
 
-  // All other routes
-  return NextResponse.next();
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  const nonce = btoa(String.fromCharCode(...bytes));
+  const csp = contentSecurityPolicy(nonce);
+  const headers = new Headers(request.headers);
+  headers.set('x-nonce', nonce);
+  headers.set('Content-Security-Policy', csp);
+  const response = NextResponse.next({ request: { headers } });
+  response.headers.set('Content-Security-Policy', csp);
+  response.headers.set('Cache-Control', 'private, no-store');
+  return response;
 }
 
 export const config = {
-  matcher: [
-    /*
-     * Match all paths that need protection:
-     * - /admin/* (except /admin/login)
-     * - /api/admin/*
-     * - /api/content*
-     * - /api/members*
-     * - /member/* (for future upgrade)
-     *
-     * Exclude:
-     * - /_next/* (Next.js internals)
-     * - Static files (files with extensions like .png, .css, .js)
-     * - /api/public/* (if you add public APIs)
-     */
-    '/admin/:path*',
-    '/api/admin/:path*',
-    '/api/content/:path*',
-    '/api/members/:path*',
-    '/api/layout/:path*',
-    '/member/:path*',
-  ],
+  matcher: ['/api/:path*', '/admin/:path*', '/member/:path*', '/((?!_next/static|_next/image|favicon.ico|favicon.svg|.*\\.(?:png|jpg|jpeg|gif|webp|avif|svg|css|js|woff2?|mp4|webm|glb)$).*)'],
 };

@@ -1,4 +1,4 @@
-import { jwtVerify } from "jose";
+import { verifySessionToken } from "./session";
 import { NextRequest } from "next/server";
 
 export interface JWTPayload {
@@ -19,13 +19,13 @@ export async function verifyMemberToken(request: NextRequest): Promise<JWTPayloa
       return null;
     }
 
-    const secret = new TextEncoder().encode(process.env.JWT_SECRET);
-    const { payload } = await jwtVerify(token, secret);
+    const payload = await verifySessionToken(token);
+    if (!payload?.memberId) return null;
 
     return {
-      memberId: payload.memberId as string,
-      email: payload.email as string,
-      role: payload.role as string,
+      memberId: payload.memberId,
+      email: payload.email,
+      role: payload.role,
     };
   } catch (error) {
     // Token expired or invalid
@@ -49,7 +49,8 @@ export async function checkMemberSuspension(
     .limit(1)
     .maybeSingle();
 
-  if (error || !data) {
+  if (error) throw new Error("Unable to verify account status");
+  if (!data) {
     return { suspended: false };
   }
 

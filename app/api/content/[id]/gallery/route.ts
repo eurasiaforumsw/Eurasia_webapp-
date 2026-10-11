@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import { requireRole } from "@/lib/api-auth";
+import { CONTENT_ROLES } from "@/lib/auth/session";
 import { uploadToR2 } from "@/lib/r2";
+import { matchesFileSignature } from "@/lib/security/uploads";
+import { randomUUID } from "node:crypto";
+import sharp from "sharp";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -25,36 +29,11 @@ async function optimizeImage(
   buf: Buffer,
   mimeType: string
 ): Promise<{ buf: Buffer; contentType: string; ext: string }> {
-  try {
-    let sharpModule: any;
-    try {
-      sharpModule = require("sharp");
-    } catch {
-      const ext = mimeType.split("/")[1].replace("jpeg", "jpg") || "bin";
-      return { buf, contentType: mimeType, ext };
-    }
-    const sharp = sharpModule.default ?? sharpModule;
-
-    const input = sharp(buf, { animated: false });
-    const meta = await input.metadata();
-
-    const isLarge =
-      (meta.width ?? 0) > 1600 || (meta.height ?? 0) > 1600 || mimeType !== "image/webp";
-
-    if (isLarge) {
-      const out = await input
-        .resize(1600, 1600, { fit: "inside", withoutEnlargement: true })
-        .webp({ quality: 82 })
-        .toBuffer();
-      return { buf: out, contentType: "image/webp", ext: "webp" };
-    }
-
-    const ext = mimeType.split("/")[1].replace("jpeg", "jpg") || "bin";
-    return { buf, contentType: mimeType, ext };
-  } catch {
-    const ext = mimeType.split("/")[1].replace("jpeg", "jpg") || "bin";
-    return { buf, contentType: mimeType, ext };
-  }
+  const out = await sharp(buf, { animated: false, limitInputPixels: 20_000_000 })
+    .resize(1600, 1600, { fit: "inside", withoutEnlargement: true })
+    .webp({ quality: 82 })
+    .toBuffer();
+  return { buf: out, contentType: "image/webp", ext: "webp" };
 }
 
 type GalleryImage = {
@@ -101,7 +80,7 @@ export async function POST(
   try {
     // Require admin or pr role
     try {
-      await requireRole(req, ["admin", "pr"]);
+      await requireRole(req, CONTENT_ROLES);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unexpected error";
       const status = message === "Unauthorized" ? 401 : 403;
@@ -130,7 +109,7 @@ export async function POST(
     const caption = form.get("caption") as string | null;
     const displayOrder = form.get("displayOrder") as string | null;
 
-    if (!file) {
+    if (!file || typeof file === "string") {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
@@ -141,20 +120,26 @@ export async function POST(
       );
     }
 
-    const raw = Buffer.from(await file.arrayBuffer());
-    if (raw.byteLength > MAX_IMAGE_BYTES) {
+    if (file.size > MAX_IMAGE_BYTES) {
       return NextResponse.json(
         {
           error: `File is larger than ${formatBytes(MAX_IMAGE_BYTES)} (${formatBytes(
-            raw.byteLength
+            file.size
           )} received).`,
         },
         { status: 413 }
       );
     }
+    const raw = Buffer.from(await file.arrayBuffer());
+    if (!matchesFileSignature(raw, file.type)) {
+      return NextResponse.json({ error: "File content does not match its type" }, { status: 415 });
+    }
 
-    const { buf, contentType, ext } = await optimizeImage(raw, file.type);
-    const id = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+    let optimized: Awaited<ReturnType<typeof optimizeImage>>;
+    try { optimized = await optimizeImage(raw, file.type); }
+    catch { return NextResponse.json({ error: "Invalid or oversized image" }, { status: 415 }); }
+    const { buf, contentType, ext } = optimized;
+    const id = randomUUID();
     const key = `gallery/${contentId}/${id}.${ext}`;
 
     const imageUrl = await uploadToR2(key, buf, contentType);
@@ -207,7 +192,7 @@ export async function DELETE(
   try {
     // Require admin or pr role
     try {
-      await requireRole(req, ["admin", "pr"]);
+      await requireRole(req, CONTENT_ROLES);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unexpected error";
       const status = message === "Unauthorized" ? 401 : 403;

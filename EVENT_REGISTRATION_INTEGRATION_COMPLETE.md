@@ -149,7 +149,7 @@ Or manually run the SQL file in Supabase SQL Editor:
 
 ## Sample Event Configuration
 
-The migration includes sample data for `regional-summit-2024`:
+The migration includes sample data for `event-summit-2026` (EFSW Regional Summit 2026):
 - Registration enabled: ✅
 - Registration period: Now → 30 days
 - Max attendees: 100

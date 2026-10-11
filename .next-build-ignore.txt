@@ -1,0 +1,4 @@
+scripts/
+test-*.js
+*.test.ts
+*.spec.ts

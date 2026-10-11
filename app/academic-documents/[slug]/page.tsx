@@ -9,9 +9,7 @@ const seeds = initialContent.filter((item) => item.kind === "document");
 
 const findSeed = (slug: string): ArticleSeed | undefined => seeds.find((item) => item.id === slug);
 
-export function generateStaticParams() {
-  return seeds.map((item) => ({ slug: item.id }));
-}
+export const dynamic = "force-dynamic";
 
 export function generateMetadata({ params }: PageProps): Metadata {
   const seed = findSeed(params.slug);

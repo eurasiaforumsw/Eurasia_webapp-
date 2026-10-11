@@ -1,34 +1,15 @@
 import { NextRequest } from "next/server";
-import { jwtVerify } from "jose";
+import { verifyRequestSession } from "./auth/session";
+import type { Session, UserRole } from "./auth/session";
 
-const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key-change-in-production";
-
-export type UserRole = "admin" | "pr" | "member";
-
-export type TokenPayload = {
-  id: string;
-  email: string;
-  role: UserRole;
-  name?: string;
-};
+export type { UserRole } from "./auth/session";
+export type TokenPayload = Session;
 
 /**
  * Verify JWT token from request cookies
  */
 export async function verifyRequestToken(request: NextRequest): Promise<TokenPayload | null> {
-  const adminToken = request.cookies.get("admin_token")?.value;
-  const memberToken = request.cookies.get("member_token")?.value;
-
-  const token = adminToken || memberToken;
-  if (!token) return null;
-
-  try {
-    const secret = new TextEncoder().encode(JWT_SECRET);
-    const { payload } = await jwtVerify(token, secret);
-    return payload as unknown as TokenPayload;
-  } catch {
-    return null;
-  }
+  return verifyRequestSession(request);
 }
 
 /**
@@ -37,7 +18,8 @@ export async function verifyRequestToken(request: NextRequest): Promise<TokenPay
  * @param allowedRoles - Roles that are allowed to access this resource
  */
 export function hasRole(userRole: UserRole, allowedRoles: UserRole[]): boolean {
-  return allowedRoles.includes(userRole);
+  return allowedRoles.includes(userRole) ||
+    (userRole === "super-admin" && allowedRoles.includes("admin"));
 }
 
 /**

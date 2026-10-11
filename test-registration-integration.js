@@ -13,7 +13,7 @@
 const http = require('http');
 
 const BASE_URL = 'http://localhost:2024';
-const EVENT_SLUG = 'regional-summit-2024';
+const EVENT_SLUG = 'event-summit-2026';
 
 function request(path) {
   return new Promise((resolve, reject) => {

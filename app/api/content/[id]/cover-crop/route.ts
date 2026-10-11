@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import { requireRole } from "@/lib/api-auth";
+import { CONTENT_ROLES } from "@/lib/auth/session";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -48,7 +49,7 @@ export async function POST(
   try {
     // Require admin or pr role
     try {
-      await requireRole(req, ["admin", "pr"]);
+      await requireRole(req, CONTENT_ROLES);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unexpected error";
       const status = message === "Unauthorized" ? 401 : 403;
@@ -159,7 +160,7 @@ export async function DELETE(
   try {
     // Require admin or pr role
     try {
-      await requireRole(req, ["admin", "pr"]);
+      await requireRole(req, CONTENT_ROLES);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unexpected error";
       const status = message === "Unauthorized" ? 401 : 403;

@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { uploadToR2 } from "@/lib/r2";
+import { verifyRequestSession, CONTENT_ROLES } from "@/lib/auth/session";
+import { matchesFileSignature } from "@/lib/security/uploads";
+import { randomUUID } from "node:crypto";
+import sharp from "sharp";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,7 +19,6 @@ const ALLOWED_MIME = new Set([
   "image/png",
   "image/webp",
   "image/gif",
-  "image/svg+xml",
   "image/avif",
   "video/mp4",
   "video/webm",
@@ -27,48 +30,21 @@ function isVideo(mime: string) {
   return mime.startsWith("video/");
 }
 
-// Tries to import sharp at runtime. If not installed, we fall back to
-// uploading the raw file as-is (the admin already compresses via canvas,
-// so this is belt-and-braces).
 async function optimizeImage(
   buf: Buffer,
   mimeType: string
 ): Promise<{ buf: Buffer; contentType: string; ext: string }> {
   if (isVideo(mimeType)) {
-    const ext = mimeType.split("/")[1].replace("quicktime", "mov") || "bin";
+    const ext = mimeType.split("/")[1].replace("quicktime", "mov").replace("x-matroska", "mkv");
     return { buf, contentType: mimeType, ext };
   }
 
-  try {
-    let sharpModule: any;
-    try {
-      sharpModule = require("sharp");
-    } catch {
-      const ext = mimeType.split("/")[1].replace("jpeg", "jpg") || "bin";
-      return { buf, contentType: mimeType, ext };
-    }
-    const sharp = sharpModule.default ?? sharpModule;
-
-    const input = sharp(buf, { animated: false });
-    const meta = await input.metadata();
-
-    const isLarge =
-      (meta.width ?? 0) > 1600 || (meta.height ?? 0) > 1600 || mimeType !== "image/webp";
-
-    if (isLarge) {
-      const out = await input
-        .resize(1600, 1600, { fit: "inside", withoutEnlargement: true })
-        .webp({ quality: 82 })
-        .toBuffer();
-      return { buf: out, contentType: "image/webp", ext: "webp" };
-    }
-
-    const ext = mimeType.split("/")[1].replace("jpeg", "jpg") || "bin";
-    return { buf, contentType: mimeType, ext };
-  } catch {
-    const ext = mimeType.split("/")[1].replace("jpeg", "jpg") || "bin";
-    return { buf, contentType: mimeType, ext };
-  }
+  // Re-encoding strips metadata and prevents HTML/SVG content from being served raw.
+  const out = await sharp(buf, { animated: false, limitInputPixels: 20_000_000 })
+    .resize(1600, 1600, { fit: "inside", withoutEnlargement: true })
+    .webp({ quality: 82 })
+    .toBuffer();
+  return { buf: out, contentType: "image/webp", ext: "webp" };
 }
 
 function formatBytes(bytes: number): string {
@@ -78,10 +54,15 @@ function formatBytes(bytes: number): string {
 }
 
 export async function POST(req: NextRequest) {
+  const session = await verifyRequestSession(req);
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!CONTENT_ROLES.includes(session.role)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   try {
     const form = await req.formData();
     const file = form.get("file") as File | null;
-    if (!file) {
+    if (!file || typeof file === "string") {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
@@ -92,21 +73,27 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const raw = Buffer.from(await file.arrayBuffer());
     const ceiling = isVideo(file.type) ? MAX_VIDEO_BYTES : MAX_IMAGE_BYTES;
-    if (raw.byteLength > ceiling) {
+    if (file.size > ceiling) {
       return NextResponse.json(
         {
           error: `File is larger than ${formatBytes(ceiling)} (${formatBytes(
-            raw.byteLength
+            file.size
           )} received).`,
         },
         { status: 413 }
       );
     }
+    const raw = Buffer.from(await file.arrayBuffer());
+    if (!matchesFileSignature(raw, file.type)) {
+      return NextResponse.json({ error: "File content does not match its type" }, { status: 415 });
+    }
 
-    const { buf, contentType, ext } = await optimizeImage(raw, file.type);
-    const id = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+    let optimized: Awaited<ReturnType<typeof optimizeImage>>;
+    try { optimized = await optimizeImage(raw, file.type); }
+    catch { return NextResponse.json({ error: "Invalid or oversized image" }, { status: 415 }); }
+    const { buf, contentType, ext } = optimized;
+    const id = randomUUID();
     const key = `content/${id}.${ext}`;
 
     const url = await uploadToR2(key, buf, contentType);
@@ -125,7 +112,7 @@ export async function POST(req: NextRequest) {
   } catch (err: any) {
     console.error("/api/upload error:", err);
     return NextResponse.json(
-      { error: err?.message || "Upload failed" },
+      { error: "Upload failed" },
       { status: 500 }
     );
   }

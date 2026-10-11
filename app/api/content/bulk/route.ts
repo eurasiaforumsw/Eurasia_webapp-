@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
+import { requireRole } from "@/lib/api-auth";
+import { CONTENT_ROLES } from "@/lib/auth/session";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -47,6 +49,11 @@ function sanitizeCategory(category: unknown): string | null {
 }
 
 export async function POST(req: NextRequest) {
+  try { await requireRole(req, CONTENT_ROLES); }
+  catch (error) {
+    const message = error instanceof Error ? error.message : "Unauthorized";
+    return NextResponse.json({ error: message }, { status: message === "Unauthorized" ? 401 : 403 });
+  }
   try {
     const payload = (await req.json()) as Partial<BulkPayload>;
 

@@ -1,15 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-change-in-production';
-
-interface JWTPayload {
-  email: string;
-  role: string;
-  name: string;
-  iat: number;
-  exp: number;
-}
+import { verifyAdminToken } from '@/lib/auth/session';
 
 export async function GET(request: NextRequest) {
   try {
@@ -22,7 +12,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const decoded = jwt.verify(token, JWT_SECRET) as JWTPayload;
+    const decoded = await verifyAdminToken(token);
+    if (!decoded) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     return NextResponse.json({
       id: decoded.email,
@@ -32,20 +23,6 @@ export async function GET(request: NextRequest) {
       signedInAt: new Date().toISOString()
     });
   } catch (error) {
-    if (error instanceof jwt.JsonWebTokenError) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
-    if (error instanceof jwt.TokenExpiredError) {
-      return NextResponse.json(
-        { error: 'Token expired' },
-        { status: 401 }
-      );
-    }
-
     return NextResponse.json(
       { error: 'Unauthorized' },
       { status: 401 }

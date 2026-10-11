@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Event Registration Integration Demo</title>
+  <style>
+    :root {
+      --surface-0: #05070C;
+      --surface-1: #0A0D12;
+      --surface-2: #0F131C;
+      --surface-3: #161D2B;
+      --surface-4: #1E2636;
+      --text-primary: #F8FAFC;
+      --text-secondary: #94A3B8;
+      --text-muted: #64748B;
+      --accent-primary: #38BDF8;
+      --accent-hover: #0EA5E9;
+      --border-subtle: #1E293B;
+      --success-bg: rgba(34, 197, 94, 0.1);
+      --success-text: #4ADE80;
+      --warning-bg: rgba(251, 191, 36, 0.1);
+      --warning-text: #FCD34D;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--surface-0);
+      color: var(--text-primary);
+      line-height: 1.6;
+      padding: 2rem 1rem;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .demo-header {
+      text-align: center;
+      margin-bottom: 3rem;
+      padding-bottom: 2rem;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .demo-header h1 {
+      font-size: clamp(1.75rem, 4vw, 2.5rem);
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      letter-spacing: -0.02em;
+    }
+
+    .demo-header p {
+      color: var(--text-secondary);
+      font-size: 1.125rem;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      border-radius: 999px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      margin: 1rem 0;
+    }
+
+    .status-badge.success {
+      background: var(--success-bg);
+      color: var(--success-text);
+    }
+
+    .status-badge.warning {
+      background: var(--warning-bg);
+      color: var(--warning-text);
+    }
+
+    /* Event Content Mockup */
+    .event-content {
+      background: var(--surface-1);
+      border: 1px solid var(--border-subtle);
+      border-radius: 1rem;
+      padding: 2rem;
+      margin-bottom: 2rem;
+    }
+
+    .event-content h2 {
+      font-size: 1.75rem;
+      margin-bottom: 1rem;
+    }
+
+    .event-meta {
+      display: flex;
+      gap: 2rem;
+      margin-bottom: 1.5rem;
+      color: var(--text-secondary);
+      font-size: 0.875rem;
+    }
+
+    .event-meta span {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .event-body {
+      color: var(--text-secondary);
+      line-height: 1.8;
+      margin-bottom: 2rem;
+    }
+
+    /* Registration Section */
+    .registration-section {
+      background: var(--surface-2);
+      border: 1px solid var(--border-subtle);
+      border-radius: 1rem;
+      padding: 2rem;
+      margin-top: 3rem;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+
+    .section-icon {
+      width: 2rem;
+      height: 2rem;
+      background: var(--accent-primary);
+      border-radius: 0.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--surface-0);
+      font-weight: bold;
+    }
+
+    .section-header h3 {
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
+
+    .section-description {
+      color: var(--text-secondary);
+      margin-bottom: 1.5rem;
+      line-height: 1.6;
+    }
+
+    .registration-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .stat-box {
+      background: var(--surface-3);
+      border: 1px solid var(--border-subtle);
+      border-radius: 0.75rem;
+      padding: 1.5rem;
+    }
+
+    .stat-label {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      margin-bottom: 0.25rem;
+    }
+
+    .stat-value {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: var(--accent-primary);
+    }
+
+    /* Registration Buttons */
+    .registration-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .btn {
+      padding: 1rem 2rem;
+      border: none;
+      border-radius: 999px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    .btn-primary {
+      background: var(--accent-primary);
+      color: var(--surface-0);
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(56, 189, 248, 0.3);
+    }
+
+    .btn-success {
+      background: var(--success-bg);
+      color: var(--success-text);
+      cursor: default;
+      border: 1px solid var(--success-text);
+    }
+
+    .btn-disabled {
+      background: var(--surface-3);
+      color: var(--text-muted);
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--text-secondary);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .btn-secondary:hover {
+      background: var(--surface-3);
+      border-color: var(--text-muted);
+    }
+
+    /* States Demo */
+    .states-demo {
+      margin-top: 3rem;
+      padding-top: 3rem;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .states-demo h3 {
+      font-size: 1.5rem;
+      margin-bottom: 1.5rem;
+      text-align: center;
+    }
+
+    .state-examples {
+      display: grid;
+      gap: 2rem;
+    }
+
+    .state-example {
+      background: var(--surface-2);
+      border: 1px solid var(--border-subtle);
+      border-radius: 0.75rem;
+      padding: 1.5rem;
+    }
+
+    .state-example h4 {
+      color: var(--accent-primary);
+      font-size: 0.875rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 1rem;
+    }
+
+    /* Modal Demo */
+    .modal-demo {
+      margin-top: 3rem;
+      padding: 2rem;
+      background: var(--surface-1);
+      border: 1px solid var(--border-subtle);
+      border-radius: 1rem;
+    }
+
+    .modal-demo h3 {
+      margin-bottom: 1rem;
+    }
+
+    .form-field {
+      margin-bottom: 1.5rem;
+    }
+
+    .form-field label {
+      display: block;
+      font-size: 0.875rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      color: var(--text-primary);
+    }
+
+    .form-field input,
+    .form-field textarea {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      background: var(--surface-3);
+      border: 1px solid var(--border-subtle);
+      border-radius: 0.5rem;
+      color: var(--text-primary);
+      font-size: 1rem;
+      font-family: inherit;
+      transition: all 0.2s;
+    }
+
+    .form-field input:focus,
+    .form-field textarea:focus {
+      outline: none;
+      border-color: var(--accent-primary);
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.1);
+    }
+
+    .form-field textarea {
+      resize: vertical;
+      min-height: 100px;
+    }
+
+    .required {
+      color: #EF4444;
+    }
+
+    @media (max-width: 640px) {
+      .event-meta {
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      .registration-stats {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Demo Header -->
+    <div class="demo-header">
+      <h1>Event Registration Integration Demo</h1>
+      <p>Visual preview of the registration system integrated into event pages</p>
+      <div class="status-badge success">
+        <span>✓</span>
+        <span>Integration Complete</span>
+      </div>
+    </div>
+
+    <!-- Event Content Mockup -->
+    <div class="event-content">
+      <h2>EFSW Regional Summit 2026</h2>
+      <div class="event-meta">
+        <span>📅 March 15-17, 2026</span>
+        <span>📍 Bangkok, Thailand</span>
+        <span>🏷️ Summit</span>
+      </div>
+      <div class="event-body">
+        <p>
+          The Eurasia Forum for Social Workers invites practitioners, researchers, students and institutional
+          partners to the 2026 Regional Summit in Bangkok. Across three days we'll move from plenary keynotes
+          to hands-on masterclasses, and from country delegation briefings to open working groups on child
+          protection, digital practice and community care.
+        </p>
+      </div>
+    </div>
+
+    <!-- Registration Section - Main Implementation -->
+    <div class="registration-section">
+      <div class="section-header">
+        <div class="section-icon">👥</div>
+        <h3>Event Registration</h3>
+      </div>
+
+      <p class="section-description">
+        Secure your spot at EFSW Regional Summit 2026. Registration includes access to all sessions,
+        networking events, and conference materials.
+      </p>
+
+      <div class="registration-stats">
+        <div class="stat-box">
+          <div class="stat-label">Registered Attendees</div>
+          <div class="stat-value">47 / 100</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">Registration Closes</div>
+          <div class="stat-value">15 days</div>
+        </div>
+      </div>
+
+      <div class="registration-actions">
+        <button class="btn btn-primary">
+          Register Now
+        </button>
+      </div>
+    </div>
+
+    <!-- Different Button States -->
+    <div class="states-demo">
+      <h3>Registration Button States</h3>
+
+      <div class="state-examples">
+        <div class="state-example">
+          <h4>1. Can Register (Default)</h4>
+          <button class="btn btn-primary">Register Now</button>
+        </div>
+
+        <div class="state-example">
+          <h4>2. Already Registered</h4>
+          <button class="btn btn-success">
+            ✓ You are Registered
+          </button>
+        </div>
+
+        <div class="state-example">
+          <h4>3. Not Logged In</h4>
+          <button class="btn btn-secondary">
+            Login to Register
+          </button>
+        </div>
+
+        <div class="state-example">
+          <h4>4. Registration Closed</h4>
+          <button class="btn btn-disabled">
+            Registration Closed
+          </button>
+        </div>
+
+        <div class="state-example">
+          <h4>5. Event Full</h4>
+          <button class="btn btn-disabled">
+            Event Full
+          </button>
+        </div>
+
+        <div class="state-example">
+          <h4>6. Registration Not Started</h4>
+          <button class="btn btn-disabled">
+            Registration Opens Soon
+          </button>
+        </div>
+
+        <div class="state-example">
+          <h4>7. Loading State</h4>
+          <button class="btn btn-primary" style="opacity: 0.7">
+            <span style="animation: spin 1s linear infinite;">⟳</span>
+            Loading...
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Form Demo -->
+    <div class="modal-demo">
+      <h3>Registration Form (Modal)</h3>
+      <p class="section-description" style="margin-bottom: 2rem;">
+        Dynamic form with custom fields configured per event
+      </p>
+
+      <form>
+        <div class="form-field">
+          <label>Full Name <span class="required">*</span></label>
+          <input type="text" placeholder="Enter your full name" required>
+        </div>
+
+        <div class="form-field">
+          <label>Email Address <span class="required">*</span></label>
+          <input type="email" placeholder="your.email@example.com" required>
+        </div>
+
+        <div class="form-field">
+          <label>Organization</label>
+          <input type="text" placeholder="Your organization or institution">
+        </div>
+
+        <div class="form-field">
+          <label>Dietary Requirements</label>
+          <textarea placeholder="Any dietary restrictions or special requirements?"></textarea>
+        </div>
+
+        <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+          <button type="submit" class="btn btn-primary" style="flex: 1;">
+            Submit Registration
+          </button>
+          <button type="button" class="btn btn-secondary">
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Feature List -->
+    <div style="margin-top: 3rem; padding: 2rem; background: var(--surface-2); border-radius: 1rem; border: 1px solid var(--border-subtle);">
+      <h3 style="margin-bottom: 1rem;">✨ Key Features</h3>
+      <ul style="list-style: none; display: grid; gap: 0.75rem;">
+        <li style="display: flex; align-items: start; gap: 0.75rem;">
+          <span style="color: var(--accent-primary);">✓</span>
+          <span><strong>Multi-state button</strong> - Shows different states based on auth and registration status</span>
+        </li>
+        <li style="display: flex; align-items: start; gap: 0.75rem;">
+          <span style="color: var(--accent-primary);">✓</span>
+          <span><strong>Dynamic form fields</strong> - Custom fields configured per event in admin console</span>
+        </li>
+        <li style="display: flex; align-items: start; gap: 0.75rem;">
+          <span style="color: var(--accent-primary);">✓</span>
+          <span><strong>Real-time validation</strong> - Client-side validation with helpful error messages</span>
+        </li>
+        <li style="display: flex; align-items: start; gap: 0.75rem;">
+          <span style="color: var(--accent-primary);">✓</span>
+          <span><strong>Registration stats</strong> - Shows current attendees and seats available</span>
+        </li>
+        <li style="display: flex; align-items: start; gap: 0.75rem;">
+          <span style="color: var(--accent-primary);">✓</span>
+          <span><strong>Confirmation numbers</strong> - Unique confirmation code for each registration</span>
+        </li>
+        <li style="display: flex; align-items: start; gap: 0.75rem;">
+          <span style="color: var(--accent-primary);">✓</span>
+          <span><strong>Responsive design</strong> - Works perfectly on mobile, tablet, and desktop</span>
+        </li>
+        <li style="display: flex; align-items: start; gap: 0.75rem;">
+          <span style="color: var(--accent-primary);">✓</span>
+          <span><strong>EFSW theme integration</strong> - Matches existing design system perfectly</span>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <style>
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</body>
+</html>

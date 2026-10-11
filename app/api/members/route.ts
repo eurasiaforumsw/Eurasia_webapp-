@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import type { EducationLevel } from "@/lib/member-auth";
 import { requireRole, verifyRequestToken } from "@/lib/api-auth";
+import { MEMBER_REVIEW_ROLES } from "@/lib/auth/session";
+import { randomBytes, randomUUID } from "node:crypto";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -147,6 +149,10 @@ export async function GET(request: NextRequest) {
       if (!payload) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
       }
+      if (!MEMBER_REVIEW_ROLES.includes(payload.role) &&
+          ((id && id !== payload.memberId) || (email && normalizeEmail(email) !== payload.email))) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
 
       if (id) {
         const member = await getMemberById(id);
@@ -160,7 +166,7 @@ export async function GET(request: NextRequest) {
 
     // List all members - admin only
     try {
-      await requireRole(request, ["admin"]);
+      await requireRole(request, MEMBER_REVIEW_ROLES);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unexpected error";
       const status = message === "Unauthorized" ? 401 : 403;
@@ -206,30 +212,19 @@ export async function POST(request: NextRequest) {
     }
 
     // Hash password with bcrypt (12 rounds)
-    const password = sanitizeText(payload.password);
-    if (!password) return NextResponse.json({ error: "Password is required" }, { status: 400 });
+    const password = payload.password;
+    if (typeof password !== "string" || password.length < 8 || Buffer.byteLength(password, "utf8") > 72) {
+      return NextResponse.json({ error: "Password must be at least 8 characters and at most 72 bytes" }, { status: 400 });
+    }
 
     const bcrypt = await import("bcrypt");
     const passwordHash = await bcrypt.hash(password, 12);
 
     // Generate verification token (32 chars, URL-safe)
-    const generateVerificationToken = (): string => {
-      const bytes = new Uint8Array(32);
-      if (typeof globalThis.crypto?.getRandomValues === "function") {
-        globalThis.crypto.getRandomValues(bytes);
-      } else {
-        for (let i = 0; i < bytes.length; i++) bytes[i] = Math.floor(Math.random() * 256);
-      }
-      let binary = "";
-      for (const b of bytes) binary += String.fromCharCode(b);
-      const b64 = typeof btoa === "function" ? btoa(binary) : Buffer.from(binary, "binary").toString("base64");
-      return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
-    };
-
-    const verificationToken = generateVerificationToken();
+    const verificationToken = randomBytes(32).toString("base64url");
 
     const record = {
-      id: sanitizeText(payload.id) || `efsw-${Date.now().toString(36)}`,
+      id: `efsw-${randomUUID()}`,
       full_name: sanitizeText(payload.fullName),
       email,
       country: sanitizeText(payload.country),
@@ -244,8 +239,9 @@ export async function POST(request: NextRequest) {
       contact_position: sanitizeText(payload.contactPosition),
       bio: sanitizeText(payload.bio),
       password_hash: passwordHash,
-      status: sanitizeStatus(payload.status),
-      joined_at: sanitizeText(payload.joinedAt) || new Date().toISOString(),
+      status: "pending",
+      role: "member",
+      joined_at: new Date().toISOString(),
       avatar_url: payload.avatarUrl ? sanitizeText(payload.avatarUrl, 600) : null,
       first_name: payload.firstName ? sanitizeText(payload.firstName) : null,
       last_name: payload.lastName ? sanitizeText(payload.lastName) : null,
@@ -258,8 +254,8 @@ export async function POST(request: NextRequest) {
     };
 
     const { data, error } = await withTimeout(
-      () => supabaseAdmin!.from("members").upsert(record, { onConflict: "id" }).select().single(),
-      "upsertMember",
+      () => supabaseAdmin!.from("members").insert(record).select().single(),
+      "insertMember",
     );
 
     if (error) throw error;
@@ -344,6 +340,13 @@ export async function PATCH(request: NextRequest) {
     const payload = (await request.json()) as Record<string, unknown>;
     const id = String(payload.id ?? "");
     if (!id) return NextResponse.json({ error: "id is required" }, { status: 400 });
+    const session = await verifyRequestToken(request);
+    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const canReview = MEMBER_REVIEW_ROLES.includes(session.role);
+    if (!canReview && (session.memberId !== id ||
+        ["status", "email", "role", "password", "passwordHash", "joinedAt"].some((key) => key in payload))) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
 
     const updates: Record<string, unknown> = {};
     const fieldMap: Array<[string, string, (v: unknown) => unknown]> = [

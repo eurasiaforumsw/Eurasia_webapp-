@@ -1,0 +1,401 @@
+/* ============================================
+   ADMIN CONSOLE MOBILE RESPONSIVE STYLES
+   Created: 2026-10-11
+   Purpose: Mobile-first responsive fixes for admin dashboard
+   ============================================ */
+
+/* ============================================
+   MODAL AND DRAWER COMPONENTS
+   ============================================ */
+
+/* Modal layer - backdrop */
+.efsw-admin-modal-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 1300;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+/* Modal card container */
+.efsw-admin-modal-card {
+  position: relative;
+  width: 100%;
+  max-width: 56rem;
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+  background: var(--surface-2, #0F131C);
+  border: 1px solid rgba(56, 189, 248, 0.15);
+  border-radius: 1rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+/* Modal form grids */
+.efsw-admin-modal-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+}
+
+.efsw-admin-modal-form {
+  padding: 1.5rem;
+}
+
+.efsw-admin-modal-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 1.5rem;
+  border-top: 1px solid rgba(56, 189, 248, 0.1);
+}
+
+.efsw-admin-modal-actions--split {
+  justify-content: space-between;
+}
+
+/* Drawer (side panel) */
+.efsw-admin-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  max-width: 36rem;
+  max-height: 100vh;
+  overflow-y: auto;
+  background: var(--surface-1, #0A0D12);
+  border-left: 1px solid rgba(56, 189, 248, 0.15);
+  box-shadow: -8px 0 24px rgba(0, 0, 0, 0.4);
+  z-index: 1300;
+  padding: 1.5rem;
+}
+
+.efsw-admin-drawer header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.efsw-admin-drawer__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(56, 189, 248, 0.1);
+}
+
+/* Modal scrim */
+.efsw-admin-modal-scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  z-index: 1299;
+}
+
+/* ============================================
+   OVERVIEW GRID LAYOUTS
+   ============================================ */
+
+.efsw-admin-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+}
+
+.efsw-admin-overview-grid--lower {
+  margin-top: 1rem;
+}
+
+/* Admin panel component */
+.efsw-admin-panel {
+  background: rgba(15, 19, 28, 0.6);
+  border: 1px solid rgba(56, 189, 248, 0.08);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  min-width: 0;
+}
+
+.efsw-admin-panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+  gap: 1rem;
+}
+
+/* ============================================
+   TABLE MOBILE OPTIMIZATION
+   ============================================ */
+
+/* Prevent table cell content from breaking layout */
+.efsw-admin-table td {
+  min-width: 100px;
+}
+
+.efsw-admin-table td:first-child {
+  min-width: 40px; /* Checkbox column */
+}
+
+/* ============================================
+   MOBILE BREAKPOINTS
+   ============================================ */
+
+/* Tablet and below */
+@media (max-width: 1024px) {
+  .efsw-admin-overview-grid {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
+}
+
+/* Mobile devices */
+@media (max-width: 768px) {
+  /* Table text overflow handling */
+  .efsw-admin-table td {
+    max-width: 200px;
+  }
+
+  .efsw-admin-table td > div,
+  .efsw-admin-table td > span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .efsw-admin-table td strong,
+  .efsw-admin-table td small {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Member cell - prevent name/email overflow */
+  .efsw-admin-member-cell {
+    min-width: 0;
+  }
+
+  .efsw-admin-member-cell span {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .efsw-admin-member-cell strong,
+  .efsw-admin-member-cell small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Toolbar should wrap on mobile */
+  .efsw-admin-toolbar {
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .efsw-admin-filter-group {
+    flex: 1 1 100%;
+  }
+
+  .efsw-admin-chip-set {
+    flex-wrap: wrap;
+  }
+
+  .efsw-admin-toolbar__tail {
+    flex: 1 1 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  /* Modal full screen on mobile */
+  .efsw-admin-modal-layer {
+    padding: 0;
+    align-items: flex-start;
+  }
+
+  .efsw-admin-modal-card {
+    max-height: 100vh;
+    max-width: 100%;
+    border-radius: 0;
+    margin: 0;
+  }
+
+  .efsw-admin-modal-form {
+    padding: 1rem;
+  }
+
+  /* Drawer full width on mobile */
+  .efsw-admin-drawer {
+    max-width: 100%;
+    width: 100%;
+    border-left: none;
+    padding: 1rem;
+  }
+
+  /* Sticky footer for action buttons */
+  .efsw-admin-modal-actions,
+  .efsw-admin-drawer__actions {
+    position: sticky;
+    bottom: 0;
+    background: var(--surface-2, #0F131C);
+    border-top: 1px solid rgba(56, 189, 248, 0.15);
+    padding: 1rem;
+    margin: 1rem -1rem -1rem;
+    z-index: 10;
+  }
+
+  /* Modal header sticky on mobile */
+  .efsw-admin-modal-card__head {
+    position: sticky;
+    top: 0;
+    background: var(--surface-2, #0F131C);
+    z-index: 10;
+    border-bottom: 1px solid rgba(56, 189, 248, 0.1);
+    margin: -1rem -1rem 1rem;
+    padding: 1rem;
+  }
+
+  .efsw-admin-drawer header {
+    position: sticky;
+    top: 0;
+    background: var(--surface-1, #0A0D12);
+    z-index: 10;
+    border-bottom: 1px solid rgba(56, 189, 248, 0.1);
+    margin: -1rem -1rem 1rem;
+    padding: 1rem;
+  }
+
+  /* Panel adjustments */
+  .efsw-admin-panel {
+    padding: 1rem;
+  }
+
+  .efsw-admin-panel__head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  /* Reduce content padding */
+  .admin-content {
+    padding: 1rem;
+  }
+
+  /* Stack action buttons on mobile */
+  .efsw-admin-modal-actions--split {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .efsw-admin-modal-actions--split button {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Small mobile devices */
+@media (max-width: 480px) {
+  .efsw-admin-modal-layer {
+    padding: 0;
+  }
+
+  .efsw-admin-modal-card,
+  .efsw-admin-drawer {
+    padding: 0.75rem;
+  }
+
+  .efsw-admin-modal-form {
+    padding: 0.75rem;
+  }
+
+  .efsw-admin-panel {
+    padding: 0.875rem;
+  }
+
+  .admin-content {
+    padding: 0.75rem;
+  }
+
+  /* Toast notification - full width on small screens */
+  .toast-notification {
+    bottom: 1rem;
+    right: 1rem;
+    left: 1rem;
+    max-width: calc(100vw - 2rem);
+  }
+
+  /* Search inputs should be full width */
+  .efsw-admin-search {
+    flex: 1 1 100%;
+  }
+
+  /* Segmented controls should wrap */
+  .efsw-admin-segmented {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .efsw-admin-segmented button {
+    flex: 1 1 auto;
+    min-width: fit-content;
+  }
+}
+
+/* Very small screens (iPhone SE, etc.) */
+@media (max-width: 380px) {
+  .efsw-admin-modal-actions,
+  .efsw-admin-drawer__actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .efsw-admin-modal-actions button,
+  .efsw-admin-drawer__actions button {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* ============================================
+   LANDSCAPE MOBILE ORIENTATION
+   ============================================ */
+
+@media (max-height: 600px) and (orientation: landscape) {
+  /* Reduce header/footer padding in landscape */
+  .efsw-admin-modal-card__head,
+  .efsw-admin-drawer header {
+    padding: 0.75rem 1rem;
+  }
+
+  .efsw-admin-modal-actions,
+  .efsw-admin-drawer__actions {
+    padding: 0.75rem 1rem;
+  }
+
+  /* Tighter spacing in landscape */
+  .efsw-admin-modal-form {
+    padding: 0.75rem 1rem;
+  }
+}
+
+/* ============================================
+   PRINT STYLES (hide modals in print)
+   ============================================ */
+
+@media print {
+  .efsw-admin-modal-layer,
+  .efsw-admin-drawer,
+  .efsw-admin-modal-scrim {
+    display: none !important;
+  }
+}

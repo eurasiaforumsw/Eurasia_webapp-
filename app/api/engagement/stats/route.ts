@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
+import { verifyMemberToken } from '@/lib/auth/jwt';
 
 export const runtime = 'edge';
 
@@ -10,7 +11,13 @@ export const runtime = 'edge';
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const memberId = searchParams.get('memberId');
+    const session = await verifyMemberToken(request);
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const requestedId = searchParams.get('memberId');
+    if (requestedId && requestedId !== session.memberId) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+    const memberId = session.memberId;
 
     if (!memberId) {
       return NextResponse.json(

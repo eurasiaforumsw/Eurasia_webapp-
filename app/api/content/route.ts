@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import { requireRole } from "@/lib/api-auth";
+import { CONTENT_ROLES } from "@/lib/auth/session";
+import type { CoverImageCrop } from "@/lib/admin-data";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -20,6 +22,7 @@ type ContentRow = {
   summary: string;
   body: string;
   cover_image: string | null;
+  cover_image_crop: CoverImageCrop | null;
   image_caption: string | null;
   author: string | null;
   tags: string[] | null;
@@ -91,6 +94,14 @@ function sanitizeInteger(value: unknown): number | null {
   return Number.isFinite(parsed) ? Math.trunc(parsed) : null;
 }
 
+function sanitizeCrop(value: unknown): CoverImageCrop | null {
+  if (!value || typeof value !== "object") return null;
+  const crop = value as CoverImageCrop;
+  if (![crop.x, crop.y, crop.width, crop.height, crop.scale].every(Number.isFinite) ||
+      crop.width <= 0 || crop.height <= 0 || crop.scale <= 0) return null;
+  return { x: crop.x, y: crop.y, width: crop.width, height: crop.height, scale: crop.scale };
+}
+
 function rowFromPayload(payload: Record<string, unknown>, existingId?: string): ContentRow | null {
   const kind = sanitizeKind(payload.kind);
   const title = typeof payload.title === "string" ? payload.title.trim() : "";
@@ -120,6 +131,7 @@ function rowFromPayload(payload: Record<string, unknown>, existingId?: string): 
       typeof payload.coverImage === "string" && payload.coverImage
         ? payload.coverImage
         : null,
+    cover_image_crop: sanitizeCrop(payload.coverImageCrop),
     image_caption:
       typeof payload.imageCaption === "string" && payload.imageCaption
         ? payload.imageCaption
@@ -171,6 +183,7 @@ function payloadFromRow(row: ContentRow) {
     summary: row.summary,
     body: row.body ?? "",
     coverImage: row.cover_image ?? "",
+    coverImageCrop: row.cover_image_crop ?? undefined,
     imageCaption: row.image_caption ?? "",
     author: row.author ?? "",
     tags: row.tags ?? [],
@@ -199,6 +212,11 @@ function payloadFromRow(row: ContentRow) {
 
 // GET /api/content?kind=news&status=published
 export async function GET(req: NextRequest) {
+  try { await requireRole(req, CONTENT_ROLES); }
+  catch (error) {
+    const message = error instanceof Error ? error.message : "Unauthorized";
+    return NextResponse.json({ error: message }, { status: message === "Unauthorized" ? 401 : 403 });
+  }
   try {
     const { searchParams } = new URL(req.url);
     const kind = sanitizeKind(searchParams.get("kind"));
@@ -229,7 +247,7 @@ export async function POST(req: NextRequest) {
   try {
     // Check role permission - both admin and pr can create content
     try {
-      await requireRole(req, ["admin", "pr"]);
+      await requireRole(req, CONTENT_ROLES);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unexpected error";
       const status = message === "Unauthorized" ? 401 : 403;
@@ -271,7 +289,7 @@ export async function PATCH(req: NextRequest) {
   try {
     // Check role permission - both admin and pr can edit content
     try {
-      await requireRole(req, ["admin", "pr"]);
+      await requireRole(req, CONTENT_ROLES);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unexpected error";
       const status = message === "Unauthorized" ? 401 : 403;
@@ -311,7 +329,7 @@ export async function DELETE(req: NextRequest) {
   try {
     // Check role permission - both admin and pr can delete content
     try {
-      await requireRole(req, ["admin", "pr"]);
+      await requireRole(req, CONTENT_ROLES);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unexpected error";
       const status = message === "Unauthorized" ? 401 : 403;

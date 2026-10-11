@@ -1,28 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
-import jwt from "jsonwebtoken";
+import { verifyAdminRequest as verifyAdmin, ADMIN_ROLES } from "@/lib/auth/session";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-const JWT_SECRET = process.env.JWT_SECRET || "fallback-secret-change-in-production";
-
-interface JWTPayload {
-  email: string;
-  role: string;
-  name: string;
-}
-
-/** Verify admin authentication */
-async function verifyAdmin(request: NextRequest): Promise<JWTPayload | null> {
-  try {
-    const token = request.cookies.get("admin_token")?.value;
-    if (!token) return null;
-    return jwt.verify(token, JWT_SECRET) as JWTPayload;
-  } catch {
-    return null;
-  }
-}
 
 /** Run query with timeout */
 const withTimeout = <T extends PromiseLike<any>>(run: () => T, label = "query"): Promise<any> =>
@@ -37,7 +18,7 @@ const withTimeout = <T extends PromiseLike<any>>(run: () => T, label = "query"):
 export async function GET(request: NextRequest) {
   // Verify admin authentication
   const admin = await verifyAdmin(request);
-  if (!admin || admin.role !== "admin") {
+  if (!admin || !ADMIN_ROLES.includes(admin.role)) {
     return NextResponse.json({ error: "Admin authentication required" }, { status: 401 });
   }
 

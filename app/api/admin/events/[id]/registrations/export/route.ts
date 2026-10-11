@@ -1,20 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
-import jwt from "jsonwebtoken";
+import { verifyAdminRequest as verifyAdmin, ADMIN_ROLES } from "@/lib/auth/session";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-const JWT_SECRET = process.env.JWT_SECRET || "fallback-secret-change-in-production";
-
-interface JWTPayload {
-  email: string;
-  role: string;
-  name: string;
-}
 
 type RegistrationWithDetails = {
   id: string;
@@ -43,17 +35,6 @@ type EventDetails = {
   title: string;
   type: string;
 };
-
-/** Verify admin authentication */
-async function verifyAdmin(request: NextRequest): Promise<JWTPayload | null> {
-  try {
-    const token = request.cookies.get("admin_token")?.value;
-    if (!token) return null;
-    return jwt.verify(token, JWT_SECRET) as JWTPayload;
-  } catch {
-    return null;
-  }
-}
 
 /** Run query with timeout */
 const withTimeout = <T extends PromiseLike<any>>(run: () => T, label = "query"): Promise<any> =>
@@ -289,7 +270,7 @@ async function generatePDF(
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   // Verify admin authentication
   const admin = await verifyAdmin(request);
-  if (!admin || admin.role !== "admin") {
+  if (!admin || !ADMIN_ROLES.includes(admin.role)) {
     return NextResponse.json({ error: "Admin authentication required" }, { status: 401 });
   }
 

@@ -97,6 +97,7 @@ BLOB_READ_WRITE_TOKEN=your_token_here
 
 ## Documentation
 
+- [Security setup](./SECURITY.md) — required migration, environment configuration, and security tests
 - [Pro.md](./EFSW_Website_Pro.md) — Complete project specification
 - [DESIGN.md](./DESIGN.md) — Design system and component library
 - [Presentation](./EFSW_Website_Proposal.pptx) — Executive deck with budget and timeline

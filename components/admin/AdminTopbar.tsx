@@ -36,6 +36,10 @@ const VIEW_TITLES: Record<AdminView, { title: string; subtitle: string }> = {
     title: "In-app messaging",
     subtitle: "Send messages to members — auto-expires after 120 days",
   },
+  moderation: {
+    title: "Message moderation",
+    subtitle: "Monitor, search, and moderate all member communications",
+  },
   broadcast: {
     title: "Broadcast email campaigns",
     subtitle: "Send newsletters and event updates to targeted member groups",

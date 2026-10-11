@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { verifyAdminRequest } from '@/lib/auth/session';
+
+export const dynamic = 'force-dynamic';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -7,10 +10,7 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 export async function GET(request: NextRequest) {
   try {
     // Verify admin authentication
-    const authHeader = request.headers.get('authorization');
-    const token = request.cookies.get('admin_token')?.value;
-
-    if (!token && !authHeader) {
+    if (!await verifyAdminRequest(request)) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }

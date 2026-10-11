@@ -16,6 +16,22 @@ const nextConfig = {
     domains: ['localhost'],
     formats: ['image/avif', 'image/webp'],
   },
+  typescript: {
+    ignoreBuildErrors: false,
+  },
+  eslint: {
+    ignoreDuringBuilds: false,
+  },
+  // Exclude test scripts from build
+  webpack: (config, { isServer }) => {
+    if (isServer) {
+      config.externals.push({
+        'scripts/test-send-message-api': 'commonjs scripts/test-send-message-api',
+        'scripts/test-send-message': 'commonjs scripts/test-send-message',
+      });
+    }
+    return config;
+  },
 };
 
 const sentryOptions = {

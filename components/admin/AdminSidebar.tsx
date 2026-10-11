@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import { AdminSession } from "@/lib/admin-auth";
 
-export type AdminView = "overview" | "analytics" | "members" | "content" | "layout" | "messages" | "broadcast" | "activity" | "settings";
+export type AdminView = "overview" | "analytics" | "members" | "content" | "layout" | "messages" | "broadcast" | "moderation" | "activity" | "settings";
 
 interface AdminSidebarProps {
   currentView: AdminView;
@@ -114,12 +114,20 @@ export const AdminSidebar = memo(function AdminSidebar({
       shortcut: "6",
     },
     {
+      id: "moderation" as AdminView,
+      label: "Moderation",
+      subtitle: "Message monitoring",
+      icon: MessageSquare,
+      badge: null,
+      shortcut: "7",
+    },
+    {
       id: "broadcast" as AdminView,
       label: "Broadcast",
       subtitle: "Email campaigns",
       icon: Mail,
       badge: null,
-      shortcut: "7",
+      shortcut: "8",
     },
     {
       id: "activity" as AdminView,
@@ -127,7 +135,7 @@ export const AdminSidebar = memo(function AdminSidebar({
       subtitle: "Audit & Logs",
       icon: Activity,
       badge: null,
-      shortcut: "8",
+      shortcut: "9",
     },
     {
       id: "settings" as AdminView,
@@ -135,7 +143,7 @@ export const AdminSidebar = memo(function AdminSidebar({
       subtitle: "Settings & Profile",
       icon: Settings,
       badge: null,
-      shortcut: "9",
+      shortcut: "0",
     },
   ];
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
+import { verifyMemberToken } from "@/lib/auth/jwt";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -63,7 +64,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 
-  const { contentId, platform, memberId } = body;
+  const { contentId, platform } = body;
+  const session = await verifyMemberToken(request);
+  const memberId = session?.memberId;
 
   // Validate required fields
   if (!contentId || typeof contentId !== "string") {

@@ -137,13 +137,14 @@ export const loginAdmin = async (email: string, password: string): Promise<Admin
     throw new Error("Admin account not found.");
   }
 
-  // Get password from env (fallback to demo password for development)
-    const adminPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || "EFSW-demo";
-
-  if (password !== adminPassword) {
+  const response = await fetch("/api/admin/auth/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: normalizeEmail(email), password }),
+  });
+  if (!response.ok) {
     recordLoginAttempt(false);
-    const remaining = rateLimit.remainingAttempts - 1;
-    throw new Error(`Incorrect admin password (${remaining} attempt${remaining === 1 ? "" : "s"} remaining).`);
+    throw new Error("Invalid credentials or too many sign-in attempts.");
   }
 
   if (!canUseStorage()) {

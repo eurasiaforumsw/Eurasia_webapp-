@@ -1,0 +1,77 @@
+/* Academic Documents - Fix Washed Out Appearance */
+/* This file adds !important overrides to ensure proper contrast */
+
+.academic-library {
+  /* Force dark text colors */
+  --text-primary: #111827 !important;
+  --text-secondary: #374151 !important;
+  --text-tertiary: #4b5563 !important;
+}
+
+.academic-library * {
+  /* Prevent global styles from washing out text */
+  color: inherit;
+}
+
+.academic-hero__title {
+  color: #111827 !important;
+  font-weight: 800 !important;
+}
+
+.academic-hero__description {
+  color: #374151 !important;
+  font-weight: 500 !important;
+}
+
+.academic-hero__stat strong {
+  color: #2563eb !important;
+  font-weight: 800 !important;
+}
+
+.academic-hero__stat span {
+  color: #4b5563 !important;
+  font-weight: 600 !important;
+}
+
+.author-marquee__name {
+  color: #111827 !important;
+  font-weight: 700 !important;
+}
+
+.author-marquee__meta {
+  color: #374151 !important;
+  font-weight: 500 !important;
+}
+
+.document-card__title {
+  color: #111827 !important;
+  font-weight: 700 !important;
+}
+
+.document-card__author,
+.document-card__date,
+.document-card__meta {
+  color: #4b5563 !important;
+  font-weight: 500 !important;
+}
+
+.filter-pill {
+  font-weight: 600 !important;
+}
+
+.filter-pill.is-active {
+  background: #2563eb !important;
+  color: white !important;
+  font-weight: 700 !important;
+}
+
+/* Ensure headings are always visible */
+h1, h2, h3, h4, h5, h6 {
+  color: #111827 !important;
+  font-weight: 700 !important;
+}
+
+/* Ensure body text is always visible */
+p {
+  color: #374151 !important;
+}

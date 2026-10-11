@@ -40,13 +40,13 @@ WHERE table_schema = 'public'
 AND table_name LIKE 'event_registration%';
 
 -- Check sample data
-SELECT * FROM event_registration_settings WHERE event_id = 'regional-summit-2024';
-SELECT * FROM event_registration_fields WHERE event_id = 'regional-summit-2024';
+SELECT * FROM event_registration_settings WHERE event_id = 'event-summit-2026';
+SELECT * FROM event_registration_fields WHERE event_id = 'event-summit-2026';
 ```
 
 You should see:
 - 4 tables created
-- 1 registration setting for regional-summit-2024
+- 1 registration setting for event-summit-2026
 - 4 registration fields (full_name, email, organization, dietary_requirements)
 
 ## After Migration
@@ -56,7 +56,7 @@ You should see:
    npm run dev
    ```
 
-2. Visit: http://localhost:2024/events/regional-summit-2024
+2. Visit: http://localhost:2024/events/event-summit-2026
 
 3. You should see the registration section below the event content
 

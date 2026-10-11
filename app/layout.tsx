@@ -12,7 +12,10 @@ import { SkipLink } from "@/components/SkipLink";
 import enMessages from "@/locales/en.json";
 import thMessages from "@/locales/th.json";
 import koMessages from "@/locales/ko.json";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
+
+// Every rendered document must use the nonce generated for this request.
+export const dynamic = "force-dynamic";
 
 const inter = Inter({
   subsets: ["latin", "latin-ext"],
@@ -53,6 +56,11 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 5,
+  },
 };
 
 type Locale = 'en' | 'th' | 'ko';
@@ -78,6 +86,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   const initialLocale = getInitialLocale();
+  const nonce = headers().get("x-nonce") ?? undefined;
 
   return (
     <html lang={initialLocale} className={inter.variable + " " + bric.variable} suppressHydrationWarning>
@@ -86,6 +95,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <script
+          nonce={nonce}
           dangerouslySetInnerHTML={{
             __html: `
               (function() {

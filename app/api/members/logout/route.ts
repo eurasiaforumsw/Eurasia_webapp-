@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
+import { verifyMemberToken } from "@/lib/auth/jwt";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -7,18 +8,8 @@ export const dynamic = "force-dynamic";
 export async function POST(request: NextRequest) {
   try {
     // Get member_id from cookie if available for session logging
-    const memberToken = request.cookies.get("member_token")?.value;
-    let memberId: string | null = null;
-
-    if (memberToken && supabaseAdmin) {
-      try {
-        // Decode token to get member_id (basic parsing, adjust if using JWT)
-        const payload = JSON.parse(Buffer.from(memberToken.split(".")[1], "base64").toString());
-        memberId = payload.id;
-      } catch {
-        // Token parsing failed, continue with logout anyway
-      }
-    }
+    const session = await verifyMemberToken(request);
+    const memberId = session?.memberId;
 
     // Record logout in member_sessions table if configured
     if (memberId && supabaseAdmin) {

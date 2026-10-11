@@ -901,48 +901,11 @@ const USE_REMOTE =
 async function fetchRemoteContent(): Promise<AdminContentItem[] | null> {
   if (!USE_REMOTE) return null;
 
-  const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL!.replace(/\/$/, "")}/rest/v1/content?select=*`;
-  const headers = {
-    apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!}`,
-  };
-
   try {
-    const res = await fetch(url, { headers, cache: "no-store" });
+    const res = await fetch("/api/content", { cache: "no-store" });
     if (!res.ok) return null;
-
-    const rows = (await res.json()) as Array<Record<string, unknown>>;
-    return rows.map((row) => ({
-      id: row.id as string,
-      kind: row.kind as AdminContentKind,
-      category: (row.category as string) ?? "General",
-      title: (row.title as string) ?? "",
-      summary: (row.summary as string) ?? "",
-      body: (row.body as string) ?? "",
-      coverImage: (row.cover_image as string) ?? undefined,
-      coverImageCrop: row.cover_image_crop
-        ? (row.cover_image_crop as CoverImageCrop)
-        : undefined,
-      imageCaption: (row.image_caption as string) ?? undefined,
-      author: (row.author as string) ?? undefined,
-      tags: Array.isArray(row.tags) ? (row.tags as string[]) : [],
-      status: (row.status as AdminContentStatus) ?? "draft",
-      locale: (row.locale as AdminContentItem["locale"]) ?? "en",
-      updatedAt: (row.updated_at as string) ?? new Date().toISOString(),
-      startsAt: (row.starts_at as string) ?? undefined,
-      endsAt: (row.ends_at as string) ?? undefined,
-      venue: (row.venue as string) ?? undefined,
-      format: (row.format as string) ?? undefined,
-      registrationUrl: (row.registration_url as string) ?? undefined,
-      publishAt: (row.publish_at as string) ?? undefined,
-      expiresAt: (row.expires_at as string) ?? undefined,
-      targetMembershipTypes: Array.isArray(row.target_membership_types)
-        ? (row.target_membership_types as AdminContentItem["targetMembershipTypes"])
-        : undefined,
-      targetGroups: Array.isArray(row.target_groups)
-        ? (row.target_groups as AdminContentItem["targetGroups"])
-        : undefined,
-    }));
+    const body = await res.json() as { items: AdminContentItem[] };
+    return body.items;
   } catch {
     return null;
   }
@@ -1035,13 +998,8 @@ export async function deleteAdminContentRemote(
 
   // 2) Remote delete
   try {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!.replace(/\/$/, "");
-    const res = await fetch(`${supabaseUrl}/rest/v1/content?id=eq.${encodeURIComponent(id)}`, {
+    const res = await fetch(`/api/content?id=${encodeURIComponent(id)}`, {
       method: "DELETE",
-      headers: {
-        apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!}`,
-      },
     });
     if (!res.ok) throw new Error(await res.text());
   } catch (err: any) {
@@ -1052,49 +1010,12 @@ export async function deleteAdminContentRemote(
 
 /** Push one row to Supabase via REST. */
 async function pushContentRow(item: AdminContentItem): Promise<void> {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!.replace(/\/$/, "");
-  const body = {
-    id: item.id,
-    kind: item.kind,
-    category: item.category,
-    title: item.title,
-    summary: item.summary,
-    body: item.body,
-    cover_image: item.coverImage || null,
-    cover_image_crop: item.coverImageCrop || null,
-    image_caption: item.imageCaption || null,
-    author: item.author || null,
-    tags: item.tags ?? [],
-    status: item.status,
-    locale: item.locale,
-    updated_at: new Date().toISOString(),
-    starts_at: item.startsAt || null,
-    ends_at: item.endsAt || null,
-    venue: item.venue || null,
-    format: item.format || null,
-    registration_url: item.registrationUrl || null,
-    publish_at: item.publishAt || null,
-    expires_at: item.expiresAt || null,
-    target_membership_types: item.targetMembershipTypes ?? [],
-    target_groups: item.targetGroups ?? [],
-  };
-
-  const res = await fetch(`${supabaseUrl}/rest/v1/content`, {
+  const res = await fetch("/api/content", {
     method: "POST",
-    headers: {
-      apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!}`,
-      "Content-Type": "application/json",
-      // upsert on primary key
-      Prefer: "resolution=merge-duplicates",
-    },
-    body: JSON.stringify(body),
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(item),
   });
-
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Supabase save failed: ${res.status} ${text.slice(0, 300)}`);
-  }
+  if (!res.ok) throw new Error(`Content save failed: ${res.status}`);
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -1498,3 +1419,406 @@ export async function syncAdminLayout(): Promise<AdminLayoutConfig> {
   // Fallback to local
   return getAdminLayout();
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ADMIN MESSAGES (Member-to-Member Messaging Moderation)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+export interface AdminMessage {
+  id: string;
+  sender_id: string;
+  sender_name: string;
+  sender_email: string;
+  conversation_id: string;
+  recipient_id?: string;
+  recipient_name?: string;
+  recipient_email?: string;
+  content: string;
+  created_at: string;
+  read_at: string | null;
+  deleted_at: string | null;
+  contains_link: boolean;
+  is_flagged: boolean;
+}
+
+export interface AdminMessagesResponse {
+  messages: AdminMessage[];
+  total: number;
+  page: number;
+  pageSize: number;
+  hasMore: boolean;
+  stats: {
+    total_today: number;
+    with_links: number;
+    flagged: number;
+  };
+}
+
+/**
+ * Fetch all messages from Supabase (admin view)
+ * Supports pagination, filtering, and search
+ */
+export async function getAdminMessagesRemote(
+  page = 1,
+  pageSize = 50,
+  filter?: 'all' | 'flagged' | 'with_links',
+  search?: string
+): Promise<AdminMessagesResponse> {
+  try {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      pageSize: pageSize.toString(),
+    });
+
+    if (filter && filter !== 'all') {
+      params.append('filter', filter);
+    }
+
+    if (search && search.trim()) {
+      params.append('search', search.trim());
+    }
+
+    const response = await fetch(`/api/admin/messages/all?${params.toString()}`);
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch messages: ${response.statusText}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('[getAdminMessagesRemote] Error:', error);
+    throw error;
+  }
+}
+
+/**
+ * Delete a message (soft delete)
+ */
+export async function deleteAdminMessageRemote(messageId: string): Promise<boolean> {
+  try {
+    const response = await fetch('/api/admin/messages/all', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messageId }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to delete message: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data.success === true;
+  } catch (error) {
+    console.error('[deleteAdminMessageRemote] Error:', error);
+    throw error;
+  }
+}
+
+/**
+ * Suspend a member from messaging
+ */
+export async function suspendMemberMessaging(
+  memberId: string,
+  suspensionType: 'temporary_24h' | 'temporary_custom' | 'permanent',
+  reasonCategory: string,
+  reasonDetails?: string,
+  customDays?: number
+): Promise<{ success: boolean; suspension_id?: string }> {
+  try {
+    const response = await fetch('/api/messages/suspend', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        memberId,
+        suspensionType,
+        reasonCategory,
+        reasonDetails,
+        customDays,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to suspend member: ${response.statusText}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('[suspendMemberMessaging] Error:', error);
+    throw error;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ADMIN SETTINGS (Site-wide Configuration)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/**
+ * Fetch settings from Supabase
+ */
+export async function getAdminSettingsRemote(): Promise<AdminSettings> {
+  try {
+    const response = await fetch('/api/settings');
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch settings: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data.settings || {};
+  } catch (error) {
+    console.error('[getAdminSettingsRemote] Error:', error);
+    // Fallback to localStorage on error
+    return getAdminSettings();
+  }
+}
+
+/**
+ * Save settings to Supabase
+ */
+export async function saveAdminSettingsRemote(settings: AdminSettings): Promise<boolean> {
+  try {
+    // Save to localStorage first (optimistic update)
+    saveAdminSettings(settings);
+
+    // Then sync to Supabase
+    const response = await fetch('/api/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ settings }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to save settings: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data.success === true;
+  } catch (error) {
+    console.error('[saveAdminSettingsRemote] Error:', error);
+    throw error;
+  }
+}
+
+/**
+ * Sync settings from Supabase to localStorage
+ */
+export async function syncAdminSettings(): Promise<AdminSettings> {
+  try {
+    const remoteSettings = await getAdminSettingsRemote();
+
+    // Update localStorage with remote data
+    saveAdminSettings(remoteSettings);
+
+    return remoteSettings;
+  } catch (error) {
+    console.error('[syncAdminSettings] Error:', error);
+    // Return local settings on error
+    return getAdminSettings();
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ADMIN BROADCAST (Email Campaigns)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+export interface AdminCampaign {
+  id: string;
+  title: string;
+  subject: string;
+  preheader?: string;
+  body_html: string;
+  body_text?: string;
+  content_id?: string;
+  content_kind?: string;
+  cover_image?: string;
+  target_groups: string[];
+  target_statuses: string[];
+  status: 'draft' | 'scheduled' | 'sending' | 'sent' | 'failed';
+  scheduled_at?: string;
+  recipient_count: number;
+  sent_count: number;
+  delivered_count: number;
+  opened_count: number;
+  clicked_count: number;
+  bounced_count: number;
+  failed_count: number;
+  created_by: string;
+  sent_at?: string;
+  completed_at?: string;
+  error_message?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AdminCampaignsResponse {
+  campaigns: AdminCampaign[];
+  total: number;
+  page: number;
+  pageSize: number;
+  hasMore: boolean;
+}
+
+/**
+ * Fetch campaigns from Supabase
+ */
+export async function getAdminCampaignsRemote(
+  page = 1,
+  pageSize = 20,
+  status?: string
+): Promise<AdminCampaignsResponse> {
+  try {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      pageSize: pageSize.toString(),
+    });
+
+    if (status && status !== 'all') {
+      params.append('status', status);
+    }
+
+    const response = await fetch(`/api/broadcast?${params.toString()}`);
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch campaigns: ${response.statusText}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('[getAdminCampaignsRemote] Error:', error);
+    throw error;
+  }
+}
+
+/**
+ * Create a new campaign
+ */
+export async function createAdminCampaignRemote(
+  campaign: Partial<AdminCampaign>
+): Promise<AdminCampaign> {
+  try {
+    const response = await fetch('/api/broadcast', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(campaign),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to create campaign: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data.campaign;
+  } catch (error) {
+    console.error('[createAdminCampaignRemote] Error:', error);
+    throw error;
+  }
+}
+
+/**
+ * Update an existing campaign
+ */
+export async function updateAdminCampaignRemote(
+  campaignId: string,
+  updates: Partial<AdminCampaign>
+): Promise<AdminCampaign> {
+  try {
+    const response = await fetch('/api/broadcast', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ campaignId, ...updates }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to update campaign: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data.campaign;
+  } catch (error) {
+    console.error('[updateAdminCampaignRemote] Error:', error);
+    throw error;
+  }
+}
+
+/**
+ * Delete a campaign
+ */
+export async function deleteAdminCampaignRemote(campaignId: string): Promise<boolean> {
+  try {
+    const response = await fetch('/api/broadcast', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ campaignId }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to delete campaign: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data.success === true;
+  } catch (error) {
+    console.error('[deleteAdminCampaignRemote] Error:', error);
+    throw error;
+  }
+}
+
+/**
+ * Send a campaign via Resend
+ */
+export async function sendAdminCampaignRemote(
+  campaignId: string
+): Promise<{ totalRecipients: number; totalSent: number; totalFailed: number }> {
+  try {
+    const response = await fetch('/api/broadcast/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ campaignId }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || `Failed to send campaign: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return {
+      totalRecipients: data.totalRecipients,
+      totalSent: data.totalSent,
+      totalFailed: data.totalFailed,
+    };
+  } catch (error) {
+    console.error('[sendAdminCampaignRemote] Error:', error);
+    throw error;
+  }
+}
+
+/**
+ * Preview email HTML
+ */
+export async function previewEmailHtml(
+  body_html: string,
+  preheader?: string,
+  cover_image?: string
+): Promise<string> {
+  try {
+    const response = await fetch('/api/broadcast/preview', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ body_html, preheader, cover_image }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to preview email: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data.html;
+  } catch (error) {
+    console.error('[previewEmailHtml] Error:', error);
+    throw error;
+  }
+}
+
+
+

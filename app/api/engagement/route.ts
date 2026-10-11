@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
+import { verifyMemberToken } from "@/lib/auth/jwt";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -31,7 +32,9 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = request.nextUrl;
   const contentId = searchParams.get("contentId");
-  const memberId = searchParams.get("memberId");
+  // Aggregate counts are public; personal engagement comes only from a verified identity.
+  const session = await verifyMemberToken(request);
+  const memberId = session?.memberId;
 
   if (!contentId) {
     return NextResponse.json({ error: "contentId is required" }, { status: 400 });

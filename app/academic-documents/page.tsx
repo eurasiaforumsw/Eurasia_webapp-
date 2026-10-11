@@ -16,6 +16,7 @@ import { AuthorMarquee } from "@/components/academic/AuthorMarquee";
 import { StickyDocumentFilters } from "@/components/academic/StickyDocumentFilters";
 import { DocumentCard } from "@/components/academic/DocumentCard";
 import "./styles-light.css";
+import "./fix-contrast.css";
 
 // Document type definition
 type Document = {

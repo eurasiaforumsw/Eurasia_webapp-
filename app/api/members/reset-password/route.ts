@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
     if (typeof body.newPassword !== "string" || body.newPassword.length === 0) {
       return NextResponse.json({ error: "Please enter a new password." }, { status: 400 });
     }
-    const result = await completePasswordReset(id, token, body.newPassword);
+    const result = await completePasswordReset(id, token, body.newPassword, code);
     if (!result.ok) {
       const status = result.error.toLowerCase().includes("password") ? 400 : 401;
       return NextResponse.json({ error: result.error }, { status });

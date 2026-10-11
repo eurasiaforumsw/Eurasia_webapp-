@@ -759,8 +759,9 @@ export const AdminMembersView = memo(function AdminMembersView({
       </div>
 
       {/* ── Members table ────────────────────────────────────────── */}
-      <div className="efsw-admin-table-wrap">
-        <table className="efsw-admin-table">
+      <div className="table-scroll-wrapper">
+        <div className="efsw-admin-table-wrap">
+          <table className="efsw-admin-table">
           <thead>
             <tr>
               <th style={{ width: "40px" }}>
@@ -924,6 +925,7 @@ export const AdminMembersView = memo(function AdminMembersView({
             </div>
           </div>
         )}
+      </div>
       </div>
     </div>
   );

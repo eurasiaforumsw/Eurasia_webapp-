@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import { stringifySetCookie } from 'cookie';
+import { getJwtSecret } from '@/lib/auth/session';
+import { consumeRateLimit } from '@/lib/security/rate-limit';
 
 interface LoginRequest {
   email: string;
@@ -18,7 +20,13 @@ interface JWTPayload {
 
 export async function POST(request: NextRequest) {
   try {
-    const body: LoginRequest = await request.json();
+    let body: LoginRequest;
+    try { body = await request.json(); }
+    catch { return NextResponse.json({ error: 'Invalid request body' }, { status: 400 }); }
+    if (!body || typeof body.email !== 'string' || typeof body.password !== 'string' ||
+        body.email.length > 254 || !body.password || Buffer.byteLength(body.password, 'utf8') > 72) {
+      return NextResponse.json({ error: 'Invalid credentials' }, { status: 400 });
+    }
     const { email, password } = body;
 
     // Validate required fields
@@ -36,12 +44,22 @@ export async function POST(request: NextRequest) {
         { status: 401 }
       );
     }
+    try {
+      const rate = await consumeRateLimit(`admin-login:${email}`, 5, 15 * 60 * 1000);
+      if (!rate.allowed) {
+        return NextResponse.json({ error: 'Too many sign-in attempts. Please try again later.' },
+          { status: 429, headers: { 'Retry-After': String(rate.retryAfter) } });
+      }
+    } catch {
+      return NextResponse.json({ error: 'Security service temporarily unavailable' }, { status: 503 });
+    }
 
     // Get environment variables
-    const JWT_SECRET = process.env.JWT_SECRET;
+    const JWT_SECRET = getJwtSecret();
     const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH;
 
-    if (!JWT_SECRET || !ADMIN_PASSWORD_HASH) {
+    if (!ADMIN_PASSWORD_HASH || (process.env.NODE_ENV === 'production' &&
+        ADMIN_PASSWORD_HASH === '$2b$12$wHZkOiIcpUAq7DbR8LQkWefbHqNx6YTUfwEpBCKdWYOGALNn50Gnm')) {
       console.error('Missing required environment variables');
       return NextResponse.json(
         { error: 'Server configuration error' },
@@ -67,8 +85,8 @@ export async function POST(request: NextRequest) {
     };
 
     // Sign JWT token with 24 hour expiration
-    const token = jwt.sign(payload, JWT_SECRET, {
-      expiresIn: '24h'
+    const token = jwt.sign(payload, Buffer.from(JWT_SECRET), {
+      expiresIn: '24h', algorithm: 'HS256'
     });
 
     // Serialize cookie with security settings

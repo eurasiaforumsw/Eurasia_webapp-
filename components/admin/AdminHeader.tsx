@@ -37,6 +37,7 @@ const VIEW_LABELS: Record<AdminView, string> = {
   content: "Content & Library",
   layout: "Layout",
   messages: "Messages",
+  moderation: "Moderation",
   broadcast: "Broadcast",
   activity: "Activity Log",
   settings: "Settings",

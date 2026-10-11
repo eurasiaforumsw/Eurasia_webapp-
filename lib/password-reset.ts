@@ -15,6 +15,9 @@
  *   • Code expires 15 minutes after creation
  */
 
+import { randomBytes, randomInt, randomUUID } from "node:crypto";
+import bcrypt from "bcrypt";
+
 import { supabaseAdmin } from "@/lib/supabase";
 
 const CODE_LENGTH = 6;
@@ -64,34 +67,9 @@ const hashValue = async (value: string): Promise<string> => {
 
 /* ─────────────────────────────  random  ────────────────────────────── */
 
-const generateCode = (): string => {
-  // 6 digits with leading zeros allowed. Uses crypto when available.
-  const max = 1_000_000;
-  if (typeof globalThis.crypto?.getRandomValues === "function") {
-    const buf = new Uint32Array(1);
-    globalThis.crypto.getRandomValues(buf);
-    return String(buf[0] % max).padStart(CODE_LENGTH, "0");
-  }
-  return String(Math.floor(Math.random() * max)).padStart(CODE_LENGTH, "0");
-};
-
-const generateToken = (): string => {
-  const bytes = new Uint8Array(TOKEN_LENGTH);
-  if (typeof globalThis.crypto?.getRandomValues === "function") {
-    globalThis.crypto.getRandomValues(bytes);
-  } else {
-    for (let i = 0; i < bytes.length; i++) bytes[i] = Math.floor(Math.random() * 256);
-  }
-  // URL-safe base64 (no padding)
-  let binary = "";
-  for (const b of bytes) binary += String.fromCharCode(b);
-  // btoa exists in browser + Node 16+
-  const b64 = typeof btoa === "function" ? btoa(binary) : Buffer.from(binary, "binary").toString("base64");
-  return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
-};
-
-const generateId = (): string =>
-  `reset-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+const generateCode = (): string => String(randomInt(1_000_000)).padStart(CODE_LENGTH, "0");
+const generateToken = (): string => randomBytes(TOKEN_LENGTH).toString("base64url");
+const generateId = (): string => `reset-${randomUUID()}`;
 
 /* ─────────────────────────────  email  ────────────────────────────── */
 
@@ -132,6 +110,9 @@ const sendResetEmail = async (payload: DeliveryPayload): Promise<{ delivered: "r
         error: err instanceof Error ? err.message : "Resend fetch failed",
       };
     }
+  }
+  if (process.env.NODE_ENV === "production") {
+    return { delivered: "dev", error: "Email service is not configured" };
   }
   // Dev mode — log to server console so devs can copy link + code.
   // eslint-disable-next-line no-console
@@ -291,111 +272,42 @@ type VerifyCodeResult =
 
 /** Verify a (token, code) pair. On success returns resetId+email so the next
  *  step can update the password atomically. */
-export const verifyResetCode = async (
-  resetId: string,
-  token: string,
-  code: string,
-): Promise<VerifyCodeResult> => {
+async function verifyResetAtomically(
+  resetId: string, token: string, code: string, passwordHash: string | null,
+): Promise<VerifyCodeResult> {
   if (!supabaseAdmin) return { ok: false, error: "Member service is not configured." };
-  if (!resetId || !token || !code) return { ok: false, error: "Missing reset details." };
-  if (!/^\d{6}$/.test(code.trim())) return { ok: false, error: "Code must be 6 digits." };
-
-  const tokenHash = await hashValue(token);
-  const codeHash = await hashValue(code.trim());
-
-  const { data: row, error } = await supabaseAdmin
-    .from("password_resets")
-    .select("*")
-    .eq("id", resetId)
-    .maybeSingle<ResetRow>();
-  if (error) return { ok: false, error: error.message };
-  if (!row) return { ok: false, error: "Reset request not found. Please request a new code." };
-  if (row.consumed_at) return { ok: false, error: "This reset link has already been used." };
-  if (new Date(row.expires_at).getTime() < Date.now()) {
-    return { ok: false, error: "This code has expired. Please request a new one." };
+  if (!resetId || !token || !/^\d{6}$/.test(code.trim())) {
+    return { ok: false, error: "Invalid reset details." };
   }
-  if (row.token_hash !== tokenHash) {
-    return { ok: false, error: "Invalid reset link. Please request a new code." };
+  const { data, error } = await supabaseAdmin.rpc("verify_security_password_reset", {
+    p_reset_id: resetId,
+    p_token_hash: await hashValue(token),
+    p_code_hash: await hashValue(code.trim()),
+    p_password_hash: passwordHash,
+  });
+  if (error || !data || typeof data.ok !== "boolean") {
+    console.error("[password-reset] Reset verification unavailable");
+    return { ok: false, error: "Password reset service temporarily unavailable." };
   }
-  if (row.attempts >= MAX_ATTEMPTS) {
-    return { ok: false, error: "Too many failed attempts. Please request a new code." };
-  }
+  return data as VerifyCodeResult;
+}
 
-  // Constant-time-ish comparison on both hashes.
-  if (row.code_hash !== codeHash) {
-    await supabaseAdmin
-      .from("password_resets")
-      .update({ attempts: row.attempts + 1 })
-      .eq("id", resetId);
-    return { ok: false, error: "Incorrect code. Please try again." };
-  }
-
-  return { ok: true, resetId: row.id, email: row.email };
-};
+export const verifyResetCode = async (
+  resetId: string, token: string, code: string,
+): Promise<VerifyCodeResult> => verifyResetAtomically(resetId, token, code, null);
 
 type CompleteResult =
   | { ok: true; email: string }
   | { ok: false; error: string };
 
-/** Apply the new password. Marks the reset as consumed. */
 export const completePasswordReset = async (
-  resetId: string,
-  token: string,
-  newPassword: string,
+  resetId: string, token: string, newPassword: string, code: string,
 ): Promise<CompleteResult> => {
-  if (!supabaseAdmin) return { ok: false, error: "Member service is not configured." };
-  if (!resetId || !token || !newPassword) {
-    return { ok: false, error: "Missing reset details." };
+  if (!newPassword || newPassword.length < 8 || Buffer.byteLength(newPassword, "utf8") > 72) {
+    return { ok: false, error: "Password must be at least 8 characters and at most 72 bytes." };
   }
-  if (newPassword.length < 8) {
-    return { ok: false, error: "Password must be at least 8 characters." };
-  }
-
-  const tokenHash = await hashValue(token);
-  const { data: row, error } = await supabaseAdmin
-    .from("password_resets")
-    .select("*")
-    .eq("id", resetId)
-    .maybeSingle<ResetRow>();
-  if (error) return { ok: false, error: error.message };
-  if (!row) return { ok: false, error: "Reset request not found." };
-  if (row.consumed_at) return { ok: false, error: "This reset link has already been used." };
-  if (new Date(row.expires_at).getTime() < Date.now()) {
-    return { ok: false, error: "This code has expired. Please request a new one." };
-  }
-  if (row.token_hash !== tokenHash) {
-    return { ok: false, error: "Invalid reset link." };
-  }
-  if (row.attempts >= MAX_ATTEMPTS) {
-    return { ok: false, error: "Too many failed attempts. Please request a new code." };
-  }
-
-  // Hash new password (same scheme as register/login — SHA-256).
-  const newHash = await hashValue(newPassword);
-
-  const { error: updateError } = await supabaseAdmin
-    .from("members")
-    .update({ password_hash: newHash })
-    .eq("email", row.email);
-  if (updateError) {
-    return { ok: false, error: `Could not update password: ${updateError.message}` };
-  }
-
-  // Mark reset as consumed so it can't be reused.
-  await supabaseAdmin
-    .from("password_resets")
-    .update({ consumed_at: new Date().toISOString() })
-    .eq("id", resetId);
-
-  // Invalidate any other outstanding resets for the same email.
-  await supabaseAdmin
-    .from("password_resets")
-    .update({ consumed_at: new Date().toISOString() })
-    .eq("email", row.email)
-    .is("consumed_at", null)
-    .neq("id", resetId);
-
-  return { ok: true, email: row.email };
+  const result = await verifyResetAtomically(resetId, token, code, await bcrypt.hash(newPassword, 12));
+  return result.ok ? { ok: true, email: result.email } : result;
 };
 
 /* Public constants used by the UI to display copy + match behaviour. */

@@ -1,45 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import { SignJWT } from "jose";
+import { getJwtSecret } from "@/lib/auth/session";
+import { consumeRateLimit } from "@/lib/security/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// Rate limiting for login attempts
-const LOGIN_ATTEMPTS = new Map<string, { count: number; resetAt: number }>();
-const MAX_ATTEMPTS = 5;
-const WINDOW_MS = 15 * 60 * 1000; // 15 minutes
-
 const normalizeEmail = (value: string) => value.trim().toLowerCase();
-
-const checkRateLimit = (email: string): { allowed: boolean; remaining: number } => {
-  const now = Date.now();
-  for (const [key, record] of LOGIN_ATTEMPTS) {
-    if (now > record.resetAt) LOGIN_ATTEMPTS.delete(key);
-  }
-  const record = LOGIN_ATTEMPTS.get(email);
-  if (!record) return { allowed: true, remaining: MAX_ATTEMPTS };
-  if (now > record.resetAt) {
-    LOGIN_ATTEMPTS.delete(email);
-    return { allowed: true, remaining: MAX_ATTEMPTS };
-  }
-  if (record.count >= MAX_ATTEMPTS) return { allowed: false, remaining: 0 };
-  return { allowed: true, remaining: MAX_ATTEMPTS - record.count };
-};
-
-const recordAttempt = (email: string, success: boolean) => {
-  if (success) {
-    LOGIN_ATTEMPTS.delete(email);
-    return;
-  }
-  const now = Date.now();
-  const record = LOGIN_ATTEMPTS.get(email);
-  if (record && now <= record.resetAt) {
-    record.count += 1;
-    return;
-  }
-  LOGIN_ATTEMPTS.set(email, { count: 1, resetAt: now + WINDOW_MS });
-};
 
 type MemberRow = {
   id: string;
@@ -92,19 +60,25 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 
-  const email = normalizeEmail(String(body.email ?? ""));
-  const password = String(body.password ?? "");
+  if (!body || typeof body.email !== "string" || typeof body.password !== "string" ||
+      body.email.length > 254 || Buffer.byteLength(body.password, "utf8") > 72) {
+    return NextResponse.json({ error: "Invalid credentials" }, { status: 400 });
+  }
+  const email = normalizeEmail(body.email);
+  const password = body.password;
 
   if (!email || !password) {
     return NextResponse.json({ error: "Email and password are required" }, { status: 400 });
   }
 
-  const rateCheck = checkRateLimit(email);
-  if (!rateCheck.allowed) {
-    return NextResponse.json(
-      { error: "Too many sign-in attempts. Please wait 15 minutes and try again." },
-      { status: 429 },
-    );
+  try {
+    const rate = await consumeRateLimit(`member-login:${email}`, 5, 15 * 60 * 1000);
+    if (!rate.allowed) {
+      return NextResponse.json({ error: "Too many sign-in attempts. Please try again later." },
+        { status: 429, headers: { "Retry-After": String(rate.retryAfter) } });
+    }
+  } catch {
+    return NextResponse.json({ error: "Security service temporarily unavailable" }, { status: 503 });
   }
 
   try {
@@ -116,15 +90,18 @@ export async function POST(request: NextRequest) {
     );
 
     if (error) {
-      recordAttempt(email, false);
-      return NextResponse.json({ error: error.message }, { status: 500 });
+
+      return NextResponse.json({ error: "Unable to sign in. Please try again later." }, { status: 500 });
     }
 
     const member = data;
 
     if (!member) {
-      recordAttempt(email, false);
-      return NextResponse.json({ error: "No member account was found for this email." }, { status: 401 });
+
+      // Match password comparison cost so unknown addresses do not return immediately.
+      const bcrypt = await import("bcrypt");
+      await bcrypt.compare(password, "$2b$12$wHZkOiIcpUAq7DbR8LQkWefbHqNx6YTUfwEpBCKdWYOGALNn50Gnm");
+      return NextResponse.json({ error: "Invalid email or password." }, { status: 401 });
     }
 
     // Verify password using bcrypt
@@ -132,22 +109,21 @@ export async function POST(request: NextRequest) {
     const isValidPassword = await bcrypt.compare(password, member.password_hash);
 
     if (!isValidPassword) {
-      recordAttempt(email, false);
-      return NextResponse.json({ error: "Incorrect password." }, { status: 401 });
+
+      return NextResponse.json({ error: "Invalid email or password." }, { status: 401 });
     }
 
     if (member.status === "suspended") {
-      recordAttempt(email, false);
+
       return NextResponse.json(
         { error: "This account has been suspended. Contact support for help." },
         { status: 403 },
       );
     }
 
-    recordAttempt(email, true);
 
     // Create JWT token with role
-    const secret = new TextEncoder().encode(process.env.JWT_SECRET);
+    const secret = getJwtSecret();
     const token = await new SignJWT({
       memberId: member.id,
       email: member.email,
@@ -202,8 +178,8 @@ export async function POST(request: NextRequest) {
 
     return response;
   } catch (err) {
-    recordAttempt(email, false);
-    const message = err instanceof Error ? err.message : "Unexpected error";
-    return NextResponse.json({ error: message }, { status: 500 });
+
+    console.error("[members/login] Sign-in failed");
+    return NextResponse.json({ error: "Unable to sign in. Please try again later." }, { status: 500 });
   }
 }

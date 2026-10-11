@@ -237,10 +237,10 @@ $$ LANGUAGE plpgsql;
 -- 8. Sample Data (for testing)
 -- ============================================================================
 
--- Insert sample registration settings for regional-summit-2024
+-- Insert sample registration settings for event-summit-2026
 INSERT INTO public.event_registration_settings (event_id, registration_enabled, registration_starts_at, registration_ends_at, max_attendees)
 VALUES (
-  'regional-summit-2024',
+  'event-summit-2026',
   true,
   now(),
   now() + INTERVAL '30 days',
@@ -250,10 +250,10 @@ VALUES (
 -- Insert sample registration fields
 INSERT INTO public.event_registration_fields (event_id, field_name, field_type, field_label, required, display_order)
 VALUES
-  ('regional-summit-2024', 'full_name', 'text', 'Full Name', true, 1),
-  ('regional-summit-2024', 'email', 'email', 'Email Address', true, 2),
-  ('regional-summit-2024', 'organization', 'text', 'Organization', false, 3),
-  ('regional-summit-2024', 'dietary_requirements', 'textarea', 'Dietary Requirements', false, 4)
+  ('event-summit-2026', 'full_name', 'text', 'Full Name', true, 1),
+  ('event-summit-2026', 'email', 'email', 'Email Address', true, 2),
+  ('event-summit-2026', 'organization', 'text', 'Organization', false, 3),
+  ('event-summit-2026', 'dietary_requirements', 'textarea', 'Dietary Requirements', false, 4)
 ON CONFLICT DO NOTHING;
 
 -- Grant necessary permissions
