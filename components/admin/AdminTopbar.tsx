@@ -20,6 +20,10 @@ const VIEW_TITLES: Record<AdminView, { title: string; subtitle: string }> = {
     title: "Analytics & Performance",
     subtitle: "Content engagement, traffic insights, and growth metrics",
   },
+  "academic-analytics": {
+    title: "Academic Document Analytics",
+    subtitle: "Track downloads, views, and engagement for your academic library",
+  },
   members: {
     title: "Manage network members",
     subtitle: "Member applications, credentials verification, and directory",

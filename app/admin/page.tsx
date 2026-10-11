@@ -42,6 +42,7 @@ import { AdminMessagesView } from "@/components/admin/views/AdminMessagesView";
 import { AdminBroadcastView } from "@/components/admin/views/AdminBroadcastView";
 import { AdminActivityView } from "@/components/admin/views/AdminActivityView";
 import { AdminSettingsView } from "@/components/admin/views/AdminSettingsView";
+import { AdminAcademicAnalyticsView } from "@/components/admin/views/AdminAcademicAnalyticsView";
 import { MessageModeration } from "@/components/admin/moderation/MessageModeration";
 import { AnalyticsDashboard } from "@/components/admin/AnalyticsDashboard";
 import { MemberDetailDrawer } from "@/components/admin/modals/MemberDetailDrawer";
@@ -430,6 +431,10 @@ export default function AdminDashboardPage() {
 
           {view === "analytics" && (
             <AnalyticsDashboard />
+          )}
+
+          {view === "academic-analytics" && (
+            <AdminAcademicAnalyticsView />
           )}
 
           {view === "members" && (

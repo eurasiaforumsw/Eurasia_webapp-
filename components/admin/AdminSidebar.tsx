@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import { AdminSession } from "@/lib/admin-auth";
 
-export type AdminView = "overview" | "analytics" | "members" | "content" | "layout" | "messages" | "broadcast" | "moderation" | "activity" | "settings";
+export type AdminView = "overview" | "analytics" | "academic-analytics" | "members" | "content" | "layout" | "messages" | "broadcast" | "moderation" | "activity" | "settings";
 
 interface AdminSidebarProps {
   currentView: AdminView;
@@ -80,6 +80,14 @@ export const AdminSidebar = memo(function AdminSidebar({
       icon: TrendingUp,
       badge: null,
       shortcut: "2",
+    },
+    {
+      id: "academic-analytics" as AdminView,
+      label: "Academic Stats",
+      subtitle: "Document downloads",
+      icon: FileText,
+      badge: null,
+      shortcut: "A",
     },
     {
       id: "members" as AdminView,

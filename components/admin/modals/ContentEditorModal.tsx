@@ -37,6 +37,7 @@ import {
 } from "@/lib/target-groups";
 import CoverImageCropper from "@/components/admin/content/CoverImageCropper";
 import GalleryManager, { GalleryImage } from "@/components/admin/content/GalleryManager";
+import { AcademicFileUploader } from "@/components/admin/AcademicFileUploader";
 
 type Area = { width: number; height: number; x: number; y: number };
 
@@ -1058,6 +1059,90 @@ export const ContentEditorModal = memo(function ContentEditorModal({
               </button>
             )}
           </fieldset>
+
+          {/* ── Academic File Upload ──────────────────────────────── */}
+          {formData.kind === "academic" && (
+            <fieldset
+              style={{
+                display: "grid",
+                gap: "0.85rem",
+                margin: "1.6rem 0 0",
+                padding: 0,
+                border: 0,
+              }}
+            >
+              <legend
+                style={{
+                  margin: 0,
+                  padding: 0,
+                  fontFamily: "var(--font-display)",
+                  fontSize: "1.1rem",
+                  fontWeight: 650,
+                }}
+              >
+                Document File
+              </legend>
+
+              <AcademicFileUploader
+                onFileSelect={async (file) => {
+                  try {
+                    const formData = new FormData();
+                    formData.append("file", file);
+                    formData.append("contentId", initialItem?.id || "temp-" + Date.now());
+
+                    const res = await fetch("/api/admin/content/upload-file", {
+                      method: "POST",
+                      body: formData,
+                    });
+
+                    if (!res.ok) {
+                      const { error } = await res.json();
+                      throw new Error(error || "Upload failed");
+                    }
+
+                    const result = await res.json();
+                    setFormData((prev) => ({
+                      ...prev,
+                      fileUrl: result.fileUrl,
+                      fileName: result.fileName,
+                      fileSize: result.fileSize,
+                      fileType: result.fileType,
+                    }));
+
+                    addToast({
+                      type: "success",
+                      title: "File uploaded",
+                      description: `${result.fileName} has been uploaded successfully.`,
+                    });
+
+                    return result;
+                  } catch (err) {
+                    const message = err instanceof Error ? err.message : "Upload failed";
+                    addToast({
+                      type: "error",
+                      title: "Upload failed",
+                      description: message,
+                    });
+                    throw err;
+                  }
+                }}
+                currentFile={{
+                  fileUrl: formData.fileUrl,
+                  fileName: formData.fileName,
+                  fileSize: formData.fileSize,
+                }}
+                onClear={() => {
+                  setFormData((prev) => ({
+                    ...prev,
+                    fileUrl: undefined,
+                    fileName: undefined,
+                    fileSize: undefined,
+                    fileType: undefined,
+                  }));
+                }}
+              />
+            </fieldset>
+          )}
 
           {/* ── Gallery Section ──────────────────────────────── */}
           {(formData.kind === "news" || formData.kind === "event") && (

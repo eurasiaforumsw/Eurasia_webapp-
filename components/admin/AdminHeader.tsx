@@ -33,6 +33,7 @@ interface AdminHeaderProps {
 const VIEW_LABELS: Record<AdminView, string> = {
   overview: "Overview",
   analytics: "Analytics",
+  "academic-analytics": "Academic Statistics",
   members: "Members",
   content: "Content & Library",
   layout: "Layout",
