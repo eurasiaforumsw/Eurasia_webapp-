@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { AdminContentItem, AdminContentKind, AdminContentStatus } from "@/lib/admin-data";
 import { AdvancedFilterPanel, Filter } from "./filters/AdvancedFilterPanel";
 
@@ -13,6 +13,7 @@ const KIND_OPTIONS = [
   { value: "all", label: "All Types" },
   { value: "news", label: "News" },
   { value: "document", label: "Document" },
+  { value: "academic", label: "Academic" },
   { value: "event", label: "Event" },
 ];
 
@@ -154,7 +155,7 @@ export function ContentAdvancedFilters({ content, onFilterChange }: ContentAdvan
   }, [content, filterValues]);
 
   // Notify parent
-  useMemo(() => {
+  useEffect(() => {
     onFilterChange(filtered);
   }, [filtered, onFilterChange]);
 

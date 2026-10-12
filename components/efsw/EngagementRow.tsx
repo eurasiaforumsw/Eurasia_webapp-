@@ -115,6 +115,7 @@ export function EngagementRow({ contentId, memberId, readonly }: EngagementRowPr
         type="button"
         className="efsw-engagement__btn"
         aria-pressed={counts.isInterested}
+        aria-label={counts.isInterested ? "Remove from saved documents" : "Save document"}
         disabled={!memberId || isTogglingInterest}
         title={!memberId ? "Log in to save" : undefined}
         onClick={handleToggleInterest}
@@ -138,6 +139,7 @@ export function EngagementRow({ contentId, memberId, readonly }: EngagementRowPr
         type="button"
         className="efsw-engagement__btn"
         aria-pressed={counts.isLiked}
+        aria-label={counts.isLiked ? "Unlike document" : "Like document"}
         disabled={!memberId || isTogglingLike}
         title={!memberId ? "Log in to like" : undefined}
         onClick={handleToggleLike}

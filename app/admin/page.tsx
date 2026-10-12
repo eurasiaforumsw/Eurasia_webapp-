@@ -221,9 +221,7 @@ export default function AdminDashboardPage() {
   const handleSaveContent = useCallback(
     async (item: AdminContentItem) => {
       const isNew = !item.id || !content.some((c) => c.id === item.id);
-      const updatedList = await saveAdminContentRemote(item, (errorMsg) => {
-        notify(`Database error: ${errorMsg}`);
-      });
+      const updatedList = await saveAdminContentRemote(item);
       setContent(updatedList);
       setIsContentModalOpen(false);
       setContentEditorItem(null);
@@ -249,15 +247,17 @@ export default function AdminDashboardPage() {
         title: "Confirm content deletion",
         description: `Delete "${item?.title || id}" from the system?`,
         onConfirm: async () => {
-          const updated = await deleteAdminContentRemote(id, (errorMsg) => {
-            notify(`Database error: ${errorMsg}`);
-          });
-          setContent(updated);
-          setIsContentModalOpen(false);
-          setContentEditorItem(null);
-          setConfirmDelete(null);
-          logActivity("Deleted content", item?.title || id, "warning");
-          notify("Content deleted");
+          try {
+            const updated = await deleteAdminContentRemote(id);
+            setContent(updated);
+            setIsContentModalOpen(false);
+            setContentEditorItem(null);
+            setConfirmDelete(null);
+            logActivity("Deleted content", item?.title || id, "warning");
+            notify("Content deleted");
+          } catch (error) {
+            notify(`Delete failed: ${error instanceof Error ? error.message : "Please try again"}`);
+          }
         },
       });
     },
@@ -272,16 +272,18 @@ export default function AdminDashboardPage() {
         status: nextStatus,
         updatedAt: new Date().toISOString(),
       };
-      const updatedList = await saveAdminContentRemote(updated, (errorMsg) => {
-        notify(`Database error: ${errorMsg}`);
-      });
-      setContent(updatedList);
-      logActivity(
-        nextStatus === "published" ? "Published content" : "Moved content to draft",
-        item.title,
-        "neutral"
-      );
-      notify(`Status changed to ${nextStatus === "published" ? "published" : "draft"}`);
+      try {
+        const updatedList = await saveAdminContentRemote(updated);
+        setContent(updatedList);
+        logActivity(
+          nextStatus === "published" ? "Published content" : "Moved content to draft",
+          item.title,
+          "neutral"
+        );
+        notify(`Status changed to ${nextStatus === "published" ? "published" : "draft"}`);
+      } catch (error) {
+        notify(`Status change failed: ${error instanceof Error ? error.message : "Please try again"}`);
+      }
     },
     [logActivity, notify]
   );

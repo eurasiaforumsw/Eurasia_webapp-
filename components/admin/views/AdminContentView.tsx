@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useMemo, useState } from "react";
+import { memo, useCallback, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import {
   Plus,
@@ -25,6 +25,9 @@ import {
   AdminContentStatus,
   isContentExpired,
   isContentVisible,
+  getAdminContent,
+  saveAdminContent,
+  deleteAdminContent,
 } from "@/lib/admin-data";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useFilterPersistence } from "@/hooks/useFilterPersistence";
@@ -107,12 +110,17 @@ export const AdminContentView = memo(function AdminContentView({
 
   const [categoryKind, setCategoryKind] = useState<AdminContentKind>("news");
   const [categoryDrafts, setCategoryDrafts] = useState<AdminContentCategory[]>(contentCategories);
+  const [advancedFilteredIds, setAdvancedFilteredIds] = useState<Set<string> | null>(null);
+  const handleAdvancedFilterChange = useCallback((filtered: AdminContentItem[]) => {
+    setAdvancedFilteredIds(new Set(filtered.map((item) => item.id)));
+  }, []);
 
   // Bulk selection state
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkProcessing, setBulkProcessing] = useState(false);
   const [showBulkProgress, setShowBulkProgress] = useState(false);
-  const [bulkAction, setBulkAction] = useState<"delete" | "publish" | "archive" | null>(null);
+  const [bulkAction, setBulkAction] = useState<"delete" | "publish" | "archive" | "unpublish" | null>(null);
+  const [bulkHadChanges, setBulkHadChanges] = useState(false);
 
   // Destructure for easier access
   const { kindFilter, statusFilter, searchQuery } = filterValues;
@@ -146,6 +154,7 @@ export const AdminContentView = memo(function AdminContentView({
 
   const filteredContent = useMemo(() => {
     return content.filter((item) => {
+      if (advancedFilteredIds && !advancedFilteredIds.has(item.id)) return false;
       const matchesKind = kindFilter === "all" || item.kind === kindFilter;
       const matchesStatus = statusFilter === "all" || item.status === statusFilter;
       if (!matchesKind || !matchesStatus) return false;
@@ -159,7 +168,7 @@ export const AdminContentView = memo(function AdminContentView({
 
       return haystack.includes(debouncedSearch);
     });
-  }, [content, kindFilter, statusFilter, debouncedSearch]);
+  }, [content, advancedFilteredIds, kindFilter, statusFilter, debouncedSearch]);
 
   const counts = useMemo(() => {
     const published = content.filter((c) => c.status === "published").length;
@@ -201,16 +210,18 @@ export const AdminContentView = memo(function AdminContentView({
   };
 
   // Bulk operations
-  const handleBulkAction = async (action: "delete" | "publish" | "archive") => {
+  const handleBulkAction = (action: "delete" | "publish" | "archive" | "unpublish") => {
+    if (selectedIds.size === 0) return;
     setBulkAction(action);
+    setBulkHadChanges(false);
     setShowBulkProgress(true);
   };
 
-  const handleBulkComplete = () => {
+  const handleBulkClose = () => {
     setShowBulkProgress(false);
     setBulkAction(null);
     setSelectedIds(new Set());
-    window.location.reload();
+    if (bulkHadChanges) window.location.reload();
   };
 
   // Legacy handlers (kept for backward compatibility)
@@ -221,6 +232,7 @@ export const AdminContentView = memo(function AdminContentView({
   const handleBulkUpdateStatus = async (status: AdminContentStatus) => {
     if (status === "published") handleBulkAction("publish");
     else if (status === "archived") handleBulkAction("archive");
+    else handleBulkAction("unpublish");
   };
 
   const handleBulkUpdateCategory = async () => {
@@ -317,19 +329,25 @@ export const AdminContentView = memo(function AdminContentView({
       {/* Bulk Progress Modal */}
       <BulkProgressModal
         isOpen={showBulkProgress}
-        onClose={() => setShowBulkProgress(false)}
+        onClose={handleBulkClose}
         action={bulkAction || "delete"}
         selectedIds={Array.from(selectedIds)}
         entityType="content"
         onExecute={async (ids) => {
-          // Execute the bulk action
-          if (bulkAction === "delete") {
-            await handleBulkDelete();
-          } else if (bulkAction === "publish") {
-            await handleBulkUpdateStatus("published");
-          } else if (bulkAction === "archive") {
-            await handleBulkUpdateStatus("archived");
+          const status = bulkAction === "publish" ? "published" : bulkAction === "archive" ? "archived" : "draft";
+          const response = await fetch("/api/content/bulk", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(bulkAction === "delete" ? { action: "delete", ids } : { action: "updateStatus", ids, status }),
+          });
+          if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || "Bulk operation failed");
           }
+          const affected = new Set(ids);
+          if (bulkAction === "delete") ids.forEach((id) => deleteAdminContent(id));
+          else getAdminContent().filter((item) => affected.has(item.id)).forEach((item) => saveAdminContent({ ...item, status, updatedAt: new Date().toISOString() }));
+          setBulkHadChanges(true);
         }}
       />
 
@@ -393,7 +411,7 @@ export const AdminContentView = memo(function AdminContentView({
         </div>
 
         <div className="efsw-admin-segmented">
-          {(["all", "news", "document", "event"] as const).map((kind) => (
+          {(["all", "news", "document", "academic", "event"] as const).map((kind) => (
             <button
               key={kind}
               type="button"
@@ -434,11 +452,7 @@ export const AdminContentView = memo(function AdminContentView({
       {/* Advanced Filters */}
       <ContentAdvancedFilters
         content={content}
-        onFilterChange={(filtered) => {
-          // Update the filtered content - this is a simplified approach
-          // In production, you might want to manage this via state
-          console.log(`Advanced filters applied: ${filtered.length} items`);
-        }}
+        onFilterChange={handleAdvancedFilterChange}
       />
 
       {/* Filter-mode editor */}
@@ -450,7 +464,7 @@ export const AdminContentView = memo(function AdminContentView({
           </div>
           <div style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem" }}>
             <div className="efsw-admin-segmented">
-              {(["news", "document", "event"] as const).map((kind) => (
+              {(["news", "document", "academic", "event"] as const).map((kind) => (
                 <button
                   key={kind}
                   type="button"

@@ -16,12 +16,14 @@ interface AcademicFileUploaderProps {
     fileSize?: number;
   };
   onClear: () => void;
+  onUploadingChange?: (uploading: boolean) => void;
 }
 
 export function AcademicFileUploader({
   onFileSelect,
   currentFile,
   onClear,
+  onUploadingChange,
 }: AcademicFileUploaderProps) {
   const [isDragOver, setIsDragOver] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -29,7 +31,7 @@ export function AcademicFileUploader({
   const [success, setSuccess] = useState(false);
 
   const allowedTypes = ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"];
-  const maxSize = 50 * 1024 * 1024; // 50MB
+  const maxSize = 4 * 1024 * 1024;
 
   const validateFile = (file: File): boolean => {
     if (!allowedTypes.includes(file.type)) {
@@ -44,28 +46,15 @@ export function AcademicFileUploader({
   };
 
   const handleFileUpload = async (file: File) => {
+    if (isUploading) return;
     if (!validateFile(file)) return;
 
     setError(null);
     setIsUploading(true);
+    onUploadingChange?.(true);
     setSuccess(false);
 
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("contentId", "temp-" + Date.now());
-
-      const res = await fetch("/api/admin/content/upload-file", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!res.ok) {
-        const { error } = await res.json();
-        throw new Error(error || "Upload failed");
-      }
-
-      const result = await res.json();
       await onFileSelect(file);
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
@@ -74,6 +63,7 @@ export function AcademicFileUploader({
       setError(message);
     } finally {
       setIsUploading(false);
+      onUploadingChange?.(false);
     }
   };
 
@@ -122,7 +112,7 @@ export function AcademicFileUploader({
     <div className="academic-file-uploader">
       <div className="academic-file-uploader__label">
         <strong>Academic Document File</strong>
-        <span className="academic-file-uploader__hint">PDF or Word document (max 50MB)</span>
+        <span className="academic-file-uploader__hint">PDF or Word document (max 4 MB). Use a hosted URL for larger files.</span>
       </div>
 
       {currentFile?.fileUrl ? (
@@ -143,6 +133,8 @@ export function AcademicFileUploader({
             onClick={onClear}
             className="academic-file-uploader__clear"
             title="Remove file"
+            aria-label="Remove document file"
+            disabled={isUploading}
           >
             <X size={16} />
           </button>
@@ -166,20 +158,21 @@ export function AcademicFileUploader({
             accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
             onChange={handleInputChange}
             disabled={isUploading}
+            aria-label="Upload academic document"
             className="academic-file-uploader__input"
           />
         </div>
       )}
 
       {error && (
-        <div className="academic-file-uploader__error">
+        <div className="academic-file-uploader__error" role="alert">
           <AlertCircle size={16} />
           {error}
         </div>
       )}
 
       {success && (
-        <div className="academic-file-uploader__success">
+        <div className="academic-file-uploader__success" role="status">
           <CheckCircle2 size={16} />
           File uploaded successfully
         </div>
@@ -340,8 +333,8 @@ export function AcademicFileUploader({
 
         .academic-file-uploader__clear {
           flex-shrink: 0;
-          width: 32px;
-          height: 32px;
+          width: 44px;
+          height: 44px;
           border: none;
           border-radius: 6px;
           background: var(--admin-surface-deep);
@@ -356,6 +349,12 @@ export function AcademicFileUploader({
         .academic-file-uploader__clear:hover {
           background: var(--admin-error-alpha);
           color: var(--admin-error);
+        }
+
+        .academic-file-uploader__zone:focus-within,
+        .academic-file-uploader__clear:focus-visible {
+          outline: 2px solid var(--admin-teal);
+          outline-offset: 3px;
         }
 
         .academic-file-uploader__error {
@@ -416,6 +415,10 @@ export function AcademicFileUploader({
 
         @keyframes spin {
           to { transform: rotate(360deg); }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .academic-file-uploader__spinner { animation: none; }
         }
       `}</style>
     </div>
