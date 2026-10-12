@@ -232,6 +232,15 @@
   background: var(--academic-dark);
 }
 
+.academic-document-detail .efsw-article__hero .cover-image-wrapper {
+  position: relative;
+  inset: auto;
+}
+
+.academic-document-detail .efsw-article__hero .cover-image {
+  max-height: none;
+}
+
 .academic-document-detail .efsw-article__hero-placeholder {
   display: grid;
   place-items: center;
