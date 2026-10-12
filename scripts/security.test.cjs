@@ -60,6 +60,8 @@ const { matchesFileSignature } = require('../lib/security/uploads.ts');
 const interests = require('../app/api/engagement/interest/route.ts');
 const stats = require('../app/api/engagement/stats/route.ts');
 const content = require('../app/api/content/route.ts');
+const memberLogin = require('../app/api/members/login/route.ts');
+const adminVerify = require('../app/api/admin/auth/verify/route.ts');
 
 async function token(claims = {}, options = {}) {
   let jwt = new SignJWT({ memberId: 'member-one', email: 'one@example.com', role: 'member', ...claims })
@@ -75,6 +77,59 @@ function request(url, { method = 'GET', jwt, body, headers = {} } = {}) {
     ...(body ? { body: JSON.stringify(body) } : {}),
   });
 }
+
+test('administrator member login remains authenticated when opening the admin console', async () => {
+  const password = 'test-admin-login-password';
+  queryResult = { data: {
+    id: 'admin-member', email: 'admin@efsw.local', full_name: 'Administrator',
+    role: 'admin', status: 'active', password_hash: await require('bcrypt').hash(password, 12),
+  }, error: null };
+  const login = await memberLogin.POST(request('/api/members/login', {
+    method: 'POST', body: { email: 'admin@efsw.local', password },
+  }));
+  assert.equal(login.status, 200);
+  const cookie = login.headers.get('set-cookie');
+  assert.ok(cookie.startsWith('member_token='));
+  assert.match(cookie, /HttpOnly/i);
+  const headers = { cookie: cookie.split(';')[0] };
+  assert.equal((await middleware(request('/admin', { headers }))).status, 200);
+  const verifyRequest = request('/api/admin/auth/verify', { headers });
+  assert.equal((await middleware(verifyRequest)).status, 200);
+  const verified = await adminVerify.GET(verifyRequest);
+  assert.equal(verified.status, 200);
+  const session = await verified.json();
+  assert.equal(session.email, 'admin@efsw.local');
+  assert.equal(session.role, 'admin');
+  assert.equal(session.id, 'admin-member');
+  assert.ok(session.name);
+});
+test('console session verification accepts console roles and legacy administrator cookies', async () => {
+  for (const role of sessions.CONSOLE_ROLES) {
+    const jwt = await token({ role, name: 'Console user' });
+    const req = request('/api/admin/auth/verify', { jwt });
+    assert.equal((await middleware(req)).status, 200, role);
+    assert.equal((await adminVerify.GET(req)).status, 200, role);
+  }
+  const jwt = require('jsonwebtoken').sign({
+    email: 'admin@efsw.local', role: 'super-admin', name: 'Administrator',
+  }, process.env.JWT_SECRET, { expiresIn: '1h', algorithm: 'HS256' });
+  const response = await adminVerify.GET(request('/api/admin/auth/verify', {
+    headers: { cookie: `admin_token=${jwt}` },
+  }));
+  assert.equal(response.status, 200);
+  assert.equal((await response.json()).id, 'admin@efsw.local');
+});
+test('console verification rejects absent, forged and ordinary member sessions', async () => {
+  for (const req of [request('/api/admin/auth/verify'),
+    request('/api/admin/auth/verify', { jwt: 'invalid' }),
+    request('/api/admin/auth/verify', { jwt: await token({ role: 'admin' }),
+      headers: { authorization: 'Bearer invalid' } })]) {
+    assert.equal((await adminVerify.GET(req)).status, 401);
+  }
+  const member = request('/api/admin/auth/verify', { jwt: await token() });
+  assert.equal((await middleware(member)).status, 403);
+  assert.equal((await adminVerify.GET(member)).status, 403);
+});
 
 test('regular members cannot call administrator APIs using a signed Bearer token', async () => {
   const response = await middleware(request('/api/admin/analytics/overview', {

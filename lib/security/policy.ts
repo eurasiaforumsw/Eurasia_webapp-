@@ -1,4 +1,4 @@
-import { ADMIN_ROLES, CONTENT_ROLES, MEMBER_REVIEW_ROLES } from "../auth/session";
+import { ADMIN_ROLES, CONSOLE_ROLES, CONTENT_ROLES, MEMBER_REVIEW_ROLES } from "../auth/session";
 import type { UserRole } from "../auth/session";
 
 const PUBLIC_API_METHODS: Record<string, string[]> = {
@@ -24,6 +24,7 @@ const PUBLIC_API_METHODS: Record<string, string[]> = {
 // null = public, [] = authenticated, otherwise one of the listed roles.
 export function apiRoles(path: string, method: string): UserRole[] | null {
   if (PUBLIC_API_METHODS[path]?.includes(method)) return null;
+  if (path === "/api/admin/auth/verify" && method === "GET") return CONSOLE_ROLES;
   if (/^\/api\/events\/[^/]+\/registration-(settings|fields)$/.test(path) && method === "GET") return null;
   if (path.startsWith("/api/content/") || path === "/api/content" || path === "/api/upload") return CONTENT_ROLES;
   if (path === "/api/layout" || path === "/api/settings") return ADMIN_ROLES;

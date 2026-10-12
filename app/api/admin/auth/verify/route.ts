@@ -1,24 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyAdminToken } from '@/lib/auth/session';
+import { CONSOLE_ROLES, verifyRequestSession } from '@/lib/auth/session';
 
 export async function GET(request: NextRequest) {
   try {
-    const token = request.cookies.get('admin_token')?.value;
-
-    if (!token) {
+    const decoded = await verifyRequestSession(request);
+    if (!decoded) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       );
     }
 
-    const decoded = await verifyAdminToken(token);
-    if (!decoded) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!CONSOLE_ROLES.includes(decoded.role)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
 
     return NextResponse.json({
-      id: decoded.email,
+      id: decoded.id,
       email: decoded.email,
-      name: decoded.name,
+      name: decoded.name || decoded.email,
       role: decoded.role,
       signedInAt: new Date().toISOString()
     });
