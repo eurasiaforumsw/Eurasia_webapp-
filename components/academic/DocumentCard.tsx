@@ -1,23 +1,23 @@
 "use client";
 
-import React from "react";
+import type { MouseEvent } from "react";
+import Link from "next/link";
 import {
+  ArrowUpRight,
   BookOpen,
-  FileText,
-  FileBarChart2,
   Download,
   Eye,
+  FileBarChart2,
+  FileText,
   Heart,
-  Calendar,
-  User,
-  ExternalLink,
-  TrendingUp,
 } from "lucide-react";
+import CoverImage from "@/components/content/CoverImage";
+import type { CoverImageCrop } from "@/lib/admin-data";
 
 type DocumentCardProps = {
   id: string;
   title: string;
-  category: "Research" | "Practice" | "Briefings";
+  category: string;
   author: string;
   date: string;
   summary: string;
@@ -27,31 +27,15 @@ type DocumentCardProps = {
   viewCount: number;
   likeCount: number;
   isLiked: boolean;
+  coverImage?: string;
+  coverImageCrop?: CoverImageCrop;
   fileUrl?: string;
   fileName?: string;
   fileSize?: number;
   pageCount?: number;
   onView: () => void;
-  onLike: (e: React.MouseEvent) => void;
-  onDownload: (e: React.MouseEvent) => void;
-};
-
-const CATEGORY_CONFIG = {
-  Research: {
-    icon: BookOpen,
-    color: "#3b82f6",
-    bgColor: "#1e3a5f",
-  },
-  Practice: {
-    icon: FileText,
-    color: "#10b981",
-    bgColor: "#0f3a2f",
-  },
-  Briefings: {
-    icon: FileBarChart2,
-    color: "#f59e0b",
-    bgColor: "#3d2f1a",
-  },
+  onLike: (event: MouseEvent) => void;
+  onDownload: (event: MouseEvent) => void;
 };
 
 export function DocumentCard({
@@ -67,6 +51,8 @@ export function DocumentCard({
   viewCount,
   likeCount,
   isLiked,
+  coverImage,
+  coverImageCrop,
   fileUrl,
   fileName,
   fileSize,
@@ -75,113 +61,136 @@ export function DocumentCard({
   onLike,
   onDownload,
 }: DocumentCardProps) {
-  const categoryConfig = CATEGORY_CONFIG[category];
-  const Icon = categoryConfig.icon;
+  const tone = /practice|guide|manual/i.test(category)
+    ? "practice"
+    : /policy|brief/i.test(category)
+      ? "briefings"
+      : "research";
+  const Icon =
+    tone === "practice"
+      ? FileText
+      : tone === "briefings"
+        ? FileBarChart2
+        : BookOpen;
+  const href = `/academic-documents/${encodeURIComponent(id)}`;
+  const downloadHref =
+    fileUrl && /^(https?:\/\/|\/(?!\/))/i.test(fileUrl) ? fileUrl : null;
 
   return (
-    <article className="document-card" onClick={onView}>
-      {featured && (
-        <div className="document-card__badge">
-          <TrendingUp size={11} />
-          Featured
-        </div>
-      )}
-
-      <div className="document-card__header">
-        <div
-          className="document-card__category"
-          style={
-            {
-              "--category-color": categoryConfig.color,
-              "--category-bg": categoryConfig.bgColor,
-            } as React.CSSProperties
-          }
-        >
-          <Icon size={14} />
-          <span>{category}</span>
-        </div>
-        <time className="document-card__date">
-          <Calendar size={12} />
-          {new Date(date).toLocaleDateString("en-US", {
-            year: "numeric",
-            month: "short",
-          })}
-        </time>
-      </div>
-
-      <div className="document-card__content">
-        <h3 className="document-card__title">{title}</h3>
-        <p className="document-card__summary">{summary}</p>
-        <div className="document-card__author">
-          <User size={13} />
-          {author}
-        </div>
-        {pageCount && (
-          <div className="document-card__meta" style={{ marginTop: '6px', fontSize: '12px', color: '#6b7280' }}>
-            {pageCount} pages {fileSize && `• ${(fileSize / 1024 / 1024).toFixed(1)}MB`}
+    <article className={`document-card document-card--${tone}`}>
+      <Link
+        href={href}
+        onClick={onView}
+        className="document-card__cover"
+        aria-label={`Read ${title}`}
+        tabIndex={-1}
+      >
+        {coverImage ? (
+          <CoverImage src={coverImage} crop={coverImageCrop} alt="" />
+        ) : (
+          <div className="document-card__paper" aria-hidden="true">
+            <Icon size={40} strokeWidth={1.3} />
+            <span>{category}</span>
+            <div />
+            <div />
+            <div />
           </div>
         )}
-      </div>
-
-      {tags.length > 0 && (
-        <div className="document-card__tags">
-          {tags.slice(0, 3).map((tag) => (
-            <span key={tag} className="document-card__tag">
-              {tag}
+        {featured && (
+          <span className="document-card__badge">Editor's pick</span>
+        )}
+      </Link>
+      <div className="document-card__body">
+        <div className="document-card__header">
+          <span className="document-card__category">
+            <Icon size={14} aria-hidden="true" />
+            {category}
+          </span>
+          <time dateTime={date} className="document-card__date">
+            {new Date(date).toLocaleDateString("en-US", {
+              year: "numeric",
+              month: "short",
+              timeZone: "Asia/Bangkok",
+            })}
+          </time>
+        </div>
+        <h3 className="document-card__title">
+          <Link href={href} onClick={onView}>
+            {title}
+            <ArrowUpRight size={20} aria-hidden="true" />
+          </Link>
+        </h3>
+        <p className="document-card__author">{author}</p>
+        <p className="document-card__summary">{summary}</p>
+        {pageCount || fileSize ? (
+          <p className="document-card__meta">
+            {pageCount ? `${pageCount} pages` : ""}
+            {pageCount && fileSize ? " · " : ""}
+            {fileSize ? `${(fileSize / 1024 / 1024).toFixed(1)} MB` : ""}
+          </p>
+        ) : null}
+        {tags.length > 0 && (
+          <div className="document-card__tags">
+            {tags.slice(0, 2).map((tag) => (
+              <span key={tag} className="document-card__tag">
+                {tag}
+              </span>
+            ))}
+            {tags.length > 2 && (
+              <span
+                className="document-card__tag"
+                title={tags.slice(2).join(", ")}
+              >
+                +{tags.length - 2} topics
+              </span>
+            )}
+          </div>
+        )}
+        <div className="document-card__footer">
+          <div className="document-card__stats">
+            <span>
+              <Eye size={14} aria-hidden="true" />
+              {viewCount.toLocaleString()}
+              <span className="sr-only"> views</span>
             </span>
-          ))}
-          {tags.length > 3 && (
-            <span className="document-card__tag">+{tags.length - 3}</span>
-          )}
-        </div>
-      )}
-
-      <div className="document-card__footer">
-        <div className="document-card__stats">
-          <span title="Views">
-            <Eye size={13} />
-            {viewCount || 0}
-          </span>
-          <span title="Downloads">
-            <Download size={13} />
-            {downloads || 0}
-          </span>
-          <span title="Likes">
-            <Heart
-              size={13}
-              fill={isLiked ? "currentColor" : "none"}
-            />
-            {likeCount || 0}
-          </span>
-        </div>
-        <div className="document-card__actions">
-          <button
-            type="button"
-            onClick={onLike}
-            className={`document-card__action ${isLiked ? "is-liked" : ""}`}
-            title={isLiked ? "Unlike" : "Like"}
-          >
-            <Heart size={15} fill={isLiked ? "currentColor" : "none"} />
-          </button>
-          <button
-            type="button"
-            onClick={onDownload}
-            className="document-card__action"
-            title="Download"
-          >
-            <Download size={15} />
-          </button>
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onView();
-            }}
-            className="document-card__action document-card__action--primary"
-            title="View document"
-          >
-            <ExternalLink size={15} />
-          </button>
+            {downloadHref && (
+              <span>
+                <Download size={14} aria-hidden="true" />
+                {downloads.toLocaleString()}
+                <span className="sr-only"> downloads</span>
+              </span>
+            )}
+          </div>
+          <div className="document-card__actions">
+            <button
+              type="button"
+              onClick={onLike}
+              className={`document-card__action ${isLiked ? "is-liked" : ""}`}
+              aria-label={`${isLiked ? "Unlike" : "Like"} ${title}`}
+              aria-pressed={isLiked}
+            >
+              <Heart
+                size={17}
+                fill={isLiked ? "currentColor" : "none"}
+                aria-hidden="true"
+              />
+              {likeCount > 0 && <span>{likeCount}</span>}
+            </button>
+            {downloadHref && (
+              <a
+                href={downloadHref}
+                download={fileName || undefined}
+                onClick={onDownload}
+                className="document-card__action"
+                aria-label={`Download ${title}`}
+              >
+                <Download size={17} aria-hidden="true" />
+              </a>
+            )}
+            <Link href={href} onClick={onView} className="document-card__read">
+              Read <ArrowUpRight size={16} aria-hidden="true" />
+            </Link>
+          </div>
         </div>
       </div>
     </article>

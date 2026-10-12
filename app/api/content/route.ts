@@ -25,6 +25,13 @@ type ContentRow = {
   cover_image_crop: CoverImageCrop | null;
   image_caption: string | null;
   author: string | null;
+  author_image: string | null;
+  featured: boolean;
+  file_url: string | null;
+  file_name: string | null;
+  file_size: number | null;
+  file_type: string | null;
+  page_count: number | null;
   tags: string[] | null;
   status: AdminContentStatus;
   locale: ContentLocale;
@@ -94,6 +101,24 @@ function sanitizeInteger(value: unknown): number | null {
   return Number.isFinite(parsed) ? Math.trunc(parsed) : null;
 }
 
+function sanitizePositiveInteger(value: unknown): number | null {
+  if (value === null || value === undefined || value === "") return null;
+  const parsed = Number(value);
+  return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : null;
+}
+
+function sanitizeAssetUrl(value: unknown): string | null {
+  const url = sanitizeNullableString(value);
+  if (!url) return null;
+  if (url.startsWith("/") && !url.startsWith("//")) return url;
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === "https:" || parsed.protocol === "http:" ? url : null;
+  } catch {
+    return null;
+  }
+}
+
 function sanitizeCrop(value: unknown): CoverImageCrop | null {
   if (!value || typeof value !== "object") return null;
   const crop = value as CoverImageCrop;
@@ -138,6 +163,13 @@ function rowFromPayload(payload: Record<string, unknown>, existingId?: string): 
         : null,
     author:
       typeof payload.author === "string" && payload.author ? payload.author : null,
+    author_image: sanitizeAssetUrl(payload.authorImage),
+    featured: sanitizeBoolean(payload.featured),
+    file_url: sanitizeAssetUrl(payload.fileUrl),
+    file_name: sanitizeNullableString(payload.fileName),
+    file_size: sanitizePositiveInteger(payload.fileSize),
+    file_type: sanitizeNullableString(payload.fileType),
+    page_count: sanitizePositiveInteger(payload.pageCount),
     tags,
     status: sanitizeStatus(payload.status),
     locale: sanitizeLocale(payload.locale),
@@ -186,6 +218,13 @@ function payloadFromRow(row: ContentRow) {
     coverImageCrop: row.cover_image_crop ?? undefined,
     imageCaption: row.image_caption ?? "",
     author: row.author ?? "",
+    authorImage: row.author_image ?? undefined,
+    featured: row.featured ?? false,
+    fileUrl: row.file_url ?? undefined,
+    fileName: row.file_name ?? undefined,
+    fileSize: row.file_size ?? undefined,
+    fileType: row.file_type ?? undefined,
+    pageCount: row.page_count ?? undefined,
     tags: row.tags ?? [],
     status: row.status,
     locale: row.locale,

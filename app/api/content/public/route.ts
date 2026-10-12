@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
+import type { CoverImageCrop } from "@/lib/admin-data";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,8 +13,16 @@ type ContentRow = {
   summary: string;
   body: string;
   cover_image: string | null;
+  cover_image_crop: CoverImageCrop | null;
   image_caption: string | null;
   author: string | null;
+  author_image: string | null;
+  featured: boolean;
+  file_url: string | null;
+  file_name: string | null;
+  file_size: number | null;
+  file_type: string | null;
+  page_count: number | null;
   tags: string[] | null;
   status: string;
   locale: string;
@@ -46,8 +55,16 @@ function payloadFromRow(row: ContentRow) {
     summary: row.summary,
     body: row.body ?? "",
     coverImage: row.cover_image ?? "",
+    coverImageCrop: row.cover_image_crop ?? undefined,
     imageCaption: row.image_caption ?? "",
     author: row.author ?? "",
+    authorImage: row.author_image ?? undefined,
+    featured: row.featured ?? false,
+    fileUrl: row.file_url ?? undefined,
+    fileName: row.file_name ?? undefined,
+    fileSize: row.file_size ?? undefined,
+    fileType: row.file_type ?? undefined,
+    pageCount: row.page_count ?? undefined,
     tags: row.tags ?? [],
     status: row.status as "draft" | "published" | "archived",
     locale: row.locale as "en" | "th" | "ko",

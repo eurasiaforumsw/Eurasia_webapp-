@@ -1,0 +1,36 @@
+/* Academic library tokens are scoped so navigation and Admin keep their own theme. */
+.academic-library,
+.academic-document-detail {
+  --academic-paper: oklch(0.97 0.012 85);
+  --academic-surface: oklch(0.995 0.004 85);
+  --academic-ink: oklch(0.25 0.035 190);
+  --academic-muted: oklch(0.46 0.025 190);
+  --academic-teal: oklch(0.43 0.075 185);
+  --academic-dark: oklch(0.27 0.044 190);
+  --academic-dark-raised: oklch(0.34 0.045 190);
+  --academic-on-dark: oklch(0.98 0.008 85);
+  --academic-on-dark-muted: oklch(0.83 0.025 175);
+  --academic-gold: oklch(0.83 0.11 85);
+  --academic-mint: oklch(0.93 0.025 165);
+  --academic-rule: oklch(0.86 0.018 100);
+  --academic-danger: oklch(0.47 0.17 25);
+  --academic-research: oklch(0.43 0.075 185);
+  --academic-research-surface: oklch(0.9 0.04 165);
+  --academic-practice: oklch(0.43 0.06 250);
+  --academic-practice-surface: oklch(0.91 0.025 250);
+  --academic-briefings: oklch(0.43 0.065 60);
+  --academic-briefings-surface: oklch(0.92 0.045 85);
+  --academic-font-display:
+    var(--font-bricolage), "Noto Sans Thai", "Noto Sans KR", sans-serif;
+  --academic-font-body:
+    var(--font-inter), "Noto Sans Thai", "Noto Sans KR", sans-serif;
+  --academic-space-xs: 8px;
+  --academic-space-sm: 16px;
+  --academic-space-md: 24px;
+  --academic-space-lg: 32px;
+  --academic-space-xl: 48px;
+  --academic-gutter: clamp(24px, 4vw, 64px);
+  --academic-section-space: clamp(56px, 7vw, 88px);
+  --academic-radius: 16px;
+  --academic-ease: cubic-bezier(0.16, 1, 0.3, 1);
+}

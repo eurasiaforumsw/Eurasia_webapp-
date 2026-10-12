@@ -1,19 +1,41 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { writeFile } from 'fs/promises';
-import { mkdir } from 'fs/promises';
-import path from 'path';
-import { randomBytes } from 'crypto';
+import { randomUUID } from 'node:crypto';
+import { uploadToR2 } from '@/lib/r2';
+import { requireRole } from '@/lib/api-auth';
+import { CONTENT_ROLES } from '@/lib/auth/session';
 
-const UPLOAD_DIR = path.join(process.cwd(), 'public', 'academic-files');
-const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+// Stay below Vercel's 4.5 MB function request-body ceiling, including multipart data.
+const MAX_FILE_SIZE = 4 * 1024 * 1024;
+const FILE_EXTENSIONS: Record<string, string> = {
+  'application/pdf': 'pdf',
+  'application/msword': 'doc',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
+};
+
+function matchesDocumentSignature(buffer: Buffer, mime: string): boolean {
+  if (mime === 'application/pdf') return buffer.subarray(0, 5).toString() === '%PDF-';
+  if (mime === 'application/msword') {
+    return buffer.subarray(0, 8).equals(Buffer.from([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1]));
+  }
+  return mime === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    && buffer.subarray(0, 4).equals(Buffer.from([0x50, 0x4b, 0x03, 0x04]));
+}
 
 export async function POST(request: NextRequest) {
+  try { await requireRole(request, CONTENT_ROLES); }
+  catch (error) {
+    const message = error instanceof Error ? error.message : 'Unauthorized';
+    return NextResponse.json({ error: message }, { status: message === 'Unauthorized' ? 401 : 403 });
+  }
   try {
     const formData = await request.formData();
     const file = formData.get('file') as File | null;
     const contentId = formData.get('contentId') as string | null;
 
-    if (!file) {
+    if (!file || typeof file === 'string') {
       return NextResponse.json(
         { error: 'No file provided' },
         { status: 400 }
@@ -28,44 +50,33 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate file type
-    const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
-    if (!allowedTypes.includes(file.type)) {
+    const extension = FILE_EXTENSIONS[file.type];
+    if (typeof extension !== 'string') {
       return NextResponse.json(
         { error: 'Only PDF and Word documents are allowed' },
-        { status: 400 }
+        { status: 415 }
       );
     }
 
     // Validate file size
-    if (file.size > MAX_FILE_SIZE) {
+    if (file.size === 0 || file.size > MAX_FILE_SIZE) {
       return NextResponse.json(
-        { error: 'File size exceeds 50MB limit' },
-        { status: 400 }
+        { error: 'Upload a non-empty document of 4 MB or less, or use a hosted document URL.' },
+        { status: 413 }
       );
     }
 
-    // Ensure upload directory exists
-    try {
-      await mkdir(UPLOAD_DIR, { recursive: true });
-    } catch (err) {
-      console.error('Failed to create upload directory:', err);
+    const buffer = Buffer.from(await file.arrayBuffer());
+    if (!matchesDocumentSignature(buffer, file.type)) {
+      return NextResponse.json({ error: 'File content does not match its document type' }, { status: 415 });
     }
-
-    // Generate unique filename
-    const ext = path.extname(file.name);
-    const basename = path.basename(file.name, ext);
-    const uniqueId = randomBytes(8).toString('hex');
-    const uniqueFilename = `${basename}-${uniqueId}${ext}`;
-    const filepath = path.join(UPLOAD_DIR, uniqueFilename);
-
-    // Save file
-    const buffer = await file.arrayBuffer();
-    await writeFile(filepath, Buffer.from(buffer));
+    const key = `academic/${randomUUID()}.${extension}`;
+    const fileUrl = await uploadToR2(key, buffer, file.type);
 
     // Return file metadata
     return NextResponse.json({
       success: true,
-      fileUrl: `/academic-files/${uniqueFilename}`,
+      fileUrl,
       fileName: file.name,
       fileSize: file.size,
       fileType: file.type,

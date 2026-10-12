@@ -26,7 +26,7 @@ export function apiRoles(path: string, method: string): UserRole[] | null {
   if (PUBLIC_API_METHODS[path]?.includes(method)) return null;
   if (path === "/api/admin/auth/verify" && method === "GET") return CONSOLE_ROLES;
   if (/^\/api\/events\/[^/]+\/registration-(settings|fields)$/.test(path) && method === "GET") return null;
-  if (path.startsWith("/api/content/") || path === "/api/content" || path === "/api/upload") return CONTENT_ROLES;
+  if (path.startsWith("/api/content/") || path === "/api/content" || path === "/api/upload" || path === "/api/admin/content/upload-file") return CONTENT_ROLES;
   if (path === "/api/layout" || path === "/api/settings") return ADMIN_ROLES;
   if (path.startsWith("/api/broadcast")) return [...ADMIN_ROLES, "pr"];
   if (path.startsWith("/api/admin/members/") || path === "/api/admin/suspensions" || path === "/api/members/bulk") return MEMBER_REVIEW_ROLES;
@@ -60,7 +60,7 @@ export function ratePolicy(path: string): { scope: string; limit: number; window
   if (/\/(login|reset-password|forgot-password|resend-verification|verify-email)$/.test(path)) {
     return { scope: "authentication", limit: 10, windowMs: 15 * 60 * 1000 };
   }
-  if (path === "/api/upload" || /^\/api\/content\/[^/]+\/gallery$/.test(path)) {
+  if (path === "/api/upload" || path === "/api/admin/content/upload-file" || /^\/api\/content\/[^/]+\/gallery$/.test(path)) {
     return { scope: "upload", limit: 10, windowMs: 60 * 1000 };
   }
   if (path === "/api/translate") return { scope: "translate", limit: 20, windowMs: 60 * 1000 };
@@ -68,6 +68,7 @@ export function ratePolicy(path: string): { scope: string; limit: number; window
 }
 
 export function maxBodyBytes(path: string): number {
+  if (path === "/api/admin/content/upload-file") return 4 * 1024 * 1024 + 128 * 1024;
   if (path === "/api/upload") return 201 * 1024 * 1024;
   if (/^\/api\/content\/[^/]+\/gallery$/.test(path)) return 6 * 1024 * 1024;
   return 1024 * 1024;

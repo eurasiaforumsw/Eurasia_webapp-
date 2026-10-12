@@ -1,556 +1,489 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { BookOpen, FileText, FileBarChart2, ExternalLink, Search, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
+import {
+  motion,
+  useReducedMotion,
+  useScroll,
+  useTransform,
+} from "framer-motion";
+import {
+  ArrowDown,
+  ArrowUpRight,
+  BookOpen,
+  FileText,
+  Layers,
+  RefreshCw,
+  X,
+} from "lucide-react";
 import { SiteNav } from "@/components/efsw/SiteNav";
-import { getPublishedAdminContent } from "@/lib/admin-data";
+import CoverImage from "@/components/content/CoverImage";
+import {
+  ADMIN_CONTENT_KEY,
+  getAdminContent,
+  type AdminContentItem,
+} from "@/lib/admin-data";
+import {
+  filterLibraryDocuments,
+  getLibraryAuthors,
+  getLibraryDocuments,
+} from "@/lib/academic-library";
 import {
   getContentEngagement,
-  incrementViewCount,
-  incrementDownloadCount,
-  toggleLike,
   hasUserLiked,
+  incrementDownloadCount,
+  incrementViewCount,
+  toggleLike,
 } from "@/lib/content-engagement";
-import { useRouter } from "next/navigation";
 import { AuthorMarquee } from "@/components/academic/AuthorMarquee";
 import { StickyDocumentFilters } from "@/components/academic/StickyDocumentFilters";
 import { DocumentCard } from "@/components/academic/DocumentCard";
 import "./styles-light.css";
-import "./fix-contrast.css";
-
-// Document type definition
-type Document = {
-  id: string;
-  title: string;
-  category: "Research" | "Practice" | "Briefings";
-  author: string;
-  date: string;
-  summary: string;
-  tags: string[];
-  downloads: number;
-  featured?: boolean;
-  fileType?: "PDF" | "DOC" | "DOCX";
-  pageCount?: number;
-  fileUrl?: string;
-  fileName?: string;
-  fileSize?: number;
-};
-
-const CATEGORY_CONFIG = {
-  Research: {
-    icon: BookOpen,
-    color: "#3b82f6",
-    bgColor: "#eff6ff",
-    label: "Research Papers",
-    description: "Academic writing and field research",
-  },
-  Practice: {
-    icon: FileText,
-    color: "#10b981",
-    bgColor: "#ecfdf5",
-    label: "Practice Guides",
-    description: "Field manuals and practical resources",
-  },
-  Briefings: {
-    icon: FileBarChart2,
-    color: "#f59e0b",
-    bgColor: "#fef3c7",
-    label: "Policy Briefings",
-    description: "Policy perspectives and insights",
-  },
-};
 
 const SORT_OPTIONS = [
   { value: "newest", label: "Newest first" },
   { value: "oldest", label: "Oldest first" },
   { value: "popular", label: "Most downloaded" },
-  { value: "title", label: "Title A-Z" },
+  { value: "title", label: "Title A–Z" },
 ];
 
 export default function AcademicDocumentsPage() {
-  const router = useRouter();
-
-  // Load documents from admin content
-  const allDocuments = useMemo(() => {
-    const adminDocs = getPublishedAdminContent("academic"); // Use 'academic' kind
-    const mappedDocs = adminDocs.map((doc) => ({
-      id: doc.id,
-      title: doc.title,
-      category: (doc.category || "Research") as Document["category"],
-      author: doc.author || "EFSW Network",
-      date: doc.publishAt || new Date().toISOString(),
-      summary: doc.summary || "",
-      tags: doc.tags || [],
-      downloads: doc.downloadCount || Math.floor(Math.random() * 500) + 50,
-      featured: Math.random() > 0.7,
-      fileType: "PDF" as const,
-      pageCount: doc.pageCount || Math.floor(Math.random() * 50) + 5,
-      fileUrl: doc.fileUrl,
-      fileName: doc.fileName,
-      fileSize: doc.fileSize,
-    }));
-
-    // Add sample documents for demo purposes
-    const sampleDocs: Document[] = [
-      {
-        id: "doc-001",
-        title: "Social Work Practice in Rural Communities of Central Asia",
-        category: "Research",
-        author: "Dr. Aisha Karimova",
-        date: "2026-09-15T00:00:00Z",
-        summary: "A comprehensive study examining the unique challenges and opportunities for social work practice in rural areas across Kazakhstan, Kyrgyzstan, and Uzbekistan. The research explores cultural sensitivity, resource limitations, and community-based interventions.",
-        tags: ["Rural Development", "Central Asia", "Community Practice", "Cultural Competency"],
-        downloads: 342,
-        featured: true,
-        fileType: "PDF",
-        pageCount: 45,
-        fileUrl: "/academic-files/rural-communities-central-asia.pdf",
-        fileName: "Social Work Practice in Rural Communities of Central Asia.pdf",
-        fileSize: 3500000,
-      },
-      {
-        id: "doc-002",
-        title: "Field Manual: Crisis Intervention for Social Workers",
-        category: "Practice",
-        author: "EFSW Training Committee",
-        date: "2026-08-20T00:00:00Z",
-        summary: "A practical guide for social workers responding to crisis situations, including natural disasters, family emergencies, and mental health crises. Includes assessment tools, intervention protocols, and safety guidelines adapted for the Eurasian context.",
-        tags: ["Crisis Intervention", "Emergency Response", "Mental Health", "Field Guide"],
-        downloads: 567,
-        featured: true,
-        fileType: "PDF",
-        pageCount: 78,
-        fileUrl: "/academic-files/crisis-intervention-manual.pdf",
-        fileName: "Field Manual: Crisis Intervention for Social Workers.pdf",
-        fileSize: 5200000,
-      },
-      {
-        id: "doc-003",
-        title: "Policy Brief: Child Protection Systems in Southeast Asia",
-        category: "Briefings",
-        author: "Dr. Mei Lin Chen",
-        date: "2026-09-01T00:00:00Z",
-        summary: "An analysis of child protection policies across Thailand, Vietnam, and Cambodia, with recommendations for strengthening inter-agency collaboration and family support services. Includes comparative policy frameworks and implementation strategies.",
-        tags: ["Child Protection", "Policy Analysis", "Southeast Asia", "Child Welfare"],
-        downloads: 234,
-        featured: false,
-        fileType: "PDF",
-        pageCount: 28,
-        fileUrl: "/academic-files/child-protection-southeast-asia.pdf",
-        fileName: "Policy Brief: Child Protection Systems in Southeast Asia.pdf",
-        fileSize: 2100000,
-      },
-      {
-        id: "doc-004",
-        title: "Trauma-Informed Care: A Guide for Social Workers in Conflict Zones",
-        category: "Practice",
-        author: "Dr. Yuki Tanaka & Sarah Williams",
-        date: "2026-07-12T00:00:00Z",
-        summary: "Evidence-based practices for delivering trauma-informed care in regions affected by conflict and displacement. Covers trauma assessment, therapeutic approaches, and self-care for practitioners working in high-stress environments.",
-        tags: ["Trauma", "Conflict Zones", "Psychosocial Support", "Evidence-Based Practice"],
-        downloads: 489,
-        featured: false,
-        fileType: "PDF",
-        pageCount: 62,
-        fileUrl: "/academic-files/trauma-informed-care-guide.pdf",
-        fileName: "Trauma-Informed Care: A Guide for Social Workers in Conflict Zones.pdf",
-        fileSize: 4200000,
-      },
-      {
-        id: "doc-005",
-        title: "Research Report: Gender-Based Violence Prevention in South Asia",
-        category: "Research",
-        author: "Dr. Priya Sharma",
-        date: "2026-06-30T00:00:00Z",
-        summary: "A multi-country study examining community-based interventions for preventing gender-based violence in India, Bangladesh, and Pakistan. Includes quantitative data analysis and qualitative case studies from over 50 communities.",
-        tags: ["Gender-Based Violence", "Prevention", "South Asia", "Community Interventions"],
-        downloads: 412,
-        featured: false,
-        fileType: "PDF",
-        pageCount: 92,
-        fileUrl: "/academic-files/gbv-prevention-south-asia.pdf",
-        fileName: "Research Report: Gender-Based Violence Prevention in South Asia.pdf",
-        fileSize: 6100000,
-      },
-      {
-        id: "doc-006",
-        title: "Policy Brief: Mental Health Services Integration in Primary Care",
-        category: "Briefings",
-        author: "EFSW Policy Working Group",
-        date: "2026-09-10T00:00:00Z",
-        summary: "Recommendations for integrating mental health screening and services into primary healthcare settings across Eurasia. Addresses workforce training, funding mechanisms, and quality assurance frameworks.",
-        tags: ["Mental Health", "Primary Care", "Health Policy", "Service Integration"],
-        downloads: 287,
-        featured: false,
-        fileType: "PDF",
-        pageCount: 18,
-        fileUrl: "/academic-files/mental-health-integration-brief.pdf",
-        fileName: "Policy Brief: Mental Health Services Integration in Primary Care.pdf",
-        fileSize: 1800000,
-      },
-      {
-        id: "doc-007",
-        title: "Supervision in Social Work: Models and Best Practices",
-        category: "Practice",
-        author: "Prof. Michael Roberts",
-        date: "2026-05-15T00:00:00Z",
-        summary: "A comprehensive guide to social work supervision covering administrative, educational, and supportive functions. Includes case examples, supervision contracts, and evaluation tools suitable for diverse practice settings.",
-        tags: ["Supervision", "Professional Development", "Best Practices", "Leadership"],
-        downloads: 523,
-        featured: true,
-        fileType: "PDF",
-        pageCount: 55,
-        fileUrl: "/academic-files/supervision-models-best-practices.pdf",
-        fileName: "Supervision in Social Work: Models and Best Practices.pdf",
-        fileSize: 3900000,
-      },
-      {
-        id: "doc-008",
-        title: "Research: Migration and Social Work Practice in East Asia",
-        category: "Research",
-        author: "Dr. Kim Min-jun",
-        date: "2026-08-05T00:00:00Z",
-        summary: "An examination of social work responses to internal and international migration in Japan, South Korea, and Mongolia. Explores issues of cultural adaptation, family separation, and access to services for migrant populations.",
-        tags: ["Migration", "East Asia", "Cross-Cultural Practice", "Family Services"],
-        downloads: 356,
-        featured: false,
-        fileType: "PDF",
-        pageCount: 68,
-        fileUrl: "/academic-files/migration-east-asia-research.pdf",
-        fileName: "Research: Migration and Social Work Practice in East Asia.pdf",
-        fileSize: 4500000,
-      },
-      {
-        id: "doc-009",
-        title: "Policy Brief: Aging Populations and Long-Term Care",
-        category: "Briefings",
-        author: "Dr. Svetlana Ivanova",
-        date: "2026-07-22T00:00:00Z",
-        summary: "Policy recommendations for addressing the needs of rapidly aging populations across Russia, Kazakhstan, and neighboring countries. Covers community-based care, caregiver support, and sustainable financing models.",
-        tags: ["Aging", "Long-Term Care", "Elder Care", "Policy Development"],
-        downloads: 198,
-        featured: false,
-        fileType: "PDF",
-        pageCount: 22,
-        fileUrl: "/academic-files/aging-longterm-care-brief.pdf",
-        fileName: "Policy Brief: Aging Populations and Long-Term Care.pdf",
-        fileSize: 1900000,
-      },
-      {
-        id: "doc-010",
-        title: "Ethical Dilemmas in Social Work: A Casebook for Practice",
-        category: "Practice",
-        author: "EFSW Ethics Committee",
-        date: "2026-09-18T00:00:00Z",
-        summary: "A collection of real-world ethical dilemmas faced by social workers across Eurasia, with guided analysis using ethical frameworks and professional codes of conduct. Includes discussion questions and decision-making tools.",
-        tags: ["Ethics", "Professional Practice", "Case Studies", "Decision Making"],
-        downloads: 445,
-        featured: false,
-        fileType: "PDF",
-        pageCount: 82,
-        fileUrl: "/academic-files/ethical-dilemmas-casebook.pdf",
-        fileName: "Ethical Dilemmas in Social Work: A Casebook for Practice.pdf",
-        fileSize: 5300000,
-      },
-    ];
-
-    return [...mappedDocs, ...sampleDocs];
-  }, []);
-
-  // State
+  const heroRef = useRef<HTMLElement>(null);
+  const reduceMotion = useReducedMotion();
+  const { scrollYProgress } = useScroll({
+    target: heroRef,
+    offset: ["start start", "end start"],
+  });
+  const previewY = useTransform(scrollYProgress, [0, 1], [0, 48]);
+  const [items, setItems] = useState<AdminContentItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [retry, setRetry] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState("newest");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [likedDocs, setLikedDocs] = useState<Set<string>>(new Set());
   const [selectedAuthor, setSelectedAuthor] = useState<string | null>(null);
+  const [likedDocs, setLikedDocs] = useState<Set<string>>(new Set());
+  const [engagementRevision, setEngagementRevision] = useState(0);
 
-  // Load liked state on mount
-  useMemo(() => {
-    const liked = new Set<string>();
-    allDocuments.forEach((doc) => {
-      if (hasUserLiked(doc.id)) {
-        liked.add(doc.id);
-      }
-    });
-    setLikedDocs(liked);
-  }, [allDocuments]);
-
-  // Get all unique tags
-  const allTags = useMemo(() => {
-    const tags = new Set<string>();
-    allDocuments.forEach((doc) => doc.tags.forEach((tag) => tags.add(tag)));
-    return Array.from(tags).sort();
-  }, [allDocuments]);
-
-  // Calculate author stats
-  const authorStats = useMemo(() => {
-    const stats = new Map<string, {
-      id: string;
-      name: string;
-      documentCount: number;
-      totalViews: number;
-      latestDate: string;
-      profileImage?: string;
-    }>();
-
-    allDocuments.forEach((doc) => {
-      const existing = stats.get(doc.author);
-      const engagement = getContentEngagement(doc.id);
-
-      if (existing) {
-        existing.documentCount++;
-        existing.totalViews += engagement.viewCount || 0;
-        if (new Date(doc.date) > new Date(existing.latestDate)) {
-          existing.latestDate = doc.date;
+  useEffect(() => {
+    let disposed = false;
+    let controller: AbortController | undefined;
+    const refresh = async () => {
+      controller?.abort();
+      const requestController = new AbortController();
+      controller = requestController;
+      setLoadError(false);
+      try {
+        let nextItems: AdminContentItem[];
+        if (
+          !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+          !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+        ) {
+          nextItems = getAdminContent();
+        } else {
+          const responses = await Promise.all(
+            ["academic", "document"].map((kind) =>
+              fetch(`/api/content/public?kind=${kind}`, {
+                cache: "no-store",
+                signal: requestController.signal,
+              }),
+            ),
+          );
+          if (responses.some((response) => !response.ok))
+            throw new Error("Library unavailable");
+          const payloads = await Promise.all(
+            responses.map(
+              (response) =>
+                response.json() as Promise<{ items: AdminContentItem[] }>,
+            ),
+          );
+          nextItems = payloads.flatMap((payload) => payload.items);
         }
-      } else {
-        stats.set(doc.author, {
-          id: doc.author.toLowerCase().replace(/\s+/g, "-"),
-          name: doc.author,
-          documentCount: 1,
-          totalViews: engagement.viewCount || 0,
-          latestDate: doc.date,
-        });
+        if (!disposed) setItems(nextItems);
+      } catch (error) {
+        if (
+          !disposed &&
+          !(error instanceof Error && error.name === "AbortError")
+        )
+          setLoadError(true);
+      } finally {
+        if (!disposed && !requestController.signal.aborted) setLoading(false);
       }
-    });
+    };
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === ADMIN_CONTENT_KEY) void refresh();
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") void refresh();
+    };
+    void refresh();
+    window.addEventListener("storage", onStorage);
+    window.addEventListener("pageshow", refresh);
+    window.addEventListener("efsw:content-changed", refresh);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      disposed = true;
+      controller?.abort();
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener("pageshow", refresh);
+      window.removeEventListener("efsw:content-changed", refresh);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [retry]);
 
-    return Array.from(stats.values());
-  }, [allDocuments]);
+  const allDocuments = useMemo(
+    () =>
+      getLibraryDocuments(items).map((doc) => {
+        const engagement = getContentEngagement(doc.id);
+        return {
+          ...doc,
+          downloadCount: (doc.downloadCount || 0) + engagement.downloadCount,
+        };
+      }),
+    [items, engagementRevision],
+  );
+  const authors = useMemo(
+    () => getLibraryAuthors(allDocuments),
+    [allDocuments],
+  );
+  const allTags = useMemo(
+    () => Array.from(new Set(allDocuments.flatMap((doc) => doc.tags))).sort(),
+    [allDocuments],
+  );
+  const categories = useMemo(
+    () =>
+      Array.from(new Set(allDocuments.map((doc) => doc.category))).map(
+        (value) => ({
+          value,
+          label:
+            (
+              {
+                Research: "Research papers",
+                Practice: "Practice guides",
+                Briefings: "Policy briefings",
+              } as Record<string, string>
+            )[value] || value,
+          count: allDocuments.filter((doc) => doc.category === value).length,
+        }),
+      ),
+    [allDocuments],
+  );
+  const filteredDocuments = useMemo(
+    () =>
+      filterLibraryDocuments(allDocuments, {
+        query: searchQuery,
+        category: selectedCategory,
+        author: selectedAuthor,
+        tags: selectedTags,
+        sort: sortBy,
+      }),
+    [
+      allDocuments,
+      searchQuery,
+      selectedCategory,
+      selectedAuthor,
+      selectedTags,
+      sortBy,
+    ],
+  );
+  const spotlight = useMemo(
+    () =>
+      [...allDocuments].sort(
+        (a, b) =>
+          Number(Boolean(b.featured)) - Number(Boolean(a.featured)) ||
+          Date.parse(b.date) - Date.parse(a.date),
+      )[0],
+    [allDocuments],
+  );
 
-  // Filter and sort documents
-  const filteredDocuments = useMemo(() => {
-    let filtered = [...allDocuments];
-
-    // Author filter
-    if (selectedAuthor) {
-      filtered = filtered.filter((doc) =>
-        doc.author.toLowerCase().replace(/\s+/g, "-") === selectedAuthor
-      );
-    }
-
-    // Search
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        (doc) =>
-          doc.title.toLowerCase().includes(query) ||
-          doc.summary.toLowerCase().includes(query) ||
-          doc.author.toLowerCase().includes(query) ||
-          doc.tags.some((tag) => tag.toLowerCase().includes(query))
-      );
-    }
-
-    // Category filter
-    if (selectedCategory) {
-      filtered = filtered.filter((doc) => doc.category === selectedCategory);
-    }
-
-    // Tags filter
-    if (selectedTags.length > 0) {
-      filtered = filtered.filter((doc) =>
-        selectedTags.some((tag) => doc.tags.includes(tag))
-      );
-    }
-
-    // Sort
-    filtered.sort((a, b) => {
-      switch (sortBy) {
-        case "newest":
-          return new Date(b.date).getTime() - new Date(a.date).getTime();
-        case "oldest":
-          return new Date(a.date).getTime() - new Date(b.date).getTime();
-        case "popular":
-          return b.downloads - a.downloads;
-        case "title":
-          return a.title.localeCompare(b.title);
-        default:
-          return 0;
-      }
-    });
-
-    return filtered;
-  }, [allDocuments, searchQuery, selectedCategory, selectedTags, sortBy, selectedAuthor]);
-
-  // Get category stats
-  const categoryStats = useMemo(() => {
-    const stats: Record<string, number> = {};
-    allDocuments.forEach((doc) => {
-      stats[doc.category] = (stats[doc.category] || 0) + 1;
-    });
-    return stats;
-  }, [allDocuments]);
-
-  const categories = useMemo(() => {
-    return [
-      { value: "Research", label: "Research Papers", count: categoryStats["Research"] || 0 },
-      { value: "Practice", label: "Practice Guides", count: categoryStats["Practice"] || 0 },
-      { value: "Briefings", label: "Policy Briefings", count: categoryStats["Briefings"] || 0 },
-    ];
-  }, [categoryStats]);
-
-  const handleAuthorClick = (authorId: string) => {
-    setSelectedAuthor(selectedAuthor === authorId ? null : authorId);
-    window.scrollTo({ top: 800, behavior: "smooth" });
-  };
-
-  const toggleTag = (tag: string) => {
-    setSelectedTags((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+  useEffect(() => {
+    setLikedDocs(
+      new Set(
+        allDocuments.filter((doc) => hasUserLiked(doc.id)).map((doc) => doc.id),
+      ),
     );
-  };
+  }, [allDocuments]);
 
+  useEffect(() => {
+    const requested = new URLSearchParams(window.location.search).get(
+      "category",
+    );
+    if (!requested) return;
+    const match = categories.find(
+      (category) =>
+        category.value.toLowerCase() === requested.toLowerCase() ||
+        category.label.toLowerCase() === requested.toLowerCase(),
+    );
+    if (match) setSelectedCategory(match.value);
+  }, [categories]);
+
+  const scrollToDocuments = useCallback(() => {
+    document
+      .getElementById("documents")
+      ?.scrollIntoView({
+        behavior: reduceMotion ? "auto" : "smooth",
+        block: "start",
+      });
+  }, [reduceMotion]);
   const clearFilters = () => {
     setSearchQuery("");
     setSelectedCategory(null);
     setSelectedTags([]);
     setSelectedAuthor(null);
   };
-
-  const handleLike = (docId: string, e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const { liked } = toggleLike(docId);
-    setLikedDocs((prev) => {
-      const next = new Set(prev);
-      if (liked) {
-        next.add(docId);
-      } else {
-        next.delete(docId);
-      }
+  const handleLike = (id: string, event: React.MouseEvent) => {
+    event.preventDefault();
+    const { liked } = toggleLike(id);
+    setLikedDocs((previous) => {
+      const next = new Set(previous);
+      if (liked) next.add(id);
+      else next.delete(id);
       return next;
     });
   };
-
-  const handleView = (docId: string) => {
-    incrementViewCount(docId);
-    router.push(`/academic-documents/${docId}`);
-  };
-
-  const handleDownload = (docId: string, e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    incrementDownloadCount(docId);
-
-    const doc = allDocuments.find(d => d.id === docId);
-    if (doc?.fileUrl) {
-      // Create download link
-      const link = document.createElement('a');
-      link.href = doc.fileUrl;
-      link.download = doc.fileName || `${doc.title}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } else {
-      // Fallback for mock data
-      alert(`Download started for document: ${docId}`);
-    }
+  const handleDownload = (id: string) => {
+    incrementDownloadCount(id);
+    setEngagementRevision((value) => value + 1);
   };
 
   return (
     <>
       <SiteNav />
-      <main className="academic-library">
-        {/* Hero Section with Marquee */}
-        <section className="academic-hero">
+      <div className="academic-library">
+        <section
+          ref={heroRef}
+          className="academic-hero"
+          aria-labelledby="library-title"
+        >
           <div className="academic-hero__inner">
             <div className="academic-hero__content">
-              <span className="academic-hero__eyebrow">Knowledge Hub</span>
-              <h1 className="academic-hero__title">
-                Academic Documents
+              <span className="academic-hero__eyebrow">
+                <BookOpen size={16} aria-hidden="true" /> The EFSW knowledge hub
+              </span>
+              <h1 id="library-title" className="academic-hero__title">
+                Academic
+                <br />
+                <span>Documents.</span>
               </h1>
               <p className="academic-hero__description">
-                A shared library of research papers, field manuals, and policy briefings
-                from social work practitioners and researchers across Eurasia.
+                Research that informs. Practice that connects. Explore a shared
+                library of ideas and resources from social workers across
+                Eurasia.
               </p>
-              <div className="academic-hero__stats">
+              <a
+                href="#documents"
+                className="academic-btn academic-btn--primary"
+              >
+                Explore the library <ArrowDown size={18} aria-hidden="true" />
+              </a>
+              <div
+                className="academic-hero__stats"
+                aria-label="Library overview"
+              >
                 <div className="academic-hero__stat">
-                  <strong>{allDocuments.length}</strong>
+                  <strong>{loading ? "—" : allDocuments.length}</strong>
                   <span>Documents</span>
                 </div>
                 <div className="academic-hero__stat">
-                  <strong>{authorStats.length}</strong>
-                  <span>Authors</span>
+                  <strong>{loading ? "—" : authors.length}</strong>
+                  <span>Contributors</span>
                 </div>
                 <div className="academic-hero__stat">
-                  <strong>{allTags.length}</strong>
-                  <span>Topics</span>
+                  <strong>{loading ? "—" : allTags.length}</strong>
+                  <span>Topics to explore</span>
                 </div>
               </div>
             </div>
+            <motion.div
+              className="academic-hero__preview"
+              style={reduceMotion ? undefined : { y: previewY }}
+            >
+              <div className="academic-preview__label">
+                <span>
+                  {spotlight?.featured ? "Editor's pick" : "From the library"}
+                </span>
+                <Layers size={18} aria-hidden="true" />
+              </div>
+              {spotlight ? (
+                <Link
+                  href={`/academic-documents/${encodeURIComponent(spotlight.id)}`}
+                  className="academic-preview"
+                  onClick={() => incrementViewCount(spotlight.id)}
+                >
+                  <div className="academic-preview__cover">
+                    {spotlight.coverImage ? (
+                      <CoverImage
+                        src={spotlight.coverImage}
+                        crop={spotlight.coverImageCrop}
+                        alt=""
+                        loading="eager"
+                      />
+                    ) : (
+                      <BookOpen size={72} strokeWidth={1} aria-hidden="true" />
+                    )}
+                    <span className="academic-preview__format">
+                      {spotlight.fileUrl
+                        ? "Document + download"
+                        : "Read online"}
+                    </span>
+                  </div>
+                  <div className="academic-preview__body">
+                    <span className="academic-preview__category">
+                      {spotlight.category}
+                    </span>
+                    <h2>{spotlight.title}</h2>
+                    <p>{spotlight.author}</p>
+                    <span className="academic-preview__link">
+                      Open document{" "}
+                      <ArrowUpRight size={18} aria-hidden="true" />
+                    </span>
+                  </div>
+                </Link>
+              ) : (
+                <div className="academic-preview academic-preview--intro">
+                  <BookOpen size={64} strokeWidth={1} aria-hidden="true" />
+                  <h2>
+                    Knowledge moves
+                    <br />
+                    practice forward.
+                  </h2>
+                  <p>
+                    Research papers, practice guides, and policy perspectives.
+                    One shared space.
+                  </p>
+                  <a href="#documents">
+                    Browse the collection{" "}
+                    <ArrowDown size={18} aria-hidden="true" />
+                  </a>
+                </div>
+              )}
+              <p className="academic-preview__note">
+                Shared knowledge. Stronger communities.
+              </p>
+            </motion.div>
           </div>
-
-          {/* Author Marquee */}
-          <AuthorMarquee
-            authors={authorStats}
-            sortMode="popular"
-            onAuthorClick={handleAuthorClick}
-          />
         </section>
 
-        {/* Sticky Filters */}
-        <StickyDocumentFilters
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          selectedCategory={selectedCategory}
-          onCategoryChange={setSelectedCategory}
-          categories={categories}
-          selectedTags={selectedTags}
-          onTagsChange={setSelectedTags}
-          allTags={allTags}
-          sortBy={sortBy}
-          onSortChange={setSortBy}
-          sortOptions={SORT_OPTIONS}
-          viewMode={viewMode}
-          onViewModeChange={setViewMode}
-          resultsCount={filteredDocuments.length}
-        />
+        {authors.length > 0 && (
+          <section
+            className="academic-contributors"
+            aria-labelledby="contributors-title"
+          >
+            <div className="academic-section-heading">
+              <div>
+                <h2 id="contributors-title">The people behind the ideas.</h2>
+                <p>Select a contributor to discover their work.</p>
+              </div>
+            </div>
+            <AuthorMarquee
+              authors={authors}
+              selectedAuthor={selectedAuthor}
+              sortMode="prolific"
+              onAuthorClick={(id) => {
+                setSelectedAuthor((previous) => (previous === id ? null : id));
+                scrollToDocuments();
+              }}
+            />
+          </section>
+        )}
 
-        {/* Documents Grid */}
-        <section className="academic-results">
-          <div className="academic-results__inner">
+        <section
+          id="documents"
+          className="academic-collection"
+          aria-labelledby="collection-title"
+        >
+          <div className="academic-section-heading academic-section-heading--collection">
+            <div>
+              <h2 id="collection-title">Find your next perspective.</h2>
+              <p>
+                Explore the collection by topic, author, or the questions that
+                matter to you.
+              </p>
+            </div>
+            <FileText size={32} strokeWidth={1.3} aria-hidden="true" />
+          </div>
+          <StickyDocumentFilters
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            selectedCategory={selectedCategory}
+            onCategoryChange={setSelectedCategory}
+            categories={categories}
+            selectedTags={selectedTags}
+            onTagsChange={setSelectedTags}
+            allTags={allTags}
+            sortBy={sortBy}
+            onSortChange={setSortBy}
+            sortOptions={SORT_OPTIONS}
+            viewMode={viewMode}
+            onViewModeChange={setViewMode}
+            resultsCount={filteredDocuments.length}
+          />
+          <div className="academic-results" aria-busy={loading}>
             {selectedAuthor && (
               <div className="academic-results__filter-notice">
                 <span>
-                  Showing documents by{" "}
+                  Documents by{" "}
                   <strong>
-                    {authorStats.find((a) => a.id === selectedAuthor)?.name}
+                    {authors.find((author) => author.id === selectedAuthor)
+                      ?.name || selectedAuthor}
                   </strong>
                 </span>
-                <button
-                  type="button"
-                  onClick={() => setSelectedAuthor(null)}
-                  className="academic-results__clear-filter"
-                >
-                  Clear
+                <button type="button" onClick={() => setSelectedAuthor(null)}>
+                  Clear author <X size={16} aria-hidden="true" />
                 </button>
               </div>
             )}
-
-            {filteredDocuments.length === 0 ? (
-              <div className="academic-empty">
-                <BookOpen size={48} />
-                <h3>No documents found</h3>
-                <p>Try adjusting your filters or search query</p>
+            {loadError && (
+              <div className="academic-load-error" role="alert">
+                <p>The library could not be refreshed. Please try again.</p>
                 <button
                   type="button"
-                  onClick={clearFilters}
-                  className="academic-btn academic-btn--primary"
+                  onClick={() => {
+                    setLoading(true);
+                    setRetry((value) => value + 1);
+                  }}
                 >
-                  Clear all filters
+                  <RefreshCw size={16} aria-hidden="true" /> Retry
                 </button>
+              </div>
+            )}
+            {loading ? (
+              <div className="academic-loading" role="status">
+                <BookOpen size={24} aria-hidden="true" /> Loading the library…
+              </div>
+            ) : filteredDocuments.length === 0 ? (
+              <div className="academic-empty">
+                <BookOpen size={40} strokeWidth={1.3} aria-hidden="true" />
+                <h3>
+                  {allDocuments.length
+                    ? "No documents match yet."
+                    : "The next chapter starts here."}
+                </h3>
+                <p>
+                  {allDocuments.length
+                    ? "Try another keyword or clear your filters to explore the collection."
+                    : "Published documents will appear here as the library grows."}
+                </p>
+                {allDocuments.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={clearFilters}
+                    className="academic-btn academic-btn--secondary"
+                  >
+                    Clear all filters
+                  </button>
+                )}
               </div>
             ) : (
               <div
-                className={`academic-grid ${
-                  viewMode === "list" ? "academic-grid--list" : ""
-                }`}
+                className={`academic-grid ${viewMode === "list" ? "academic-grid--list" : ""}`}
               >
                 {filteredDocuments.map((doc) => {
                   const engagement = getContentEngagement(doc.id);
-                  const isLiked = likedDocs.has(doc.id);
-
                   return (
                     <DocumentCard
                       key={doc.id}
@@ -561,18 +494,20 @@ export default function AcademicDocumentsPage() {
                       date={doc.date}
                       summary={doc.summary}
                       tags={doc.tags}
-                      downloads={doc.downloads}
+                      downloads={doc.downloadCount || 0}
                       featured={doc.featured}
-                      viewCount={engagement.viewCount || 0}
-                      likeCount={engagement.likeCount || 0}
-                      isLiked={isLiked}
+                      viewCount={(doc.viewCount || 0) + engagement.viewCount}
+                      likeCount={(doc.likeCount || 0) + engagement.likeCount}
+                      isLiked={likedDocs.has(doc.id)}
+                      coverImage={doc.coverImage}
+                      coverImageCrop={doc.coverImageCrop}
                       fileUrl={doc.fileUrl}
                       fileName={doc.fileName}
                       fileSize={doc.fileSize}
                       pageCount={doc.pageCount}
-                      onView={() => handleView(doc.id)}
-                      onLike={(e) => handleLike(doc.id, e)}
-                      onDownload={(e) => handleDownload(doc.id, e)}
+                      onView={() => incrementViewCount(doc.id)}
+                      onLike={(event) => handleLike(doc.id, event)}
+                      onDownload={() => handleDownload(doc.id)}
                     />
                   );
                 })}
@@ -581,29 +516,32 @@ export default function AcademicDocumentsPage() {
           </div>
         </section>
 
-        {/* CTA Section */}
         <section className="academic-cta">
           <div className="academic-cta__inner">
-            <h2>Share your knowledge</h2>
-            <p>
-              Have research or resources to contribute? Help grow this library
-              by sharing your work with the EFSW community.
-            </p>
+            <div>
+              <h2>
+                Share your knowledge.
+                <br />
+                <span>Grow our collective impact.</span>
+              </h2>
+              <p>
+                Have research or resources to contribute? Share your work with
+                the EFSW community.
+              </p>
+            </div>
             <a
               href="mailto:support@eurasiaforumsw.org"
               className="academic-btn academic-btn--primary"
             >
-              Submit a document
-              <ExternalLink size={16} />
+              Submit a document <ArrowUpRight size={18} aria-hidden="true" />
             </a>
           </div>
         </section>
-
         <footer className="academic-footer">
-          <span>© 2026 EFSW</span>
           <a href="/">Eurasia Forum for Social Workers</a>
+          <span>© 2026 EFSW · Connect. Empower. Advocate.</span>
         </footer>
-      </main>
+      </div>
     </>
   );
 }

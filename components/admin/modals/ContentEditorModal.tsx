@@ -56,7 +56,7 @@ interface ContentEditorModalProps {
   initialItem: AdminContentItem | null;
   isOpen: boolean;
   onClose: () => void;
-  onSave: (item: AdminContentItem) => void;
+  onSave: (item: AdminContentItem) => Promise<void>;
   onDelete?: (id: string) => void;
   contentCategories?: AdminContentCategory[];
 }
@@ -132,6 +132,9 @@ export const ContentEditorModal = memo(function ContentEditorModal({
     initialItem?.tags ? initialItem.tags.join(", ") : "",
   );
   const [isCompressing, setIsCompressing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingPortrait, setIsUploadingPortrait] = useState(false);
+  const [isUploadingDocument, setIsUploadingDocument] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const [coverImageStatus, setCoverImageStatus] = useState<"empty" | "uploading" | "remote" | "local">(
     initialItem?.coverImage?.startsWith("data:") ? "local" : initialItem?.coverImage ? "remote" : "empty",
@@ -145,6 +148,11 @@ export const ContentEditorModal = memo(function ContentEditorModal({
   const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
   const [hasGallery, setHasGallery] = useState(false);
   const { addToast } = useToast();
+  const isBusy = isSaving || isCompressing || isUploadingPortrait || isUploadingDocument;
+
+  const handleClose = () => {
+    if (!isBusy) onClose();
+  };
 
   useEffect(() => {
     if (isOpen) {
@@ -162,6 +170,7 @@ export const ContentEditorModal = memo(function ContentEditorModal({
         setCoverImageStatus("remote");
       }
       setCoverImageError(null);
+      setIsSaving(false);
       setShowCropModal(false);
       setGalleryImages([]);
       setHasGallery(false);
@@ -308,6 +317,23 @@ export const ContentEditorModal = memo(function ContentEditorModal({
     if (file) handleImageUpload(file);
   };
 
+  const handlePortraitUpload = async (file: File) => {
+    if (!file.type.startsWith("image/") || file.size > 4 * 1024 * 1024) {
+      addToast({ type: "error", title: "Invalid portrait", description: "Choose a JPG, PNG, WebP, or AVIF image of 4 MB or less." });
+      return;
+    }
+    setIsUploadingPortrait(true);
+    try {
+      const { url } = await uploadImageToR2(file);
+      setFormData((prev) => ({ ...prev, authorImage: url }));
+      addToast({ type: "success", title: "Author portrait uploaded" });
+    } catch (err) {
+      addToast({ type: "error", title: "Portrait upload failed", description: err instanceof Error ? err.message : "Please try again." });
+    } finally {
+      setIsUploadingPortrait(false);
+    }
+  };
+
   const handleDrop = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setIsDragOver(false);
@@ -341,8 +367,9 @@ export const ContentEditorModal = memo(function ContentEditorModal({
     });
   };
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    if (isBusy) return;
     if (!formData.title.trim()) {
       addToast({ type: "error", title: "Title required", description: "Please enter a title before saving." });
       return;
@@ -374,17 +401,20 @@ export const ContentEditorModal = memo(function ContentEditorModal({
       updatedAt: new Date().toISOString(),
     };
 
-    // Save gallery images if enabled
-    if (hasGallery && updated.id) {
-      saveGalleryImages(updated.id);
+    setIsSaving(true);
+    try {
+      await onSave(updated);
+      if (hasGallery && updated.id) await saveGalleryImages(updated.id);
+      addToast({
+        type: "success",
+        title: formData.id ? "Content updated" : "Content created",
+        description: `${KIND_LABELS[updated.kind]} saved to the library.`,
+      });
+    } catch (err) {
+      addToast({ type: "error", title: "Content could not be saved", description: err instanceof Error ? err.message : "Please try again." });
+    } finally {
+      setIsSaving(false);
     }
-
-    onSave(updated);
-    addToast({
-      type: "success",
-      title: formData.id ? "Content updated" : "Content created",
-      description: `${KIND_LABELS[updated.kind]} saved to the library.`,
-    });
   };
 
   const saveGalleryImages = async (contentId: string) => {
@@ -418,13 +448,8 @@ export const ContentEditorModal = memo(function ContentEditorModal({
   };
 
   const handleDelete = () => {
-    if (!formData.id || !onDelete) return;
+    if (isBusy || !formData.id || !onDelete) return;
     onDelete(formData.id);
-    addToast({
-      type: "success",
-      title: "Content deleted",
-      description: "The content has been removed from the library.",
-    });
   };
 
   // ── Sidebar state helpers ──
@@ -448,7 +473,18 @@ export const ContentEditorModal = memo(function ContentEditorModal({
 
   return (
     <div className="efsw-admin-modal-layer">
-      <div className="efsw-admin-editor" role="dialog" aria-label={isEditing ? "Edit content" : "Create content"}>
+      <div
+        className="efsw-admin-editor"
+        role="dialog"
+        aria-label={isEditing ? "Edit content" : "Create content"}
+        aria-busy={isBusy}
+        onKeyDown={(e) => {
+          if (e.key === "Escape" && isBusy) {
+            e.preventDefault();
+            e.stopPropagation();
+          }
+        }}
+      >
         <header>
           <div>
             <span className="efsw-admin-eyebrow">
@@ -459,7 +495,8 @@ export const ContentEditorModal = memo(function ContentEditorModal({
           <button
             type="button"
             className="efsw-admin-icon-button"
-            onClick={onClose}
+            onClick={handleClose}
+            disabled={isBusy}
             aria-label="Close editor"
           >
             <X size={16} />
@@ -532,14 +569,16 @@ export const ContentEditorModal = memo(function ContentEditorModal({
                   Content type
                 </label>
                 <div className="efsw-admin-segmented" style={{ alignSelf: "start" }}>
-                  {(["news", "document", "event"] as AdminContentKind[]).map((kind) => {
+                  {(["news", "document", "academic", "event"] as AdminContentKind[]).map((kind) => {
                     const Icon = KIND_ICON[kind];
                     return (
                       <button
                         key={kind}
                         type="button"
                         onClick={() => setFormData((prev) => ({ ...prev, kind }))}
+                        disabled={isBusy}
                         className={formData.kind === kind ? "is-active" : ""}
+                        aria-pressed={formData.kind === kind}
                       >
                         <Icon size={13} />
                         <span style={{ textTransform: "capitalize" }}>{kind}</span>
@@ -617,6 +656,48 @@ export const ContentEditorModal = memo(function ContentEditorModal({
                 />
               </label>
             </div>
+
+            {(formData.kind === "academic" || formData.kind === "document") && (
+              <div style={{ display: "grid", gap: "0.85rem", padding: "1rem", border: "1px solid var(--admin-line)", background: "var(--admin-surface-deep)" }}>
+                <div className="efsw-admin-form-grid">
+                  <label>
+                    Author portrait URL
+                    <input
+                      type="text"
+                      value={formData.authorImage || ""}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, authorImage: e.target.value }))}
+                      placeholder="https://… or /images/author.webp"
+                    />
+                    <small style={{ color: "var(--admin-muted)" }}>Public portrait shown in the library author marquee.</small>
+                  </label>
+                  <label>
+                    Upload author portrait
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/avif"
+                      disabled={isBusy}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) void handlePortraitUpload(file);
+                        e.target.value = "";
+                      }}
+                    />
+                    <small style={{ color: "var(--admin-muted)" }}>JPG, PNG, WebP, or AVIF; maximum 4 MB.</small>
+                    {isUploadingPortrait && <small role="status">Uploading portrait…</small>}
+                  </label>
+                </div>
+                {formData.authorImage && (
+                  <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+                    <img src={formData.authorImage} alt={formData.author ? `${formData.author} portrait` : "Author portrait preview"} width={80} height={80} style={{ borderRadius: "50%", objectFit: "cover" }} />
+                    <button type="button" className="efsw-admin-text-action" onClick={() => setFormData((prev) => ({ ...prev, authorImage: undefined }))}>Remove portrait</button>
+                  </div>
+                )}
+                <label style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
+                  <input type="checkbox" checked={formData.featured === true} onChange={(e) => setFormData((prev) => ({ ...prev, featured: e.target.checked }))} />
+                  Feature this document in the academic library
+                </label>
+              </div>
+            )}
           </fieldset>
 
           {/* ── Event-only scheduling ─────────────────────────── */}
@@ -1061,7 +1142,7 @@ export const ContentEditorModal = memo(function ContentEditorModal({
           </fieldset>
 
           {/* ── Academic File Upload ──────────────────────────────── */}
-          {formData.kind === "academic" && (
+          {(formData.kind === "academic" || formData.kind === "document") && (
             <fieldset
               style={{
                 display: "grid",
@@ -1084,6 +1165,7 @@ export const ContentEditorModal = memo(function ContentEditorModal({
               </legend>
 
               <AcademicFileUploader
+                onUploadingChange={setIsUploadingDocument}
                 onFileSelect={async (file) => {
                   try {
                     const formData = new FormData();
@@ -1141,6 +1223,30 @@ export const ContentEditorModal = memo(function ContentEditorModal({
                   }));
                 }}
               />
+              <div className="efsw-admin-form-grid">
+                <label>
+                  Hosted document URL
+                  <input type="text" value={formData.fileUrl || ""} onChange={(e) => setFormData((prev) => ({ ...prev, fileUrl: e.target.value || undefined }))} placeholder="https://… or /academic-files/document.pdf" />
+                  <small style={{ color: "var(--admin-muted)" }}>Use a public PDF or Word file URL for attachments larger than 4 MB.</small>
+                </label>
+                <label>
+                  Download filename
+                  <input type="text" value={formData.fileName || ""} onChange={(e) => setFormData((prev) => ({ ...prev, fileName: e.target.value || undefined }))} placeholder="research-paper.pdf" />
+                </label>
+                <label>
+                  Document format
+                  <select value={formData.fileType || ""} onChange={(e) => setFormData((prev) => ({ ...prev, fileType: e.target.value || undefined }))}>
+                    <option value="">Unspecified</option>
+                    <option value="application/pdf">PDF</option>
+                    <option value="application/msword">Word (.doc)</option>
+                    <option value="application/vnd.openxmlformats-officedocument.wordprocessingml.document">Word (.docx)</option>
+                  </select>
+                </label>
+                <label>
+                  Page count
+                  <input type="number" min={1} step={1} value={formData.pageCount || ""} onChange={(e) => setFormData((prev) => ({ ...prev, pageCount: e.target.value ? Number(e.target.value) : undefined }))} placeholder="Optional" />
+                </label>
+              </div>
             </fieldset>
           )}
 
@@ -1587,6 +1693,7 @@ export const ContentEditorModal = memo(function ContentEditorModal({
               <button
                 type="button"
                 onClick={handleDelete}
+                disabled={isBusy}
                 className="efsw-admin-text-action"
                 style={{ color: "var(--admin-danger)", marginRight: "auto" }}
               >
@@ -1596,11 +1703,11 @@ export const ContentEditorModal = memo(function ContentEditorModal({
               <span style={{ marginRight: "auto" }} />
             )}
 
-            <button type="button" onClick={onClose} className="efsw-admin-text-action">
+            <button type="button" onClick={handleClose} disabled={isBusy} className="efsw-admin-text-action">
               Cancel
             </button>
-            <button type="submit" className="efsw-admin-text-action" style={{ color: "var(--admin-green)", fontSize: "0.78rem" }}>
-              <Save size={14} /> {isEditing ? "Update content" : "Create content"}
+            <button type="submit" disabled={isBusy} className="efsw-admin-text-action" style={{ color: "var(--admin-green)", fontSize: "0.78rem" }}>
+              <Save size={14} /> {isSaving ? "Saving…" : isEditing ? "Update content" : "Create content"}
             </button>
           </div>
         </form>

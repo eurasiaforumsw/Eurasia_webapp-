@@ -7,6 +7,7 @@ import {
   ArrowUpRight,
   Calendar,
   Clock,
+  Download,
   Image as ImageIcon,
   MapPin,
   Tag,
@@ -22,6 +23,7 @@ import { useTranslatedFields } from "@/hooks/useTranslatedFields";
 import { useI18n } from "@/contexts/I18nContext";
 import {
   ADMIN_CONTENT_KEY,
+  getAdminContent,
   getPublishedContentBySlug,
   getRelatedContent,
   type AdminContentItem,
@@ -29,18 +31,21 @@ import {
 } from "@/lib/admin-data";
 import { getSessionMember, type MemberProfile } from "@/lib/member-auth";
 import { EngagementRow, RecordView } from "@/components/efsw/EngagementRow";
+import { articleBodyText } from "@/lib/article-body";
+import { getLibraryDocuments } from "@/lib/academic-library";
 
 export type ArticleSeed = Pick<
   AdminContentItem,
   "id" | "category" | "title" | "summary" | "body"
-> & Partial<Pick<AdminContentItem, "coverImage" | "coverImageCrop" | "imageCaption" | "author" | "tags" | "updatedAt" | "startsAt" | "endsAt" | "venue" | "format" | "registrationUrl">>;
+> & Partial<Pick<AdminContentItem, "coverImage" | "coverImageCrop" | "imageCaption" | "author" | "tags" | "updatedAt" | "startsAt" | "endsAt" | "venue" | "format" | "registrationUrl" | "fileUrl" | "fileName" | "fileSize" | "fileType" | "pageCount">>;
 
 type ArticleViewProps = {
   kind: AdminContentKind;
   slug: string;
-  /** Build-time copy rendered before localStorage hydration. */
+  /** Initial copy supplied by the detail route. */
   seed: ArticleSeed;
   backHref: string;
+  contentSource?: "local" | "public" | "local-library";
 };
 
 const formatDate = (value?: string) => {
@@ -77,7 +82,7 @@ const formatDateRange = (startsAt?: string, endsAt?: string) => {
 
 /* ~200 wpm is the usual reading-time baseline for editorial prose. */
 const readingMinutes = (body?: string, summary?: string) => {
-  const words = `${summary ?? ""} ${body ?? ""}`.trim().split(/\s+/).filter(Boolean).length;
+  const words = `${summary ?? ""} ${articleBodyText(body)}`.trim().split(/\s+/).filter(Boolean).length;
   return Math.max(1, Math.round(words / 200));
 };
 
@@ -89,7 +94,7 @@ type Block =
 
 const parseBody = (body?: string): Block[] => {
   if (!body?.trim()) return [];
-  return body.split(/\n{2,}/).flatMap<Block>((chunk) => {
+  return articleBodyText(body).split(/\n{2,}/).flatMap<Block>((chunk) => {
     const lines = chunk.split("\n").map((line) => line.trim()).filter(Boolean);
     const blocks: Block[] = [];
     let list: string[] = [];
@@ -124,7 +129,7 @@ type GalleryImage = {
   height?: number;
 };
 
-export default function ArticleView({ kind, slug, seed, backHref }: ArticleViewProps) {
+export default function ArticleView({ kind, slug, seed, backHref, contentSource = "local" }: ArticleViewProps) {
   const { t } = useI18n();
   const [article, setArticle] = useState<ArticleSeed>(seed);
   const [related, setRelated] = useState<AdminContentItem[]>([]);
@@ -144,9 +149,38 @@ export default function ArticleView({ kind, slug, seed, backHref }: ArticleViewP
     };
   }, []);
 
-  // Published content lives in localStorage, so the admin's copy replaces the
-  // build-time seed once mounted. Refreshes on cross-tab edits.
+  // Academic routes receive authoritative public content from the server.
+  // Keep that copy and use the public API for related papers; local browser
+  // drafts must never replace a published record on these routes.
   useEffect(() => {
+    if (contentSource === "local-library") {
+      setArticle(seed);
+      setRelated(getLibraryDocuments(getAdminContent())
+        .filter((item) => item.id !== slug)
+        .sort((a, b) => (b.updatedAt ?? "").localeCompare(a.updatedAt ?? ""))
+        .slice(0, 3));
+      return;
+    }
+    if (contentSource === "public") {
+      const controller = new AbortController();
+      setArticle(seed);
+      const refresh = async () => {
+        try {
+          const response = await fetch("/api/content/public", { signal: controller.signal });
+          if (!response.ok) throw new Error("Failed to load related documents");
+          const { items } = await response.json() as { items: AdminContentItem[] };
+          setRelated(items
+            .filter((item) => (item.kind === "academic" || item.kind === "document") && item.id !== slug)
+            .sort((a, b) => (b.updatedAt ?? "").localeCompare(a.updatedAt ?? ""))
+            .slice(0, 3));
+        } catch (error) {
+          if (!controller.signal.aborted) console.error("Failed to load related documents:", error);
+        }
+      };
+      void refresh();
+      return () => controller.abort();
+    }
+
     const refresh = () => {
       const stored = getPublishedContentBySlug(kind, slug);
       if (stored) setArticle(stored);
@@ -160,10 +194,11 @@ export default function ArticleView({ kind, slug, seed, backHref }: ArticleViewP
     refresh();
     window.addEventListener("storage", handleStorage);
     return () => window.removeEventListener("storage", handleStorage);
-  }, [kind, slug]);
+  }, [kind, slug, seed, contentSource]);
 
   // Load gallery images for this content
   useEffect(() => {
+    if (contentSource === "local-library") return;
     const loadGallery = async () => {
       try {
         const res = await fetch(`/api/content/${article.id}/gallery`);
@@ -190,7 +225,7 @@ export default function ArticleView({ kind, slug, seed, backHref }: ArticleViewP
     if (article.id) {
       loadGallery();
     }
-  }, [article.id]);
+  }, [article.id, contentSource]);
 
   // Reading-progress rail across the top of the viewport.
   // Driven by a scroll-driven CSS animation when the browser supports it
@@ -223,12 +258,14 @@ export default function ArticleView({ kind, slug, seed, backHref }: ArticleViewP
   const blocks = useMemo(() => parseBody(article.body), [article.body]);
   const minutes = useMemo(() => readingMinutes(article.body, article.summary), [article.body, article.summary]);
   const publishedLabel = formatDate(article.updatedAt);
+  const downloadHref = (kind === "academic" || kind === "document") && article.fileUrl &&
+    /^(https?:\/\/|\/(?!\/))/i.test(article.fileUrl) ? article.fileUrl : null;
 
   // Reader-triggered machine translation of the article copy.
   const translatable = useMemo(() => ({
     title: article.title,
     summary: article.summary,
-    body: article.body ?? "",
+    body: articleBodyText(article.body),
     category: article.category,
   }), [article.title, article.summary, article.body, article.category]);
 
@@ -244,11 +281,10 @@ export default function ArticleView({ kind, slug, seed, backHref }: ArticleViewP
   return (
     <>
       <SiteNav />
-      <div className="efsw-article-progress" aria-hidden>
-        <span style={{ transform: `scaleX(${progress})` }} />
-      </div>
-
-      <main className="efsw-article-page">
+      <div className={`efsw-article-page${contentSource !== "local" ? " academic-document-detail" : ""}`}>
+        <div className="efsw-article-progress" aria-hidden>
+          <span style={{ transform: `scaleX(${progress})` }} />
+        </div>
         <article className="efsw-article">
           <header className="efsw-article__head">
             <Link href={backHref} className="efsw-article__back">
@@ -311,6 +347,17 @@ export default function ArticleView({ kind, slug, seed, backHref }: ArticleViewP
                     {t("events.rsvp")} <ArrowUpRight size={14} aria-hidden />
                   </a>
                 </Button>
+              </div>
+            )}
+
+            {downloadHref && (
+              <div className="efsw-article__register">
+                <Button variant="default" size="lg" asChild>
+                  <a href={downloadHref} download={article.fileName || true} target="_blank" rel="noopener noreferrer">
+                    <Download size={16} aria-hidden /> {t("documents.download")}
+                  </a>
+                </Button>
+                {article.fileName && <p className="efsw-article__file-name">{article.fileName}</p>}
               </div>
             )}
 
@@ -390,7 +437,7 @@ export default function ArticleView({ kind, slug, seed, backHref }: ArticleViewP
                 </div>
               )}
 
-              <div className="efsw-article__cta">
+              {!downloadHref && <div className="efsw-article__cta">
                 <div>
                   <h2>{t(kind === "news" ? "article.newsCtaHeadline" : "article.documentCtaHeadline")}</h2>
                   <p>{t(kind === "news" ? "article.newsCtaBody" : "article.documentCtaBody")}</p>
@@ -398,7 +445,7 @@ export default function ArticleView({ kind, slug, seed, backHref }: ArticleViewP
                 <a href="mailto:support@eurasiaforumsw.org" className="efsw-button efsw-button--dark">
                   {t("article.ctaButton")} <ArrowUpRight size={16} aria-hidden />
                 </a>
-              </div>
+              </div>}
             </div>
           </div>
 
@@ -432,7 +479,7 @@ export default function ArticleView({ kind, slug, seed, backHref }: ArticleViewP
             </section>
           )}
         </article>
-      </main>
+      </div>
     </>
   );
 }

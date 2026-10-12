@@ -35,6 +35,8 @@ export type AdminContentItem = {
   coverImageCrop?: CoverImageCrop;  // Crop settings for cover image
   imageCaption?: string;
   author?: string;
+  authorImage?: string;      // Public author portrait managed in the Content editor
+  featured?: boolean;       // Featured academic library selection
   tags?: string[];
   status: AdminContentStatus;
   locale: ContentLocale;
@@ -659,6 +661,9 @@ export const defaultContentCategories: AdminContentCategory[] = [
   { id: "document-research", kind: "document", label: "Research", order: 0, enabled: true },
   { id: "document-practice", kind: "document", label: "Practice", order: 1, enabled: true },
   { id: "document-briefings", kind: "document", label: "Briefings", order: 2, enabled: true },
+  { id: "academic-research", kind: "academic", label: "Research", order: 0, enabled: true },
+  { id: "academic-practice", kind: "academic", label: "Practice", order: 1, enabled: true },
+  { id: "academic-briefings", kind: "academic", label: "Briefings", order: 2, enabled: true },
   { id: "event-summit", kind: "event", label: "Summit", order: 0, enabled: true },
   { id: "event-conference", kind: "event", label: "Conference", order: 1, enabled: true },
   { id: "event-webinar", kind: "event", label: "Webinar", order: 2, enabled: true },
@@ -817,7 +822,7 @@ const readContentCategories = (): AdminContentCategory[] => {
       .filter((item): item is Partial<AdminContentCategory> => Boolean(item && typeof item === "object"))
       .map((item, index): AdminContentCategory => ({
         id: typeof item.id === "string" && item.id ? item.id : `category-${index}`,
-        kind: item.kind === "document" ? "document" : item.kind === "event" ? "event" : "news",
+        kind: item.kind === "academic" ? "academic" : item.kind === "document" ? "document" : item.kind === "event" ? "event" : "news",
         label: typeof item.label === "string" ? item.label.trim() : "",
         order: Number.isFinite(Number(item.order)) ? Number(item.order) : index,
         enabled: item.enabled !== false,
@@ -917,7 +922,7 @@ async function fetchRemoteContent(): Promise<AdminContentItem[] | null> {
   }
 }
 
-/** Sync content: localStorage + Supabase. Remote wins on conflict. */
+/** Refresh the local cache from Supabase, including deletions made by other editors. */
 export async function syncAdminContent(): Promise<AdminContentItem[]> {
   const local = getAdminContent();
 
@@ -926,18 +931,8 @@ export async function syncAdminContent(): Promise<AdminContentItem[]> {
   const remote = await fetchRemoteContent();
   if (!remote) return autoArchive(local);
 
-  // Merge: remote items first (they win), then any local-only items
-  // that haven't been pushed to remote yet.
-  const remoteIds = new Set(remote.map((i) => i.id));
-  const localOnly = local.filter((i) => !remoteIds.has(i.id) && i.id);
-
-  const merged = autoArchive([...remote, ...localOnly]);
+  const merged = autoArchive(remote);
   write(ADMIN_CONTENT_KEY, merged);
-
-  // Push local-only items to remote so nothing is lost
-  for (const item of localOnly) {
-    await pushContentRow(item);
-  }
 
   // Push back any items we just auto-archived
   for (const before of remote) {
@@ -973,23 +968,20 @@ export function autoArchive(items: AdminContentItem[]): AdminContentItem[] {
   return next;
 }
 
-/** Save one row: optimistic localStorage write + async remote POST. */
+/** Save remotely before updating the local cache so failures remain retryable. */
 export async function saveAdminContentRemote(
   item: AdminContentItem,
   onError?: (message: string) => void
 ): Promise<AdminContentItem[]> {
-  // 1) Optimistic local write — UI updates instantly.
-  const next = saveAdminContent(item);
-
-  if (!USE_REMOTE) return next;
-
-  // 2) Push to Supabase; on failure, keep local but surface the error.
-  try {
-    await pushContentRow(item);
-  } catch (err: any) {
-    onError?.(err?.message || "Failed to save to database");
+  if (USE_REMOTE) {
+    try {
+      await pushContentRow(item);
+    } catch (err: any) {
+      onError?.(err?.message || "Failed to save to database");
+      throw err;
+    }
   }
-  return next;
+  return saveAdminContent(item);
 }
 
 /** Delete one row locally + remotely. */
@@ -997,21 +989,21 @@ export async function deleteAdminContentRemote(
   id: string,
   onError?: (message: string) => void
 ): Promise<AdminContentItem[]> {
-  // 1) Optimistic local delete
-  const next = deleteAdminContent(id);
-
-  if (!USE_REMOTE) return next;
-
-  // 2) Remote delete
-  try {
-    const res = await fetch(`/api/content?id=${encodeURIComponent(id)}`, {
-      method: "DELETE",
-    });
-    if (!res.ok) throw new Error(await res.text());
-  } catch (err: any) {
-    onError?.(err?.message || "Failed to delete from database");
+  if (USE_REMOTE) {
+    try {
+      const res = await fetch(`/api/content?id=${encodeURIComponent(id)}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || `Content delete failed: ${res.status}`);
+      }
+    } catch (err: any) {
+      onError?.(err?.message || "Failed to delete from database");
+      throw err;
+    }
   }
-  return next;
+  return deleteAdminContent(id);
 }
 
 /** Push one row to Supabase via REST. */
@@ -1021,7 +1013,10 @@ async function pushContentRow(item: AdminContentItem): Promise<void> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(item),
   });
-  if (!res.ok) throw new Error(`Content save failed: ${res.status}`);
+  if (!res.ok) {
+    const data = await res.json();
+    throw new Error(data.error || `Content save failed: ${res.status}`);
+  }
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -1825,6 +1820,5 @@ export async function previewEmailHtml(
     throw error;
   }
 }
-
 
 
