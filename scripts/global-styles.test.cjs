@@ -78,7 +78,7 @@ test('homepage sections and footer retain the layout and color rules used by the
   assert.ok(home.get('background'), 'Homepage surface styling is missing');
   assert.ok(home.get('color'), 'Homepage text styling is missing');
   for (const className of ['efsw-about-bridge__grid', 'efsw-home-news__grid', 'efsw-footer__top']) {
-    usedBy('app/page.tsx', className);
+    usedBy(className === 'efsw-footer__top' ? 'components/efsw/SiteFooter.tsx' : 'app/page.tsx', className);
     assert.equal(declarations(css, `.${className}`).get('display'), 'grid',
       `${className} layout is missing`);
   }

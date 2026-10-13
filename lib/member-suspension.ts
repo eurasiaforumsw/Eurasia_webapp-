@@ -38,9 +38,9 @@ export async function suspendMember(params: {
   reasonDetails?: string;
   customDays?: number;
 }) {
-  const { data, error } = await supabaseAdmin.rpc('suspend_member', {
+  const { data, error } = await supabaseAdmin.rpc('admin_suspend_member', {
     p_member_id: params.memberId,
-    p_suspended_by: params.suspendedBy,
+    p_actor_id: params.suspendedBy,
     p_suspension_type: params.suspensionType,
     p_reason_category: params.reasonCategory,
     p_reason_details: params.reasonDetails || null,
@@ -49,7 +49,7 @@ export async function suspendMember(params: {
 
   if (error) {
     console.error('Error suspending member:', error);
-    throw new Error('Failed to suspend member');
+    throw new Error(error.message || 'Failed to suspend member');
   }
 
   return { suspensionId: data };
@@ -59,9 +59,9 @@ export async function suspendMember(params: {
  * Lift a suspension
  */
 export async function liftSuspension(suspensionId: string, liftedBy: string) {
-  const { data, error } = await supabaseAdmin.rpc('lift_suspension', {
+  const { data, error } = await supabaseAdmin.rpc('admin_lift_suspension', {
     p_suspension_id: suspensionId,
-    p_lifted_by: liftedBy,
+    p_actor_id: liftedBy,
   });
 
   if (error) {

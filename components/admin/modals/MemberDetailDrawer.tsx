@@ -21,8 +21,8 @@ import { AdminMember } from "@/lib/admin-data";
 interface MemberDetailDrawerProps {
   member: AdminMember | null;
   onClose: () => void;
-  onUpdateStatus: (id: string, status: AdminMember["status"], reviewNote: string) => void;
-  onDeleteMember: (id: string) => void;
+  onUpdateStatus: (id: string, status: AdminMember["status"], reviewNote: string) => Promise<void>;
+  onDeleteMember?: (id: string) => void;
 }
 
 const STATUS_LABELS: Record<AdminMember["status"], string> = {
@@ -62,10 +62,13 @@ export const MemberDetailDrawer = memo(function MemberDetailDrawer({
   const [note, setNote] = useState(member.reviewNote || "");
   const [isSavingNote, setIsSavingNote] = useState(false);
 
-  const handleSaveNote = () => {
+  const [error, setError] = useState("");
+  const handleSaveNote = async (status = member.status) => {
     setIsSavingNote(true);
-    onUpdateStatus(member.id, member.status, note);
-    setTimeout(() => setIsSavingNote(false), 1000);
+    setError("");
+    try { await onUpdateStatus(member.id, status, note); }
+    catch (error) { setError(error instanceof Error ? error.message : "Save failed"); }
+    finally { setIsSavingNote(false); }
   };
 
   const formatDate = (iso?: string) => {
@@ -309,7 +312,7 @@ export const MemberDetailDrawer = memo(function MemberDetailDrawer({
               lineHeight: 1.5,
             }}
           >
-            Passwords are stored as one-way SHA-256 hashes. Admins can approve, suspend, or
+            Passwords are securely hashed. Admins can approve, suspend, or
             delete accounts — but cannot view or recover a member's password.
           </p>
           <div
@@ -362,24 +365,27 @@ export const MemberDetailDrawer = memo(function MemberDetailDrawer({
             placeholder="Approval rationale, follow-up needed, or context for the next admin…"
           />
           <div className="efsw-admin-note-actions">
-            <small>Notes are visible to other admins in the activity log.</small>
+            <small>Notes are visible to other administrators reviewing this profile.</small>
             <button
               type="button"
               className="efsw-admin-text-action"
-              onClick={handleSaveNote}
+              onClick={() => void handleSaveNote()}
               disabled={isSavingNote}
             >
-              <Save size={13} /> {isSavingNote ? "Saved" : "Save note"}
+              <Save size={13} /> {isSavingNote ? "Saving…" : "Save note"}
             </button>
           </div>
         </section>
+
+        {error && <p role="alert">{error}</p>}
 
         {/* Action footer */}
         <div className="efsw-admin-drawer__actions" style={{ marginTop: "1.5rem" }}>
           {member.status !== "active" ? (
             <button
               type="button"
-              onClick={() => onUpdateStatus(member.id, "active", note)}
+              disabled={isSavingNote}
+              onClick={() => void handleSaveNote("active")}
               className="efsw-admin-text-action"
               style={{ color: "var(--admin-green)", fontSize: "0.78rem" }}
             >
@@ -388,21 +394,22 @@ export const MemberDetailDrawer = memo(function MemberDetailDrawer({
           ) : (
             <button
               type="button"
-              onClick={() => onUpdateStatus(member.id, "suspended", note)}
+              disabled={isSavingNote}
+              onClick={() => void handleSaveNote("suspended")}
               className="efsw-admin-text-action"
               style={{ color: "var(--admin-warning)", fontSize: "0.78rem" }}
             >
               <Ban size={14} /> Suspend account
             </button>
           )}
-          <button
+          {onDeleteMember && <button
             type="button"
             onClick={() => onDeleteMember(member.id)}
             className="efsw-admin-text-action"
             style={{ color: "var(--admin-danger)", marginLeft: "auto", fontSize: "0.78rem" }}
           >
             <Trash2 size={14} /> Delete record
-          </button>
+          </button>}
         </div>
       </aside>
     </div>

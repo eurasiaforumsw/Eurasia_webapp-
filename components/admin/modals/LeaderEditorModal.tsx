@@ -9,7 +9,7 @@ interface LeaderEditorModalProps {
   initialLeader: AdminLeaderProfile | null;
   isOpen: boolean;
   onClose: () => void;
-  onSave: (leader: AdminLeaderProfile) => void;
+  onSave: (leader: AdminLeaderProfile) => Promise<void>;
   onDelete?: (leader: AdminLeaderProfile) => void;
 }
 
@@ -39,6 +39,8 @@ export const LeaderEditorModal = memo(function LeaderEditorModal({
   );
   const [isCompressing, setIsCompressing] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
 
   const handleImageUpload = async (file: File) => {
     if (!file.type.startsWith("image/")) return;
@@ -70,7 +72,7 @@ export const LeaderEditorModal = memo(function LeaderEditorModal({
     if (file) handleImageUpload(file);
   };
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     const specializations = specInput
       .split(",")
@@ -84,7 +86,11 @@ export const LeaderEditorModal = memo(function LeaderEditorModal({
       specializations,
     };
 
-    onSave(updated);
+    setIsSaving(true);
+    setSaveError("");
+    try { await onSave(updated); }
+    catch (error) { setSaveError(error instanceof Error ? error.message : "Save failed"); }
+    finally { setIsSaving(false); }
   };
 
   return (
@@ -92,6 +98,7 @@ export const LeaderEditorModal = memo(function LeaderEditorModal({
       <div className="efsw-admin-modal-scrim" onClick={onClose} />
 
       <div className="efsw-admin-modal-card efsw-admin-modal-card--wide" role="dialog" aria-modal="true" aria-label={formData.id ? "Edit leadership profile" : "Add leadership profile"}>
+        {saveError && <p role="alert">{saveError}</p>}
         {/* ── Head ── */}
         <div className="efsw-admin-modal-card__head">
           <div className="efsw-admin-modal-card__lead">
@@ -220,7 +227,7 @@ export const LeaderEditorModal = memo(function LeaderEditorModal({
               <button type="button" onClick={onClose} className="efsw-admin-outline-action">
                 Cancel
               </button>
-              <button type="submit" disabled={isCompressing} className="efsw-admin-primary">
+              <button type="submit" disabled={isCompressing || isSaving} className="efsw-admin-primary">
                 <Save size={15} />
                 <span>Save profile</span>
               </button>

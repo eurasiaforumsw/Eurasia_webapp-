@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { requireRole } from '@/lib/api-auth';
+import { ADMIN_ROLES } from '@/lib/auth/session';
+
+export const dynamic = 'force-dynamic';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -15,7 +19,7 @@ export async function GET() {
       .from('layout_config')
       .select('config')
       .eq('id', 'default')
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error('Supabase error fetching layout:', error);
@@ -46,22 +50,19 @@ export async function GET() {
  */
 export async function POST(req: NextRequest) {
   try {
-    // Get JWT token from cookie
-    const token = req.cookies.get('admin_token')?.value;
-
-    if (!token) {
-      return NextResponse.json(
-        { error: 'Unauthorized - admin access required' },
-        { status: 401 }
-      );
+    try {
+      await requireRole(req, ADMIN_ROLES);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unauthorized';
+      return NextResponse.json({ error: message }, { status: message === 'Forbidden' ? 403 : 401 });
     }
 
-    // Verify admin role (we trust the middleware already checked this)
-    // Parse request body
-    const body = await req.json();
-    const { config } = body;
+    let body;
+    try { body = await req.json(); }
+    catch { return NextResponse.json({ error: 'Invalid request body' }, { status: 400 }); }
+    const config = body?.config;
 
-    if (!config || typeof config !== 'object') {
+    if (!config || typeof config !== 'object' || Array.isArray(config)) {
       return NextResponse.json(
         { error: 'Invalid config format' },
         { status: 400 }

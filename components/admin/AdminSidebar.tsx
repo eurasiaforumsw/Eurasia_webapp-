@@ -19,8 +19,9 @@ import {
   Search,
 } from "lucide-react";
 import { AdminSession } from "@/lib/admin-auth";
+import { canAccessAdminView, type AdminView } from "@/lib/admin-permissions";
 
-export type AdminView = "overview" | "analytics" | "academic-analytics" | "members" | "content" | "layout" | "messages" | "broadcast" | "moderation" | "activity" | "settings";
+export type { AdminView } from "@/lib/admin-permissions";
 
 interface AdminSidebarProps {
   currentView: AdminView;
@@ -156,16 +157,7 @@ export const AdminSidebar = memo(function AdminSidebar({
   ];
 
   // Filter menu items based on role
-  const navItems = allNavItems.filter((item) => {
-    if (session?.role === "super-admin") {
-      return true; // Super admin sees everything
-    }
-    if (session?.role === "content-editor") {
-      // Content editors cannot access Members and Settings
-      return item.id !== "members" && item.id !== "settings";
-    }
-    return false; // Member role shouldn't reach here (blocked by middleware)
-  });
+  const navItems = allNavItems.filter((item) => session && canAccessAdminView(session.role, item.id));
 
   // Filter by search query
   const filteredNavItems = useMemo(() => {
@@ -181,6 +173,7 @@ export const AdminSidebar = memo(function AdminSidebar({
   // Keyboard navigation handlers
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent, currentIndex: number) => {
+      if (filteredNavItems.length === 0) return false;
       let handled = false;
 
       switch (e.key) {
@@ -514,7 +507,8 @@ export const AdminSidebar = memo(function AdminSidebar({
                           : "bg-gray-500/15 text-gray-400"
                       }`}
                     >
-                      {session?.role === "super-admin" ? "Admin" : session?.role === "content-editor" ? "PR Editor" : "Member"}
+                      {session?.role === "super-admin" || session?.role === "admin" ? "Admin" :
+                        session?.role === "pr" ? "PR" : session?.role === "content-editor" ? "Content Editor" : "Member Reviewer"}
                     </span>
                   </div>
                 </div>

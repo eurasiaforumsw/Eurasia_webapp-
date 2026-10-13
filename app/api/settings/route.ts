@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { cookies } from 'next/headers';
-import { verifyAdminToken } from '@/lib/auth/session';
+import { requireRole } from '@/lib/api-auth';
+import { ADMIN_ROLES } from '@/lib/auth/session';
+
+export const dynamic = 'force-dynamic';
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -18,7 +20,7 @@ export async function GET() {
       .from('site_settings')
       .select('config')
       .eq('id', 'default')
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error('[GET /api/settings] Supabase error:', error);
@@ -47,29 +49,20 @@ export async function GET() {
  */
 export async function POST(req: NextRequest) {
   try {
-    // 1. Verify admin authentication
-    const cookieStore = cookies();
-    const token = cookieStore.get('admin_token')?.value;
-
-    if (!token) {
-      return NextResponse.json(
-        { error: 'Unauthorized - Admin token required' },
-        { status: 401 }
-      );
+    let admin;
+    try {
+      admin = await requireRole(req, ADMIN_ROLES);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unauthorized';
+      return NextResponse.json({ error: message }, { status: message === 'Forbidden' ? 403 : 401 });
     }
 
-    const admin = await verifyAdminToken(token);
-    if (!admin) {
-      return NextResponse.json(
-        { error: 'Unauthorized - Invalid admin token' },
-        { status: 401 }
-      );
-    }
+    let body;
+    try { body = await req.json(); }
+    catch { return NextResponse.json({ error: 'Invalid request body' }, { status: 400 }); }
+    const settings = body?.settings;
 
-    // 2. Get settings from request body
-    const { settings } = await req.json();
-
-    if (!settings || typeof settings !== 'object') {
+    if (!settings || typeof settings !== 'object' || Array.isArray(settings)) {
       return NextResponse.json(
         { error: 'Invalid settings object' },
         { status: 400 }
@@ -79,12 +72,12 @@ export async function POST(req: NextRequest) {
     // 3. Update settings in Supabase
     const { error } = await supabaseAdmin
       .from('site_settings')
-      .update({
+      .upsert({
+        id: 'default',
         config: settings,
-        updated_by: admin.id,
+        updated_by: admin.memberId ?? null,
         updated_at: new Date().toISOString(),
-      })
-      .eq('id', 'default');
+      });
 
     if (error) {
       console.error('[POST /api/settings] Supabase error:', error);

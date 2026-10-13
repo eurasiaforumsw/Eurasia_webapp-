@@ -300,14 +300,16 @@ export async function POST(req: NextRequest) {
     }
 
     // Idempotency: if a row with this id already exists, update it instead.
-    const { data: existing } = await supabaseAdmin
+    const { data: existing, error: existingError } = await supabaseAdmin
       .from("content")
       .select("id")
       .eq("id", row.id)
       .maybeSingle();
+    if (existingError) throw existingError;
+    const { created_at, ...update } = row;
 
     const query = existing
-      ? supabaseAdmin.from("content").update(row).eq("id", row.id).select().single()
+      ? supabaseAdmin.from("content").update(update).eq("id", row.id).select().single()
       : supabaseAdmin.from("content").insert(row).select().single();
 
     const { data, error } = await query;
@@ -340,14 +342,37 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: "id is required" }, { status: 400 });
     }
 
-    const patch = rowFromPayload(body, body.id);
+    const { data: existing, error: existingError } = await supabaseAdmin
+      .from("content").select("*").eq("id", body.id).maybeSingle();
+    if (existingError) throw existingError;
+    if (!existing) return NextResponse.json({ error: "Content not found" }, { status: 404 });
+    // Validate supplied values against a complete persisted item, then send
+    // only supplied columns so unrelated fields survive partial edits.
+    const patch = rowFromPayload({ ...payloadFromRow(existing as ContentRow), ...body }, body.id);
     if (!patch) {
       return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
     }
 
+    const columns: Record<string, keyof ContentRow> = {
+      kind: "kind", title: "title", category: "category", summary: "summary", body: "body",
+      coverImage: "cover_image", coverImageCrop: "cover_image_crop", imageCaption: "image_caption",
+      author: "author", authorImage: "author_image", featured: "featured", fileUrl: "file_url",
+      fileName: "file_name", fileSize: "file_size", fileType: "file_type", pageCount: "page_count",
+      tags: "tags", status: "status", locale: "locale", startsAt: "starts_at", endsAt: "ends_at",
+      venue: "venue", format: "format", registrationUrl: "registration_url", publishAt: "publish_at",
+      expiresAt: "expires_at", targetMembershipTypes: "target_membership_types", targetGroups: "target_groups",
+      seoTitle: "seo_title", seoDescription: "seo_description", seoKeywords: "seo_keywords",
+      ogImage: "og_image", canonicalUrl: "canonical_url", showInHeroSlider: "show_in_hero_slider",
+      sliderDuration: "slider_duration", sliderOrder: "slider_order",
+    };
+    const update: Record<string, unknown> = { updated_at: patch.updated_at };
+    for (const field of Object.keys(body)) {
+      const column = columns[field];
+      if (column) update[column] = patch[column];
+    }
     const { data, error } = await supabaseAdmin
       .from("content")
-      .update(patch)
+      .update(update)
       .eq("id", body.id)
       .select()
       .single();

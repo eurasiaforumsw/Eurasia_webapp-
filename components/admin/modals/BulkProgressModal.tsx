@@ -10,10 +10,11 @@ import { cn } from "@/lib/utils";
 export interface BulkProgressModalProps {
   isOpen: boolean;
   onClose: () => void;
-  action: "delete" | "publish" | "archive" | "unpublish" | "approve";
+  action: "delete" | "publish" | "archive" | "unpublish" | "approve" | "updateCategory";
   selectedIds: string[];
   entityType: "content" | "members";
   onExecute: (ids: string[]) => Promise<void>;
+  onExecuteBatch?: (ids: string[]) => Promise<{ id: string; success: boolean; error?: string }[]>;
 }
 
 interface ItemProgress {
@@ -29,6 +30,7 @@ export function BulkProgressModal({
   selectedIds,
   entityType,
   onExecute,
+  onExecuteBatch,
 }: BulkProgressModalProps) {
   const [progress, setProgress] = useState<ItemProgress[]>([]);
   const [isRunning, setIsRunning] = useState(false);
@@ -49,6 +51,22 @@ export function BulkProgressModal({
   const startBulkOperation = async () => {
     setIsRunning(true);
     setHasStarted(true);
+
+    if (onExecuteBatch) {
+      setProgress(selectedIds.map((id) => ({ id, status: "processing" })));
+      try {
+        const results = await onExecuteBatch(selectedIds);
+        setProgress(selectedIds.map((id) => {
+          const result = results.find((item) => item.id === id);
+          return { id, status: result?.success ? "success" : "error", error: result?.error || (result ? undefined : "Missing result") };
+        }));
+      } catch (error) {
+        setProgress(selectedIds.map((id) => ({ id, status: "error", error: error instanceof Error ? error.message : "Failed" })));
+      } finally {
+        setIsRunning(false);
+      }
+      return;
+    }
 
     for (let i = 0; i < selectedIds.length; i++) {
       const id = selectedIds[i];
@@ -105,6 +123,7 @@ export function BulkProgressModal({
     archive: "Archiving",
     unpublish: "Unpublishing",
     approve: "Approving",
+    updateCategory: "Updating category",
   }[action];
 
   const actionPastLabel = {
@@ -113,6 +132,7 @@ export function BulkProgressModal({
     archive: "Archived",
     unpublish: "Unpublished",
     approve: "Approved",
+    updateCategory: "Updated category",
   }[action];
 
   return (

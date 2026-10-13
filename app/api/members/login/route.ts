@@ -3,6 +3,7 @@ import { supabaseAdmin } from "@/lib/supabase";
 import { SignJWT } from "jose";
 import { getJwtSecret } from "@/lib/auth/session";
 import { consumeRateLimit } from "@/lib/security/rate-limit";
+import { isActiveSuspension } from "@/lib/member-status";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -114,11 +115,37 @@ export async function POST(request: NextRequest) {
     }
 
     if (member.status === "suspended") {
-
-      return NextResponse.json(
-        { error: "This account has been suspended. Contact support for help." },
-        { status: 403 },
+      // Temporary suspensions set the member status to suspended. Resolve an
+      // expired record before denying login so an expired ban cannot lock an
+      // account forever. Permanent suspensions keep the 403 path below.
+      const { data: suspensions, error: suspensionError } = await withTimeout(
+        () => supabaseAdmin!.from("member_suspensions")
+          .select("id, is_active, expires_at")
+          .eq("member_id", member.id)
+          .eq("is_active", true),
+        "suspensionLookup",
       );
+      if (suspensionError) {
+        return NextResponse.json({ error: "Unable to verify account status." }, { status: 500 });
+      }
+      const records = Array.isArray(suspensions) ? suspensions : suspensions ? [suspensions] : [];
+      if (records.length === 0 || records.some((record) => isActiveSuspension(record))) {
+        return NextResponse.json(
+          { error: "This account has been suspended. Contact support for help." },
+          { status: 403 },
+        );
+      }
+      // The RPC locks the member and rechecks current suspensions before
+      // changing status; a concurrent permanent ban must remain in force.
+      const { data: status, error: statusError } = await withTimeout(
+        () => supabaseAdmin!.rpc("expire_member_suspensions", { p_member_id: member.id }),
+        "suspensionExpiry",
+      );
+      if (statusError) return NextResponse.json({ error: "Unable to update account status." }, { status: 500 });
+      if (status !== "active") {
+        return NextResponse.json({ error: "This account has been suspended. Contact support for help." }, { status: 403 });
+      }
+      member.status = status;
     }
 
 

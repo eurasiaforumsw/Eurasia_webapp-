@@ -4,11 +4,7 @@ import { ArrowUpRight, BookOpen, FileText, FileBarChart2, Layers } from "lucide-
 import PublicContentFeed, { type PublicContentItem } from "@/components/efsw/PublicContentFeed";
 import { SiteNav } from "@/components/efsw/SiteNav";
 import { useI18n } from "@/contexts/I18nContext";
-import {
-  type AdminLayoutConfig,
-  defaultLayoutConfig,
-  getAdminLayout,
-} from "@/lib/admin-data";
+import { usePublicLayout } from "@/hooks/use-public-site-data";
 
 /* Map stored icon names → lucide components for category icons. We use
    the same icon library as the seeded values; admins only need to change
@@ -21,9 +17,7 @@ const ICON_BY_MOD = {
 
 export default function LibraryPage({ initialItems }: { initialItems: PublicContentItem[] }) {
   const { t } = useI18n();
-  const layout: AdminLayoutConfig = (() => {
-    try { return getAdminLayout(); } catch { return defaultLayoutConfig; }
-  })();
+  const layout = usePublicLayout();
   const categories = layout.libraryCategories;
 
   return (

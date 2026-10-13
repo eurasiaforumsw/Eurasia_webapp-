@@ -4,6 +4,7 @@ import {
   removeMember,
   updateMember,
 } from "@/lib/member-auth";
+import { normalizeSiteSettings } from "@/lib/site-settings";
 
 export type AdminMember = MemberProfile & {
   reviewNote?: string;
@@ -911,15 +912,11 @@ const USE_REMOTE =
 /** Fetch all admin content rows from Supabase. */
 async function fetchRemoteContent(): Promise<AdminContentItem[] | null> {
   if (!USE_REMOTE) return null;
-
-  try {
-    const res = await fetch("/api/content", { cache: "no-store" });
-    if (!res.ok) return null;
-    const body = await res.json() as { items: AdminContentItem[] };
-    return body.items;
-  } catch {
-    return null;
-  }
+  const res = await fetch("/api/content", { cache: "no-store" });
+  const body = await res.json();
+  if (!res.ok) throw new Error(body.error || "Unable to load content");
+  if (!Array.isArray(body.items)) throw new Error("Invalid content response");
+  return body.items;
 }
 
 /** Refresh the local cache from Supabase, including deletions made by other editors. */
@@ -1361,20 +1358,12 @@ export const saveAdminLayout = (layout: AdminLayoutConfig) => {
 };
 
 /**
- * Save layout config to Supabase (async, with fallback to localStorage)
+ * Save remotely before updating the cache so failed saves remain retryable.
  */
 export async function saveAdminLayoutRemote(
   layout: AdminLayoutConfig,
   onError?: (message: string) => void
 ): Promise<AdminLayoutConfig> {
-  // 1) Optimistic local write
-  const next = saveAdminLayout(layout);
-
-  // 2) Push to Supabase
-  if (!USE_REMOTE) {
-    return next;
-  }
-
   try {
     const response = await fetch("/api/layout", {
       method: "POST",
@@ -1383,42 +1372,39 @@ export async function saveAdminLayoutRemote(
     });
 
     if (!response.ok) {
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
       throw new Error(data.error || "Failed to save layout");
     }
-  } catch (err: any) {
-    onError?.(err?.message || "Failed to save to database");
+    const data = await response.json();
+    if (data.success !== true) throw new Error("Failed to save layout");
+    return saveAdminLayout(data.config || layout);
+  } catch (err) {
+    onError?.(err instanceof Error ? err.message : "Failed to save to database");
+    throw err;
   }
-
-  return next;
 }
 
 /**
  * Sync layout config from Supabase to localStorage
  */
 export async function syncAdminLayout(): Promise<AdminLayoutConfig> {
-  if (!USE_REMOTE) {
-    return getAdminLayout();
-  }
-
   try {
-    const response = await fetch("/api/layout");
+    const response = await fetch("/api/layout", { cache: "no-store" });
     if (!response.ok) {
       throw new Error("Failed to fetch layout config");
     }
 
     const data = await response.json();
     if (data.config) {
-      // Merge remote config with local, remote wins on conflict
       write(ADMIN_LAYOUT_KEY, data.config);
-      return data.config;
+      return getAdminLayout();
     }
   } catch (err) {
     console.error("syncAdminLayout error:", err);
+    throw err;
   }
 
-  // Fallback to local
-  return getAdminLayout();
+  throw new Error("Invalid layout config response");
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -1558,18 +1544,17 @@ export async function suspendMemberMessaging(
  */
 export async function getAdminSettingsRemote(): Promise<AdminSettings> {
   try {
-    const response = await fetch('/api/settings');
+    const response = await fetch('/api/settings', { cache: 'no-store' });
 
     if (!response.ok) {
       throw new Error(`Failed to fetch settings: ${response.statusText}`);
     }
 
     const data = await response.json();
-    return data.settings || {};
+    return normalizeSiteSettings(data.settings);
   } catch (error) {
     console.error('[getAdminSettingsRemote] Error:', error);
-    // Fallback to localStorage on error
-    return getAdminSettings();
+    throw error;
   }
 }
 
@@ -1578,10 +1563,6 @@ export async function getAdminSettingsRemote(): Promise<AdminSettings> {
  */
 export async function saveAdminSettingsRemote(settings: AdminSettings): Promise<boolean> {
   try {
-    // Save to localStorage first (optimistic update)
-    saveAdminSettings(settings);
-
-    // Then sync to Supabase
     const response = await fetch('/api/settings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1589,11 +1570,14 @@ export async function saveAdminSettingsRemote(settings: AdminSettings): Promise<
     });
 
     if (!response.ok) {
-      throw new Error(`Failed to save settings: ${response.statusText}`);
+      const data = await response.json().catch(() => ({}));
+      throw new Error(data.error || `Failed to save settings: ${response.statusText}`);
     }
 
     const data = await response.json();
-    return data.success === true;
+    if (data.success !== true) throw new Error('Failed to save settings');
+    saveAdminSettings(settings);
+    return true;
   } catch (error) {
     console.error('[saveAdminSettingsRemote] Error:', error);
     throw error;
@@ -1613,8 +1597,7 @@ export async function syncAdminSettings(): Promise<AdminSettings> {
     return remoteSettings;
   } catch (error) {
     console.error('[syncAdminSettings] Error:', error);
-    // Return local settings on error
-    return getAdminSettings();
+    throw error;
   }
 }
 
@@ -1820,5 +1803,3 @@ export async function previewEmailHtml(
     throw error;
   }
 }
-
-

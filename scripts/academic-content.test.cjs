@@ -18,12 +18,14 @@ require.extensions['.ts'] = (module, filename) => {
 };
 
 const rows = new Map();
+let readError = null;
 const database = {
   from() {
     let action = 'select';
     let payload;
     const filters = [];
     const result = (single = false) => {
+      if (action === 'select' && readError) return { data: null, error: { message: readError } };
       const matching = [...rows.values()].filter((row) => filters.every(([field, value]) => row[field] === value));
       if (action === 'insert') rows.set(payload.id, { ...payload });
       if (action === 'update') matching.forEach((row) => rows.set(row.id, { ...row, ...payload }));
@@ -111,6 +113,37 @@ test('academic metadata survives create, public read, edit, file removal, and de
   assert.equal((await removed.json()).item.fileUrl, undefined);
   assert.equal((await content.DELETE(request('DELETE', null, '?id=academic-one'))).status, 200);
   assert.equal(rows.size, 0);
+});
+
+test('full saves preserve creation date and partial updates preserve omitted content and attachments', async () => {
+  rows.clear();
+  assert.equal((await content.POST(request('POST', document))).status, 200);
+  const createdAt = '2025-01-01T00:00:00.000Z';
+  rows.get(document.id).created_at = createdAt;
+  assert.equal((await content.POST(request('POST', { ...document, title: 'New title' }))).status, 200);
+  assert.equal(rows.get(document.id).created_at, createdAt);
+  const updated = await content.PATCH(request('PATCH', { id: document.id, featured: false }));
+  assert.equal(updated.status, 200);
+  const { item } = await updated.json();
+  assert.equal(item.featured, false);
+  assert.equal(item.title, 'New title');
+  assert.equal(item.body, document.body);
+  assert.equal(item.fileUrl, document.fileUrl);
+  assert.equal(item.authorImage, document.authorImage);
+  assert.equal(rows.get(document.id).created_at, createdAt);
+  const removed = await content.PATCH(request('PATCH', { id: document.id, fileUrl: null, fileName: null }));
+  assert.equal(removed.status, 200);
+  assert.equal((await removed.json()).item.fileUrl, undefined);
+});
+
+test('missing partial update returns 404 and failed existence reads cannot create or overwrite content', async () => {
+  rows.clear();
+  assert.equal((await content.PATCH(request('PATCH', { id: 'missing', title: 'Title' }))).status, 404);
+  readError = 'Database read failed';
+  assert.equal((await content.POST(request('POST', document))).status, 500);
+  assert.equal((await content.PATCH(request('PATCH', { id: document.id, featured: false }))).status, 500);
+  assert.equal(rows.size, 0);
+  readError = null;
 });
 
 test('failed remote save and delete keep existing content available for retry', async () => {

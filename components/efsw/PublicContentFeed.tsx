@@ -11,16 +11,13 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { SkeletonCard } from "@/components/ui/skeleton";
 import {
-  ADMIN_CONTENT_KEY,
-  ADMIN_CONTENT_CATEGORIES_KEY,
   defaultContentCategories,
-  getPublishedAdminContent,
-  getAdminContentCategories,
   initialContent,
   type AdminContentItem,
   type AdminContentKind,
   type CoverImageCrop,
 } from "@/lib/admin-data";
+import { usePublishedContent } from "@/hooks/use-public-site-data";
 import { getSessionMember, type MemberProfile } from "@/lib/member-auth";
 import { EngagementRow } from "@/components/efsw/EngagementRow";
 import CoverImage from "@/components/content/CoverImage";
@@ -123,6 +120,7 @@ export default function PublicContentFeed({
   const [slideDirection, setSlideDirection] = useState<1 | -1>(1);
   const [categoryDefinitions, setCategoryDefinitions] = useState(() => defaultContentCategories.filter((category) => category.kind === kind));
   const [member, setMember] = useState<MemberProfile | null>(null);
+  const { items: publishedContent, loaded } = usePublishedContent(kind);
 
   useEffect(() => {
     setMember(getSessionMember());
@@ -141,9 +139,24 @@ export default function PublicContentFeed({
   };
 
   useEffect(() => {
-    const refresh = () => {
-      setCategoryDefinitions(getAdminContentCategories(kind));
-      const published = getPublishedAdminContent(kind).map((item) => {
+    let active = true;
+    fetch("/api/content/categories")
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Could not load categories");
+        return response.json();
+      })
+      .then((data) => {
+        if (active && Array.isArray(data.categories)) {
+          setCategoryDefinitions(data.categories.filter((category: { kind: string }) => category.kind === kind));
+        }
+      })
+      .catch(() => { if (active) setCategoryDefinitions(defaultContentCategories.filter((category) => category.kind === kind)); });
+    return () => { active = false; };
+  }, [kind]);
+
+  useEffect(() => {
+    if (!loaded) return;
+    const published = publishedContent.map((item) => {
         const englishFallback = initialContent.find((entry) => entry.id === item.id && entry.kind === kind);
         const useEnglishFallback = kind === "document" && englishFallback && item.locale !== "en";
         const source = useEnglishFallback
@@ -179,28 +192,9 @@ export default function PublicContentFeed({
           registrationUrl: source.registrationUrl,
         };
       });
-      if (published.length > 0) {
-        setItems(published);
-      }
-    };
-
-    const handleStorage = (event: StorageEvent) => {
-      if (event.key === ADMIN_CONTENT_KEY || event.key === ADMIN_CONTENT_CATEGORIES_KEY) refresh();
-    };
-    const handleVisibility = () => {
-      if (document.visibilityState === "visible") refresh();
-    };
-
-    refresh();
-    window.addEventListener("storage", handleStorage);
-    window.addEventListener("pageshow", refresh);
-    document.addEventListener("visibilitychange", handleVisibility);
-    return () => {
-      window.removeEventListener("storage", handleStorage);
-      window.removeEventListener("pageshow", refresh);
-      document.removeEventListener("visibilitychange", handleVisibility);
-    };
-  }, [kind]);
+    setItems(published);
+    setFeaturedIndex(0);
+  }, [kind, publishedContent, loaded]);
 
   // Configured filter modes come first; retain any legacy content categories as a fallback.
   const categories = useMemo(() => {

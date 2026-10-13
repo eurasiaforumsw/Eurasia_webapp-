@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
 import "@/styles/admin-layout.css";
 import "@/styles/admin-mobile-responsive.css";
 import {
@@ -14,24 +13,19 @@ import {
   AdminSettings,
   defaultLayoutConfig,
   deleteAdminContentRemote,
-  deleteAdminMember,
-  getAdminActivity,
-  getAdminContent,
-  getAdminContentCategories,
-  getAdminLayout,
-  getAdminMembers,
   getAdminSettings,
-  recordAdminActivity,
-  saveAdminContentCategories,
   saveAdminContentRemote,
-  saveAdminLayout,
   saveAdminLayoutRemote,
   syncAdminLayout,
-  saveAdminSettings,
-  setAdminMemberStatus,
   syncAdminContent,
+  saveAdminSettingsRemote,
+  syncAdminSettings,
 } from "@/lib/admin-data";
-import { AdminRole } from "@/lib/admin-auth";
+import { AdminRole, logoutAdmin } from "@/lib/admin-auth";
+import { logoutMember } from "@/lib/member-auth";
+import { fetchAdminMembers, updateAdminMemberStatus, deleteAdminMemberRemote } from "@/lib/admin-members";
+import { syncAdminCategories, saveAdminCategories, fetchAdminActivity, recordAdminActivityRemote } from "@/lib/admin-console-data";
+import { canAccessAdminView, defaultAdminView } from "@/lib/admin-permissions";
 import { AdminSidebar, AdminView } from "@/components/admin/AdminSidebar";
 import { AdminTopbar } from "@/components/admin/AdminTopbar";
 import { AdminOverviewView } from "@/components/admin/views/AdminOverviewView";
@@ -61,7 +55,6 @@ interface AdminSession {
 }
 
 export default function AdminDashboardPage() {
-  const router = useRouter();
   const [session, setSession] = useState<AdminSession | null>(null);
   const [view, setView] = useState<AdminView>("overview");
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -87,7 +80,7 @@ export default function AdminDashboardPage() {
     isOpen: boolean;
     title: string;
     description: string;
-    onConfirm: () => void;
+    onConfirm: () => void | Promise<void>;
   } | null>(null);
 
   // Initialize and verify session
@@ -101,29 +94,22 @@ export default function AdminDashboardPage() {
         }
         const sessionData = await response.json();
         setSession(sessionData);
-        setMembers(getAdminMembers());
-        setContent(getAdminContent());
-        setContentCategories(getAdminContentCategories());
-        setActivity(getAdminActivity());
-        setSettings(getAdminSettings());
-        setLayout(getAdminLayout());
-
-        // Pull latest from Supabase in the background.
-        syncAdminContent()
-          .then((merged) => {
-            setContent(merged);
-          })
-          .catch(() => {
-            // Silent — local data remains available.
-          });
-
-        syncAdminLayout()
-          .then((merged) => {
-            setLayout(merged);
-          })
-          .catch(() => {
-            // Silent — local data remains available.
-          });
+        setView(defaultAdminView(sessionData.role));
+        const jobs: Promise<unknown>[] = [];
+        const load = <T,>(label: string, promise: Promise<T>, apply: (data: T) => void) => {
+          jobs.push(promise.then(apply).catch((error) => {
+            setToast(`${label}: ${error instanceof Error ? error.message : "Unable to load data"}`);
+          }));
+        };
+        if (canAccessAdminView(sessionData.role, "members")) load("Members", fetchAdminMembers(), setMembers);
+        if (canAccessAdminView(sessionData.role, "content")) {
+          load("Content", syncAdminContent(), setContent);
+          load("Categories", syncAdminCategories(), setContentCategories);
+        }
+        if (canAccessAdminView(sessionData.role, "layout")) load("Layout", syncAdminLayout(), setLayout);
+        if (canAccessAdminView(sessionData.role, "settings")) load("Settings", syncAdminSettings(), setSettings);
+        if (canAccessAdminView(sessionData.role, "activity")) load("Activity", fetchAdminActivity(), setActivity);
+        await Promise.all(jobs);
       } catch (error) {
         window.location.replace("/admin/login");
       }
@@ -145,32 +131,32 @@ export default function AdminDashboardPage() {
 
   const logActivity = useCallback(
     (action: string, detail: string, tone: AdminActivity["tone"] = "neutral") => {
-      recordAdminActivity({ action, detail, tone });
-      setActivity(getAdminActivity());
+      void recordAdminActivityRemote({ action, detail, tone })
+        .then(() => fetchAdminActivity()).then(setActivity)
+        .catch((error) => notify(`Activity log failed: ${error instanceof Error ? error.message : "Please try again"}`));
     },
-    []
+    [notify]
   );
 
-  // Member actions
+  const refreshMembers = useCallback(async () => {
+    try { setMembers(await fetchAdminMembers()); }
+    catch (error) { notify(`Refresh failed: ${error instanceof Error ? error.message : "Please try again"}`); }
+  }, [notify]);
+
   const handleUpdateMemberStatus = useCallback(
-    (id: string, status: AdminMember["status"], reviewNote: string = "") => {
-      const updated = setAdminMemberStatus(id, status, reviewNote);
-      setMembers(getAdminMembers());
-      if (selectedMember && selectedMember.id === id) {
-        setSelectedMember(updated);
+    async (id: string, status: AdminMember["status"], reviewNote?: string) => {
+      try {
+        const updated = await updateAdminMemberStatus(id, status, reviewNote);
+        setMembers((current) => current.map((member) => member.id === id ? updated : member));
+        setSelectedMember((current) => current?.id === id ? updated : current);
+        logActivity(status === "active" ? "Approve member" : status === "suspended" ? "Suspend member" : "Change member status", `ID: ${id} · ${status}`, status === "active" ? "success" : "warning");
+        notify("Member status updated");
+      } catch (error) {
+        notify(`Save failed: ${error instanceof Error ? error.message : "Please try again"}`);
+        throw error;
       }
-      logActivity(
-        status === "active"
-          ? "Approve member"
-          : status === "suspended"
-          ? "Suspend member"
-          : "Change member status",
-        `ID: ${id} · ${status}`,
-        status === "active" ? "success" : "warning"
-      );
-      notify("Member status updated");
     },
-    [selectedMember, logActivity, notify]
+    [logActivity, notify]
   );
 
   const handleDeleteMember = useCallback(
@@ -180,8 +166,9 @@ export default function AdminDashboardPage() {
         isOpen: true,
         title: "Confirm member deletion",
         description: `Delete member ${member?.fullName || id}? This cannot be undone.`,
-        onConfirm: () => {
-          setMembers(deleteAdminMember(id));
+        onConfirm: async () => {
+          await deleteAdminMemberRemote(id);
+          setMembers((current) => current.filter((item) => item.id !== id));
           setSelectedMember(null);
           setConfirmDelete(null);
           logActivity("Deleted member", member?.fullName || id, "warning");
@@ -231,10 +218,9 @@ export default function AdminDashboardPage() {
     [content, logActivity, notify]
   );
 
-  const handleSaveContentCategories = useCallback((categories: AdminContentCategory[]) => {
-    const updated = saveAdminContentCategories(categories);
+  const handleSaveContentCategories = useCallback(async (categories: AdminContentCategory[]) => {
+    const updated = await saveAdminCategories(categories);
     setContentCategories(updated);
-    setContent(getAdminContent());
     logActivity("Updated content filter modes", `${updated.filter((category) => category.kind === "news").length} news modes`, "success");
     notify("News filter modes saved");
   }, [logActivity, notify]);
@@ -257,6 +243,7 @@ export default function AdminDashboardPage() {
             notify("Content deleted");
           } catch (error) {
             notify(`Delete failed: ${error instanceof Error ? error.message : "Please try again"}`);
+            throw error;
           }
         },
       });
@@ -291,10 +278,8 @@ export default function AdminDashboardPage() {
   // Layout actions
   const handleSaveLayout = useCallback(
     async (updatedLayout: AdminLayoutConfig) => {
-      setLayout(updatedLayout);
-      await saveAdminLayoutRemote(updatedLayout, (errorMsg) => {
-        notify(`Database error: ${errorMsg}`);
-      });
+      const saved = await saveAdminLayoutRemote(updatedLayout);
+      setLayout(saved);
       logActivity("Saved website layout", "Hero, Leadership, Organization history & Section Visibility", "success");
       notify("Website layout saved");
     },
@@ -302,7 +287,7 @@ export default function AdminDashboardPage() {
   );
 
   const handleSaveLeader = useCallback(
-    (leader: AdminLeaderProfile) => {
+    async (leader: AdminLeaderProfile) => {
       const isNew = !layout.deanProfiles.some((p) => p.id === leader.id);
       const nextProfiles = isNew
         ? [...layout.deanProfiles, leader]
@@ -313,10 +298,7 @@ export default function AdminDashboardPage() {
         deanProfiles: nextProfiles,
       };
 
-      setLayout(updatedLayout);
-      saveAdminLayoutRemote(updatedLayout, (errorMsg) => {
-        notify(`Database error: ${errorMsg}`);
-      });
+      setLayout(await saveAdminLayoutRemote(updatedLayout));
       setIsLeaderModalOpen(false);
       setLeaderEditorProfile(null);
       logActivity(isNew ? "Added leader" : "Updated leader", leader.name, "success");
@@ -331,16 +313,13 @@ export default function AdminDashboardPage() {
         isOpen: true,
         title: "Confirm leadership profile deletion",
         description: `Delete the profile for "${leader.name}"?`,
-        onConfirm: () => {
+        onConfirm: async () => {
           const nextProfiles = layout.deanProfiles.filter((p) => p.id !== leader.id);
           const updatedLayout: AdminLayoutConfig = {
             ...layout,
             deanProfiles: nextProfiles,
           };
-          setLayout(updatedLayout);
-          saveAdminLayoutRemote(updatedLayout, (errorMsg) => {
-            notify(`Database error: ${errorMsg}`);
-          });
+          setLayout(await saveAdminLayoutRemote(updatedLayout));
           setIsLeaderModalOpen(false);
           setLeaderEditorProfile(null);
           setConfirmDelete(null);
@@ -354,8 +333,8 @@ export default function AdminDashboardPage() {
 
   // Settings action
   const handleSaveSettings = useCallback(
-    (updatedSettings: AdminSettings) => {
-      saveAdminSettings(updatedSettings);
+    async (updatedSettings: AdminSettings) => {
+      await saveAdminSettingsRemote(updatedSettings);
       setSettings(updatedSettings);
       logActivity("Saved system settings", "Organization & Email Preferences", "success");
       notify("System settings saved");
@@ -365,11 +344,14 @@ export default function AdminDashboardPage() {
 
   const handleSignOut = async () => {
     try {
-      await fetch('/api/admin/auth/logout', { method: 'POST' });
+      const response = await fetch('/api/admin/auth/logout', { method: 'POST' });
+      if (!response.ok) throw new Error("Unable to end server session");
+      logoutAdmin();
+      logoutMember();
+      window.location.replace("/admin/login");
     } catch (error) {
-      // Continue to logout even if request fails
+      notify(error instanceof Error ? error.message : "Sign out failed");
     }
-    router.push("/admin/login");
   };
 
   if (!session) {
@@ -383,6 +365,9 @@ export default function AdminDashboardPage() {
     );
   }
 
+  const activeView = canAccessAdminView(session.role, view) ? view : defaultAdminView(session.role);
+  const selectView = (next: AdminView) => { if (canAccessAdminView(session.role, next)) setView(next); };
+  const canDeleteMembers = session.role === "admin" || session.role === "super-admin";
   const pendingMembersCount = members.filter((m) => m.status === "pending").length;
   const draftContentCount = content.filter((c) => c.status === "draft").length;
 
@@ -400,10 +385,10 @@ export default function AdminDashboardPage() {
       <div className="admin-layout">
         {/* Collapsible Sidebar */}
         <AdminSidebar
-          currentView={view}
-          onSelectView={setView}
+          currentView={activeView}
+          onSelectView={selectView}
           session={session}
-          pendingMembersCount={pendingMembersCount}
+          pendingMembersCount={settings.reviewNotifications ? pendingMembersCount : 0}
           draftContentCount={draftContentCount}
           onSignOut={handleSignOut}
           mobileNavOpen={mobileNavOpen}
@@ -413,17 +398,17 @@ export default function AdminDashboardPage() {
         {/* Main Content Area */}
         <div className="admin-main">
           <AdminTopbar
-            currentView={view}
+            currentView={activeView}
             onOpenMobileNav={() => setMobileNavOpen(true)}
           />
 
           <main className="admin-content">
-          {view === "overview" && (
+          {activeView === "overview" && (
             <AdminOverviewView
               members={members}
               content={content}
               activity={activity}
-              onNavigate={setView}
+              onNavigate={selectView}
               onOpenNewContent={() => {
                 setContentEditorItem(null);
                 setIsContentModalOpen(true);
@@ -431,24 +416,26 @@ export default function AdminDashboardPage() {
             />
           )}
 
-          {view === "analytics" && (
+          {activeView === "analytics" && (
             <AnalyticsDashboard />
           )}
 
-          {view === "academic-analytics" && (
+          {activeView === "academic-analytics" && (
             <AdminAcademicAnalyticsView />
           )}
 
-          {view === "members" && (
+          {activeView === "members" && (
             <AdminMembersView
               members={members}
               onOpenMember={setSelectedMember}
-              onUpdateStatus={(m, s) => handleUpdateMemberStatus(m.id, s)}
+              onUpdateStatus={(m, s) => { void handleUpdateMemberStatus(m.id, s).catch(() => {}); }}
+              onRefresh={refreshMembers}
+              canDelete={canDeleteMembers}
               onExportCsv={handleExportMembersCsv}
             />
           )}
 
-          {view === "content" && (
+          {activeView === "content" && (
             <AdminContentView
               content={content}
               contentCategories={contentCategories}
@@ -466,7 +453,7 @@ export default function AdminDashboardPage() {
             />
           )}
 
-          {view === "layout" && (
+          {activeView === "layout" && (
             <AdminLayoutView
               layout={layout}
               onSaveLayout={handleSaveLayout}
@@ -478,26 +465,26 @@ export default function AdminDashboardPage() {
             />
           )}
 
-          {view === "broadcast" && (
+          {activeView === "broadcast" && (
             <AdminBroadcastView
               content={content}
               members={members}
             />
           )}
 
-          {view === "messages" && (
+          {activeView === "messages" && (
             <AdminMessagesView members={members} />
           )}
 
-          {view === "moderation" && (
+          {activeView === "moderation" && (
             <MessageModeration
               onSuspendMember={(memberId) => handleUpdateMemberStatus(memberId, "suspended")}
             />
           )}
 
-          {view === "activity" && <AdminActivityView activity={activity} />}
+          {activeView === "activity" && <AdminActivityView activity={activity} />}
 
-          {view === "settings" && (
+          {activeView === "settings" && (
             <AdminSettingsView
               settings={settings}
               onSaveSettings={handleSaveSettings}
@@ -508,12 +495,13 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* Isolated Modals & Drawers */}
-      <MemberDetailDrawer
+      {selectedMember && <MemberDetailDrawer
+        key={selectedMember.id}
         member={selectedMember}
         onClose={() => setSelectedMember(null)}
         onUpdateStatus={handleUpdateMemberStatus}
-        onDeleteMember={handleDeleteMember}
-      />
+        onDeleteMember={canDeleteMembers ? handleDeleteMember : undefined}
+      />}
 
       <ContentEditorModal
         initialItem={contentEditorItem}
@@ -527,7 +515,8 @@ export default function AdminDashboardPage() {
         onDelete={handleDeleteContent}
       />
 
-      <LeaderEditorModal
+      {isLeaderModalOpen && <LeaderEditorModal
+        key={leaderEditorProfile?.id || "new"}
         initialLeader={leaderEditorProfile}
         isOpen={isLeaderModalOpen}
         onClose={() => {
@@ -536,7 +525,7 @@ export default function AdminDashboardPage() {
         }}
         onSave={handleSaveLeader}
         onDelete={handleDeleteLeader}
-      />
+      />}
 
       {confirmDelete && (
         <ConfirmDeleteDialog

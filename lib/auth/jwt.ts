@@ -56,13 +56,10 @@ export async function checkMemberSuspension(
 
   // Check if temporary suspension has expired
   if (data.expires_at && new Date(data.expires_at) < new Date()) {
-    // Deactivate the expired suspension
-    await supabase
-      .from("member_suspensions")
-      .update({ is_active: false })
-      .eq("id", data.id);
-
-    return { suspended: false };
+    const { data: status, error: expiryError } = await supabase
+      .rpc("expire_member_suspensions", { p_member_id: memberId });
+    if (expiryError) throw new Error("Unable to verify account status");
+    return { suspended: status === "suspended" };
   }
 
   return {

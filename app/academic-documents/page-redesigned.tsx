@@ -176,10 +176,11 @@ export default function AcademicDocumentsPage() {
     setSelectedTags([]);
   };
 
-  const handleLike = (docId: string, e: React.MouseEvent) => {
+  const handleLike = async (docId: string, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    const { liked } = toggleLike(docId);
+    try {
+    const { liked } = await toggleLike(docId);
     setLikedDocs((prev) => {
       const next = new Set(prev);
       if (liked) {
@@ -189,10 +190,11 @@ export default function AcademicDocumentsPage() {
       }
       return next;
     });
+    } catch (error) { console.error("Could not save document like:", error); }
   };
 
   const handleView = (docId: string) => {
-    incrementViewCount(docId);
+    void incrementViewCount(docId).catch((error) => console.error("Could not save document view:", error));
     router.push(`/academic-documents/${docId}`);
   };
 

@@ -37,6 +37,7 @@ export function I18nProvider({ children, defaultLocale = 'en', messages }: I18nP
     const savedLocale = localStorage.getItem('efsw.locale') as Locale;
     if (savedLocale && ['en', 'th', 'ko'].includes(savedLocale)) {
       setLocaleState(savedLocale);
+      document.documentElement.lang = savedLocale;
     }
   }, []);
 
@@ -44,6 +45,7 @@ export function I18nProvider({ children, defaultLocale = 'en', messages }: I18nP
   const setLocale = (newLocale: Locale) => {
     setLocaleState(newLocale);
     localStorage.setItem('efsw.locale', newLocale);
+    document.cookie = `efsw.locale=${newLocale}; Path=/; Max-Age=31536000; SameSite=Lax`;
     // Update html lang attribute
     document.documentElement.lang = newLocale;
   };

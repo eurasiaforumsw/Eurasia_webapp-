@@ -40,7 +40,7 @@ interface MessageStats {
 }
 
 interface MessageModerationProps {
-  onSuspendMember?: (memberId: string) => void;
+  onSuspendMember?: (memberId: string) => Promise<void>;
 }
 
 const ITEMS_PER_PAGE = 50;
@@ -331,11 +331,15 @@ export const MessageModeration = memo(function MessageModeration({
     setShowSuspensionConfirm(true);
   };
 
-  const confirmSuspension = () => {
+  const confirmSuspension = async () => {
     if (suspendingMemberId && onSuspendMember) {
-      onSuspendMember(suspendingMemberId);
-      setShowSuspensionConfirm(false);
-      setSuspendingMemberId(null);
+      try {
+        await onSuspendMember(suspendingMemberId);
+        setShowSuspensionConfirm(false);
+        setSuspendingMemberId(null);
+      } catch (error) {
+        setError(error instanceof Error ? error.message : "Suspension failed");
+      }
     }
   };
 

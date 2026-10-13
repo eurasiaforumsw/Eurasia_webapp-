@@ -7,17 +7,19 @@ import RegistrationButton from "@/components/events/RegistrationButton";
 import RegistrationModal from "@/components/events/RegistrationModal";
 import { initialContent } from "@/lib/admin-data";
 import { Users } from "lucide-react";
+import { SiteNav } from "@/components/efsw/SiteNav";
+import { usePublishedContent } from "@/hooks/use-public-site-data";
 
 type PageProps = { params: { slug: string } };
 
-/* Mirrors /news/[slug] — seeds come from bundled content so each route
-   prerenders with real copy, then ArticleView swaps in localStorage on mount. */
 const seeds = initialContent.filter((item) => item.kind === "event") as ArticleSeed[];
 
 const findSeed = (slug: string): ArticleSeed | undefined => seeds.find((item) => item.id === slug);
 
 export default function EventDetailPage({ params }: PageProps) {
-  const seed = findSeed(params.slug);
+  const { items, loading: contentLoading, loaded } = usePublishedContent("event");
+  const hasRemoteContent = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+  const seed = loaded ? items.find((item) => item.id === params.slug) : !hasRemoteContent ? findSeed(params.slug) : undefined;
   const [registrationEnabled, setRegistrationEnabled] = useState(false);
   const [registrationCount, setRegistrationCount] = useState<number | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -42,7 +44,9 @@ export default function EventDetailPage({ params }: PageProps) {
     checkRegistration();
   }, [params.slug]);
 
-  if (!seed) notFound();
+  if (!seed && contentLoading) return <><SiteNav /><main className="efsw-article-page"><p role="status">Loading event…</p></main></>;
+  if (!seed && loaded) notFound();
+  if (!seed) return <><SiteNav /><main className="efsw-article-page"><p role="alert">Unable to load this event. Please refresh and try again.</p></main></>;
 
   const handleRegistrationSuccess = (confirmationNumber: string) => {
     // Refresh registration count
@@ -155,6 +159,7 @@ export default function EventDetailPage({ params }: PageProps) {
         slug={params.slug}
         seed={seed}
         backHref="/events"
+        contentSource="public"
       />
 
       {!loading && registrationEnabled && (

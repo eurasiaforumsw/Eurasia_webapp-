@@ -14,10 +14,8 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className="admin-console">
-        <AdminLayoutClient>{children}</AdminLayoutClient>
-      </body>
-    </html>
+    <div className="admin-console">
+      <AdminLayoutClient>{children}</AdminLayoutClient>
+    </div>
   );
 }

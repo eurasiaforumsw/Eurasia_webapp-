@@ -1,343 +1,109 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { cookies } from 'next/headers';
-import { verifyAdminToken } from '@/lib/auth/session';
+import { NextRequest, NextResponse } from "next/server";
+import { supabaseAdmin } from "@/lib/supabase";
+import { broadcastActor } from "./_auth";
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+const KINDS = new Set(["news", "event", "document", "academic", "custom"]);
+const AUDIENCES = new Set(["all", "professional", "student", "institutional"]);
+const STATUSES = new Set(["active", "pending", "suspended"]);
 
-/**
- * GET /api/broadcast
- * Fetch email campaigns with pagination and filters
- */
+function fail(error: string, status: number) {
+  return NextResponse.json({ error }, { status });
+}
+
+function textField(value: unknown, max: number): string | null {
+  return typeof value === "string" && value.trim() && value.length <= max ? value.trim() : null;
+}
+
+function optionalText(value: unknown, max: number): string | null | undefined {
+  if (value === undefined || value === null || value === "") return null;
+  return textField(value, max) || undefined;
+}
+
+function stringList(value: unknown, allowed?: Set<string>): string[] | null {
+  if (!Array.isArray(value) || value.length > 100 || value.some((item) => typeof item !== "string" || item.length > 120 || (allowed && !allowed.has(item)))) return null;
+  return [...new Set(value)];
+}
+
+function campaignFields(input: Record<string, unknown>): Record<string, unknown> | null {
+  const title = textField(input.title, 240);
+  const subject = textField(input.subject, 240);
+  const body = textField(input.body_html, 500000);
+  const preheader = optionalText(input.preheader, 500);
+  const cover = optionalText(input.cover_image, 2000);
+  const contentId = optionalText(input.content_id, 200);
+  const contentKind = input.content_kind ?? "custom";
+  const audience = input.audience ?? "all";
+  const groups = stringList(input.target_groups ?? []);
+  const statuses = stringList(input.target_statuses ?? ["active"], STATUSES);
+  if (!title || !subject || !body || preheader === undefined || cover === undefined || contentId === undefined ||
+      typeof contentKind !== "string" || !KINDS.has(contentKind) || typeof audience !== "string" || !AUDIENCES.has(audience) ||
+      !groups || !statuses || statuses.length === 0 || input.scheduled_at || (input.status && input.status !== "draft")) return null;
+  return {
+    title, subject, body_html: body, preheader, cover_image: cover,
+    content_id: contentId, content_kind: contentKind, audience,
+    target_groups: groups, target_statuses: statuses, status: "draft", scheduled_at: null,
+  };
+}
+
 export async function GET(req: NextRequest) {
-  try {
-    // Verify admin authentication
-    const cookieStore = cookies();
-    const token = cookieStore.get('admin_token')?.value;
-
-    if (!token) {
-      return NextResponse.json(
-        { error: 'Unauthorized - Admin token required' },
-        { status: 401 }
-      );
-    }
-
-    const admin = await verifyAdminToken(token);
-    if (!admin) {
-      return NextResponse.json(
-        { error: 'Unauthorized - Invalid admin token' },
-        { status: 401 }
-      );
-    }
-
-    // Parse query parameters
-    const searchParams = req.nextUrl.searchParams;
-    const page = parseInt(searchParams.get('page') || '1');
-    const pageSize = parseInt(searchParams.get('pageSize') || '20');
-    const status = searchParams.get('status'); // 'draft', 'scheduled', 'sent', etc.
-
-    // Build query
-    let query = supabaseAdmin
-      .from('email_campaigns')
-      .select('*', { count: 'exact' })
-      .order('created_at', { ascending: false });
-
-    // Apply status filter
-    if (status && status !== 'all') {
-      query = query.eq('status', status);
-    }
-
-    // Apply pagination
-    const from = (page - 1) * pageSize;
-    const to = from + pageSize - 1;
-    query = query.range(from, to);
-
-    const { data, error, count } = await query;
-
-    if (error) {
-      console.error('[GET /api/broadcast] Supabase error:', error);
-      return NextResponse.json(
-        { error: 'Failed to fetch campaigns' },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json({
-      success: true,
-      campaigns: data || [],
-      total: count || 0,
-      page,
-      pageSize,
-      hasMore: count ? (page * pageSize) < count : false,
-    });
-  } catch (error) {
-    console.error('[GET /api/broadcast] Error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
-  }
+  if (!await broadcastActor(req)) return fail("Unauthorized", 401);
+  const page = Math.max(1, Math.min(10000, Number(req.nextUrl.searchParams.get("page")) || 1));
+  const pageSize = Math.max(1, Math.min(100, Number(req.nextUrl.searchParams.get("pageSize")) || 20));
+  const status = req.nextUrl.searchParams.get("status");
+  if (status && status !== "all" && !["draft", "scheduled", "sending", "sent", "failed"].includes(status)) return fail("Invalid status", 400);
+  let query = supabaseAdmin.from("email_campaigns").select("*", { count: "exact" }).order("created_at", { ascending: false });
+  if (status && status !== "all") query = query.eq("status", status);
+  const { data, error, count } = await query.range((page - 1) * pageSize, page * pageSize - 1);
+  if (error) return fail("Failed to fetch campaigns", 500);
+  return NextResponse.json({ campaigns: data || [], total: count || 0, page, pageSize, hasMore: page * pageSize < (count || 0) });
 }
 
-/**
- * POST /api/broadcast
- * Create a new email campaign
- */
 export async function POST(req: NextRequest) {
-  try {
-    // Verify admin authentication
-    const cookieStore = cookies();
-    const token = cookieStore.get('admin_token')?.value;
-
-    if (!token) {
-      return NextResponse.json(
-        { error: 'Unauthorized - Admin token required' },
-        { status: 401 }
-      );
-    }
-
-    const admin = await verifyAdminToken(token);
-    if (!admin) {
-      return NextResponse.json(
-        { error: 'Unauthorized - Invalid admin token' },
-        { status: 401 }
-      );
-    }
-
-    // Get campaign data from request
-    const {
-      title,
-      subject,
-      preheader,
-      body_html,
-      body_text,
-      content_id,
-      content_kind,
-      cover_image,
-      target_groups,
-      target_statuses,
-      status,
-      scheduled_at,
-    } = await req.json();
-
-    // Validate required fields
-    if (!title || !subject || !body_html) {
-      return NextResponse.json(
-        { error: 'Missing required fields: title, subject, body_html' },
-        { status: 400 }
-      );
-    }
-
-    // Insert campaign
-    const { data, error } = await supabaseAdmin
-      .from('email_campaigns')
-      .insert({
-        title,
-        subject,
-        preheader,
-        body_html,
-        body_text,
-        content_id,
-        content_kind,
-        cover_image,
-        target_groups: target_groups || [],
-        target_statuses: target_statuses || [],
-        status: status || 'draft',
-        scheduled_at,
-        created_by: admin.id,
-      })
-      .select()
-      .single();
-
-    if (error) {
-      console.error('[POST /api/broadcast] Supabase error:', error);
-      return NextResponse.json(
-        { error: 'Failed to create campaign' },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json({
-      success: true,
-      campaign: data,
-    });
-  } catch (error) {
-    console.error('[POST /api/broadcast] Error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+  const actor = await broadcastActor(req);
+  if (!actor) return fail("Unauthorized", 401);
+  const input = await req.json().catch(() => null);
+  if (!input || typeof input !== "object" || Array.isArray(input)) return fail("Invalid campaign", 400);
+  const fields = campaignFields(input);
+  if (!fields) return fail("Invalid campaign fields", 400);
+  if (fields.content_id) {
+    const { data: source, error: sourceError } = await supabaseAdmin.from("content")
+      .select("id").eq("id", fields.content_id).maybeSingle();
+    if (sourceError) return fail("Failed to verify source content", 500);
+    if (!source) return fail("Source content not found", 400);
   }
+  const { data, error } = await supabaseAdmin.from("email_campaigns")
+    .insert({ ...fields, created_by: actor.memberId || null, created_by_actor: actor.email })
+    .select("*").single();
+  if (error) return fail("Failed to create campaign", 500);
+  return NextResponse.json({ campaign: data }, { status: 201 });
 }
 
-/**
- * PATCH /api/broadcast
- * Update an existing campaign
- */
 export async function PATCH(req: NextRequest) {
-  try {
-    // Verify admin authentication
-    const cookieStore = cookies();
-    const token = cookieStore.get('admin_token')?.value;
-
-    if (!token) {
-      return NextResponse.json(
-        { error: 'Unauthorized - Admin token required' },
-        { status: 401 }
-      );
-    }
-
-    const admin = await verifyAdminToken(token);
-    if (!admin) {
-      return NextResponse.json(
-        { error: 'Unauthorized - Invalid admin token' },
-        { status: 401 }
-      );
-    }
-
-    // Get update data
-    const { campaignId, ...updates } = await req.json();
-
-    if (!campaignId) {
-      return NextResponse.json(
-        { error: 'Missing campaignId' },
-        { status: 400 }
-      );
-    }
-
-    // Check if campaign exists and is not sent yet
-    const { data: existing } = await supabaseAdmin
-      .from('email_campaigns')
-      .select('status')
-      .eq('id', campaignId)
-      .single();
-
-    if (!existing) {
-      return NextResponse.json(
-        { error: 'Campaign not found' },
-        { status: 404 }
-      );
-    }
-
-    if (existing.status === 'sent' || existing.status === 'sending') {
-      return NextResponse.json(
-        { error: 'Cannot update a campaign that is already sent or sending' },
-        { status: 400 }
-      );
-    }
-
-    // Update campaign
-    const { data, error } = await supabaseAdmin
-      .from('email_campaigns')
-      .update({
-        ...updates,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', campaignId)
-      .select()
-      .single();
-
-    if (error) {
-      console.error('[PATCH /api/broadcast] Supabase error:', error);
-      return NextResponse.json(
-        { error: 'Failed to update campaign' },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json({
-      success: true,
-      campaign: data,
-    });
-  } catch (error) {
-    console.error('[PATCH /api/broadcast] Error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+  if (!await broadcastActor(req)) return fail("Unauthorized", 401);
+  const input = await req.json().catch(() => null);
+  if (!input || typeof input !== "object" || Array.isArray(input) || typeof input.campaignId !== "string") return fail("Invalid campaign", 400);
+  const fields = campaignFields(input);
+  if (!fields) return fail("Invalid campaign fields", 400);
+  if (fields.content_id) {
+    const { data: source, error: sourceError } = await supabaseAdmin.from("content")
+      .select("id").eq("id", fields.content_id).maybeSingle();
+    if (sourceError) return fail("Failed to verify source content", 500);
+    if (!source) return fail("Source content not found", 400);
   }
+  const { data, error } = await supabaseAdmin.from("email_campaigns")
+    .update(fields).eq("id", input.campaignId).eq("status", "draft").select("*").maybeSingle();
+  if (error) return fail("Failed to update campaign", 500);
+  if (!data) return fail("Campaign not found or no longer editable", 409);
+  return NextResponse.json({ campaign: data });
 }
 
-/**
- * DELETE /api/broadcast
- * Delete a campaign (only if not sent)
- */
 export async function DELETE(req: NextRequest) {
-  try {
-    // Verify admin authentication
-    const cookieStore = cookies();
-    const token = cookieStore.get('admin_token')?.value;
-
-    if (!token) {
-      return NextResponse.json(
-        { error: 'Unauthorized - Admin token required' },
-        { status: 401 }
-      );
-    }
-
-    const admin = await verifyAdminToken(token);
-    if (!admin) {
-      return NextResponse.json(
-        { error: 'Unauthorized - Invalid admin token' },
-        { status: 401 }
-      );
-    }
-
-    const { campaignId } = await req.json();
-
-    if (!campaignId) {
-      return NextResponse.json(
-        { error: 'Missing campaignId' },
-        { status: 400 }
-      );
-    }
-
-    // Check if campaign can be deleted
-    const { data: existing } = await supabaseAdmin
-      .from('email_campaigns')
-      .select('status')
-      .eq('id', campaignId)
-      .single();
-
-    if (!existing) {
-      return NextResponse.json(
-        { error: 'Campaign not found' },
-        { status: 404 }
-      );
-    }
-
-    if (existing.status === 'sent' || existing.status === 'sending') {
-      return NextResponse.json(
-        { error: 'Cannot delete a campaign that is already sent or sending' },
-        { status: 400 }
-      );
-    }
-
-    // Delete campaign
-    const { error } = await supabaseAdmin
-      .from('email_campaigns')
-      .delete()
-      .eq('id', campaignId);
-
-    if (error) {
-      console.error('[DELETE /api/broadcast] Supabase error:', error);
-      return NextResponse.json(
-        { error: 'Failed to delete campaign' },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json({
-      success: true,
-    });
-  } catch (error) {
-    console.error('[DELETE /api/broadcast] Error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
-  }
+  if (!await broadcastActor(req)) return fail("Unauthorized", 401);
+  const input = await req.json().catch(() => null);
+  if (!input || typeof input.campaignId !== "string") return fail("Invalid campaign ID", 400);
+  const { data, error } = await supabaseAdmin.from("email_campaigns")
+    .delete().eq("id", input.campaignId).eq("status", "draft").select("id").maybeSingle();
+  if (error) return fail("Failed to delete campaign", 500);
+  if (!data) return fail("Campaign not found or no longer deletable", 409);
+  return NextResponse.json({ success: true });
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getAdminLayout, defaultLayoutConfig, type AdminPartnerLogo } from "@/lib/admin-data";
+import { usePublicLayout } from "@/hooks/use-public-site-data";
 
 /* Partner logo strip — fades the right side so the duplicated track loops
    back to the start without showing a hard seam. Each unique logo is
@@ -10,36 +10,21 @@ import { getAdminLayout, defaultLayoutConfig, type AdminPartnerLogo } from "@/li
    one glance — even on ultra-wide screens where the original double
    sequence leaked the second copy into the viewport. */
 export function LogoMarquee() {
-  const [logos, setLogos] = useState<AdminPartnerLogo[]>(defaultLayoutConfig.partnerLogos || []);
-  const [visible, setVisible] = useState(defaultLayoutConfig.sectionVisibility?.partnerLogos !== false);
+  const layout = usePublicLayout();
+  const logos = layout.partnerLogos || [];
+  const visible = layout.sectionVisibility?.partnerLogos !== false;
   /* On phones we want a smaller cell so the strip fits without overflowing
      horizontally. Detect the breakpoint in JS so the inline cellSize style
      stays consistent with the CSS. */
   const [compact, setCompact] = useState(false);
 
   useEffect(() => {
-    // After hydration, replace with admin-saved values if present
-    const layout = getAdminLayout();
-    setLogos(layout.partnerLogos || []);
-    setVisible(layout.sectionVisibility?.partnerLogos !== false);
-
-    // Live sync: when admin saves in another tab/window, update here too
-    const onStorage = (e: StorageEvent) => {
-      if (e.key === "efsw.admin.layout") {
-        const updated = getAdminLayout();
-        setLogos(updated.partnerLogos || []);
-        setVisible(updated.sectionVisibility?.partnerLogos !== false);
-      }
-    };
-    window.addEventListener("storage", onStorage);
-
     const mq = window.matchMedia("(max-width: 30rem)");
     const onMq = () => setCompact(mq.matches);
     onMq();
     mq.addEventListener("change", onMq);
 
     return () => {
-      window.removeEventListener("storage", onStorage);
       mq.removeEventListener("change", onMq);
     };
   }, []);

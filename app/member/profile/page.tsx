@@ -36,6 +36,7 @@ import {
   refreshSessionMember,
   updateMember,
 } from "@/lib/member-auth";
+import AdminAnnouncements from "@/components/member/AdminAnnouncements";
 
 /* ═══════════════════════════════ options ═══════════════════════════════ */
 
@@ -779,6 +780,7 @@ export default function MemberProfilePage() {
 
       {/* ─── Body grid: side nav + form ─── */}
       <div className="efsw-profile__body">
+        <AdminAnnouncements />
         <aside className="efsw-profile__sidenav" aria-label="Profile sections">
           <p className="efsw-profile__sidenav-label">Sections</p>
           <ol className="efsw-profile__sidenav-list">

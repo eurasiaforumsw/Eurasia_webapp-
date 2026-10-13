@@ -13,6 +13,8 @@ import enMessages from "@/locales/en.json";
 import thMessages from "@/locales/th.json";
 import koMessages from "@/locales/ko.json";
 import { cookies, headers } from "next/headers";
+import { resolveInitialLocale } from "@/lib/site-settings";
+import { getPublicSiteSettings } from "@/lib/site-settings-server";
 
 // Every rendered document must use the nonce generated for this request.
 export const dynamic = "force-dynamic";
@@ -63,29 +65,12 @@ export const metadata: Metadata = {
   },
 };
 
-type Locale = 'en' | 'th' | 'ko';
-
-function getInitialLocale(): Locale {
-  try {
-    const cookieStore = cookies();
-    const localeCookie = cookieStore.get("efsw.locale");
-
-    if (localeCookie?.value && ["en", "th", "ko"].includes(localeCookie.value)) {
-      return localeCookie.value as Locale;
-    }
-  } catch (error) {
-    // Cookies not available in static rendering
-  }
-
-  return "en";
-}
-
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const initialLocale = getInitialLocale();
+  const initialLocale = await resolveInitialLocale(cookies().get("efsw.locale")?.value, getPublicSiteSettings);
   const nonce = headers().get("x-nonce") ?? undefined;
 
   return (

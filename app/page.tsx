@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { ArrowUpRight, Calendar, CalendarDays, MapPin, User, ImageIcon } from "lucide-react";
@@ -10,20 +10,15 @@ import { AnimatedHero } from "@/components/ui/animated-hero";
 import { DeanMessage } from "@/components/efsw/DeanMessage";
 import { EventHeroSlider } from "@/components/efsw/EventHeroSlider";
 import { LogoMarquee } from "@/components/efsw/LogoMarquee";
+import { SiteFooter } from "@/components/efsw/SiteFooter";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { SkeletonCard } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import {
-  ADMIN_CONTENT_KEY,
-  ADMIN_LAYOUT_KEY,
   AdminContentItem,
-  AdminLayoutConfig,
-  defaultLayoutConfig,
-  getAdminLayout,
-  getPublishedAdminContent,
-  initialContent,
 } from "@/lib/admin-data";
+import { usePublicLayout, usePublicSettings, usePublishedContent } from "@/hooks/use-public-site-data";
 import { initScrollAnimations, cleanupScrollAnimations } from "@/lib/scroll-animations";
 
 /** Sections tracked by the side progress indicator. */
@@ -48,43 +43,11 @@ const cardItem = (i: number) => ({
 } as const);
 
 export default function HomePage() {
-  const [layout, setLayout] = useState<AdminLayoutConfig>(defaultLayoutConfig);
-  const [news, setNews] = useState<AdminContentItem[]>([]);
-  const [events, setEvents] = useState<AdminContentItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  // Sync admin data
-  useEffect(() => {
-    const syncData = () => {
-      setIsLoading(true);
-      setLayout(getAdminLayout());
-      setNews(getPublishedAdminContent("news"));
-      setEvents(getPublishedAdminContent("event"));
-      // Remove artificial delay - data is ready immediately
-      setIsLoading(false);
-    };
-
-    syncData();
-
-    const handleStorage = (event: StorageEvent) => {
-      if (event.key === ADMIN_LAYOUT_KEY || event.key === ADMIN_CONTENT_KEY) {
-        syncData();
-      }
-    };
-    const handleVisibility = () => {
-      if (document.visibilityState === "visible") syncData();
-    };
-
-    window.addEventListener("storage", handleStorage);
-    window.addEventListener("pageshow", syncData);
-    document.addEventListener("visibilitychange", handleVisibility);
-
-    return () => {
-      window.removeEventListener("storage", handleStorage);
-      window.removeEventListener("pageshow", syncData);
-      document.removeEventListener("visibilitychange", handleVisibility);
-    };
-  }, []);
+  const layout = usePublicLayout();
+  const settings = usePublicSettings();
+  const { items: news, loading: newsLoading } = usePublishedContent("news");
+  const { items: events, loading: eventsLoading } = usePublishedContent("event");
+  const isLoading = newsLoading || eventsLoading;
 
   // Initialize GSAP ScrollTrigger animations and IntersectionObserver
   useEffect(() => {
@@ -131,12 +94,10 @@ export default function HomePage() {
     };
   }, [layout, news]);
 
-  const fallbackNews = initialContent.filter((item: AdminContentItem) => item.kind === "news");
-  const publishedNews = news.length > 0 ? news : fallbackNews;
+  const publishedNews = news;
   const displayedNews = publishedNews.slice(0, 3);
 
-  const fallbackEvents = initialContent.filter((item: AdminContentItem) => item.kind === "event");
-  const publishedEvents = events.length > 0 ? events : fallbackEvents;
+  const publishedEvents = events;
   // Sort events by start date ascending — upcoming first.
   const displayedEvents = [...publishedEvents]
     .sort((a, b) => (a.startsAt ?? "").localeCompare(b.startsAt ?? ""))
@@ -374,31 +335,7 @@ export default function HomePage() {
           </section>
         )}
 
-        <footer className="efsw-footer" id="footer">
-          <div className="efsw-footer__top">
-            <div>
-              <a href="#home" className="efsw-brand" aria-label="Back to EFSW home">
-                <span className="efsw-brand__mark">
-                  <img src="/efsw-logo-cream.png" alt="" width={64} height={64} />
-                </span>
-                <span>Eurasia Forum<br />for Social Workers</span>
-              </a>
-              <p>{layout.footerTagline}</p>
-            </div>
-            <div className="efsw-footer__links">
-              <a href="/about">About</a>
-              <a href="/events">Events</a>
-              <a href="/news">News</a>
-              <a href="/about#membership">Membership</a>
-              <a href="/admin" className="efsw-footer__admin-link">{layout.footerAdminLinkLabel}</a>
-            </div>
-            <div className="efsw-footer__contact">
-              <span>{layout.footerEmailLabel}</span>
-              <a href={`mailto:${layout.footerEmail}`}>{layout.footerEmail}</a>
-            </div>
-          </div>
-          <div className="efsw-footer__bottom"><span>{layout.footerCopyright}</span><a href="#home">Back to top <ArrowUpRight size={15} /></a></div>
-        </footer>
+        <SiteFooter layout={layout} settings={settings} />
       </main>
     </>
   );

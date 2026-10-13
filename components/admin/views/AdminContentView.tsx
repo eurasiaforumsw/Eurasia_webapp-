@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useCallback, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import {
   Plus,
@@ -52,7 +52,7 @@ interface AdminContentViewProps {
   onToggleStatus: (item: AdminContentItem) => void;
   onAddNew: () => void;
   contentCategories: AdminContentCategory[];
-  onSaveCategories: (categories: AdminContentCategory[]) => void;
+  onSaveCategories: (categories: AdminContentCategory[]) => Promise<void>;
 }
 
 interface ContentFilterValues {
@@ -119,8 +119,19 @@ export const AdminContentView = memo(function AdminContentView({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkProcessing, setBulkProcessing] = useState(false);
   const [showBulkProgress, setShowBulkProgress] = useState(false);
-  const [bulkAction, setBulkAction] = useState<"delete" | "publish" | "archive" | "unpublish" | null>(null);
+  const [bulkAction, setBulkAction] = useState<"delete" | "publish" | "archive" | "unpublish" | "updateCategory" | null>(null);
+  const [bulkCategory, setBulkCategory] = useState("");
   const [bulkHadChanges, setBulkHadChanges] = useState(false);
+  const [savingCategories, setSavingCategories] = useState(false);
+  const [categoryError, setCategoryError] = useState("");
+  useEffect(() => { setCategoryDrafts(contentCategories); }, [contentCategories]);
+  const saveCategories = async (categories: AdminContentCategory[]) => {
+    setSavingCategories(true);
+    setCategoryError("");
+    try { await onSaveCategories(categories); }
+    catch (error) { setCategoryError(error instanceof Error ? error.message : "Unable to save categories"); }
+    finally { setSavingCategories(false); }
+  };
 
   // Destructure for easier access
   const { kindFilter, statusFilter, searchQuery } = filterValues;
@@ -140,7 +151,6 @@ export const AdminContentView = memo(function AdminContentView({
   const removeCategory = (id: string) => {
     const next = categoryDrafts.filter((category) => category.id !== id);
     setCategoryDrafts(next);
-    onSaveCategories(next);
   };
   const moveCategory = (id: string, direction: -1 | 1) => {
     const ordered = [...visibleCategories];
@@ -210,7 +220,7 @@ export const AdminContentView = memo(function AdminContentView({
   };
 
   // Bulk operations
-  const handleBulkAction = (action: "delete" | "publish" | "archive" | "unpublish") => {
+  const handleBulkAction = (action: "delete" | "publish" | "archive" | "unpublish" | "updateCategory") => {
     if (selectedIds.size === 0) return;
     setBulkAction(action);
     setBulkHadChanges(false);
@@ -241,31 +251,8 @@ export const AdminContentView = memo(function AdminContentView({
     const category = prompt("Enter the new category for selected items:");
     if (!category || !category.trim()) return;
 
-    setBulkProcessing(true);
-    try {
-      const response = await fetch("/api/content/bulk", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "updateCategory",
-          ids: Array.from(selectedIds),
-          category: category.trim(),
-        }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Bulk category update failed");
-      }
-
-      setSelectedIds(new Set());
-      window.location.reload();
-    } catch (error) {
-      console.error("Bulk update category error:", error);
-      alert(`Failed to update category: ${error instanceof Error ? error.message : "Unknown error"}`);
-    } finally {
-      setBulkProcessing(false);
-    }
+    setBulkCategory(category.trim());
+    handleBulkAction("updateCategory");
   };
 
   const formatDate = (value?: string) => {
@@ -333,21 +320,38 @@ export const AdminContentView = memo(function AdminContentView({
         action={bulkAction || "delete"}
         selectedIds={Array.from(selectedIds)}
         entityType="content"
-        onExecute={async (ids) => {
+        onExecute={async () => {}}
+        onExecuteBatch={async (ids) => {
           const status = bulkAction === "publish" ? "published" : bulkAction === "archive" ? "archived" : "draft";
-          const response = await fetch("/api/content/bulk", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(bulkAction === "delete" ? { action: "delete", ids } : { action: "updateStatus", ids, status }),
-          });
-          if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || "Bulk operation failed");
+          const results: { id: string; success: boolean; error?: string }[] = [];
+          setBulkProcessing(true);
+          try {
+          for (let offset = 0; offset < ids.length; offset += 100) {
+            const batch = ids.slice(offset, offset + 100);
+            try {
+              const response = await fetch("/api/content/bulk", {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(bulkAction === "delete" ? { action: "delete", ids: batch }
+                  : bulkAction === "updateCategory" ? { action: "updateCategory", ids: batch, category: bulkCategory }
+                  : { action: "updateStatus", ids: batch, status }),
+              });
+              const data = await response.json();
+              if (!response.ok) throw new Error(data.error || "Bulk operation failed");
+              if (!Array.isArray(data.ids) || !Array.isArray(data.results)) throw new Error("Missing bulk operation results");
+              const affected = new Set<string>(data.ids.filter((id: unknown): id is string => typeof id === "string" && batch.includes(id)));
+              if (bulkAction === "delete") affected.forEach((id) => deleteAdminContent(id));
+              else getAdminContent().filter((item) => affected.has(item.id)).forEach((item) => saveAdminContent({
+                ...item, ...(bulkAction === "updateCategory" ? { category: bulkCategory } : { status }), updatedAt: new Date().toISOString(),
+              }));
+              if (affected.size) setBulkHadChanges(true);
+              results.push(...batch.map((id) => ({ id, success: affected.has(id),
+                ...(!affected.has(id) ? { error: data.results.find((item: { id: string; error?: string }) => item.id === id)?.error || "Content was not updated" } : {}) })));
+            } catch (error) {
+              results.push(...batch.map((id) => ({ id, success: false, error: error instanceof Error ? error.message : "Bulk operation failed" })));
+            }
           }
-          const affected = new Set(ids);
-          if (bulkAction === "delete") ids.forEach((id) => deleteAdminContent(id));
-          else getAdminContent().filter((item) => affected.has(item.id)).forEach((item) => saveAdminContent({ ...item, status, updatedAt: new Date().toISOString() }));
-          setBulkHadChanges(true);
+          return results;
+          } finally { setBulkProcessing(false); }
         }}
       />
 
@@ -566,16 +570,18 @@ export const AdminContentView = memo(function AdminContentView({
         </div>
 
         <div className="efsw-admin-editor__footer" style={{ padding: "0.85rem 1.35rem" }}>
+          {categoryError && <p role="alert">{categoryError}</p>}
           <small style={{ color: "var(--admin-muted)", fontSize: "0.7rem" }}>
-            Reordering or hiding a mode hides it on the public site immediately.
+            Save filter modes to publish these changes to the website.
           </small>
           <button
             type="button"
-            onClick={() => onSaveCategories(categoryDrafts)}
+            disabled={savingCategories}
+            onClick={() => void saveCategories(categoryDrafts)}
             className="efsw-admin-text-action"
             style={{ color: "var(--admin-green)", fontSize: "0.74rem" }}
           >
-            Save filter modes
+            {savingCategories ? "Saving…" : "Save filter modes"}
           </button>
         </div>
       </section>

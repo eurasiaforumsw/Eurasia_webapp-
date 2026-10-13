@@ -1,238 +1,115 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { cookies } from 'next/headers';
-import { verifyAdminToken } from '@/lib/auth/session';
-import { sendCampaignEmails, generateEmailTemplate } from '@/lib/email';
+import { NextRequest, NextResponse } from "next/server";
+import { supabaseAdmin } from "@/lib/supabase";
+import { sendCampaignEmails, generateEmailTemplate } from "@/lib/email";
+import { broadcastActor } from "../_auth";
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+export const runtime = "nodejs";
 
-/**
- * POST /api/broadcast/send
- * Send email campaign to target audience via Resend
- */
+function fail(error: string, status: number) {
+  return NextResponse.json({ error }, { status });
+}
+
 export async function POST(req: NextRequest) {
+  if (!await broadcastActor(req)) return fail("Unauthorized", 401);
+  const input = await req.json().catch(() => null);
+  const campaignId = input?.campaignId;
+  if (typeof campaignId !== "string" || !/^[0-9a-f-]{36}$/i.test(campaignId)) return fail("Invalid campaign ID", 400);
+  if (!process.env.RESEND_API_KEY) return fail("Email delivery is not configured", 503);
+
+  const { data: campaign, error: loadError } = await supabaseAdmin.from("email_campaigns")
+    .select("*").eq("id", campaignId).maybeSingle();
+  if (loadError) return fail("Failed to load campaign", 500);
+  if (!campaign) return fail("Campaign not found", 404);
+  if (campaign.status !== "draft") return fail("Campaign is not a draft", 409);
+
+  const { data: claimed, error: claimError } = await supabaseAdmin.rpc("claim_email_campaign", { p_campaign_id: campaignId });
+  if (claimError) return fail("Failed to claim campaign", 500);
+  if (!claimed) return fail("Campaign is already being sent", 409);
+
+  let deliveryStarted = false;
   try {
-    // Verify admin authentication
-    const cookieStore = cookies();
-    const token = cookieStore.get('admin_token')?.value;
-
-    if (!token) {
-      return NextResponse.json(
-        { error: 'Unauthorized - Admin token required' },
-        { status: 401 }
-      );
+    const members: Array<{ id: string; email: string; full_name: string | null }> = [];
+    for (let offset = 0; ; offset += 500) {
+      let recipientsQuery = supabaseAdmin.from("members")
+        .select("id, email, full_name")
+        .in("status", campaign.target_statuses?.length ? campaign.target_statuses : ["active"]);
+      if (campaign.audience && campaign.audience !== "all") recipientsQuery = recipientsQuery.eq("membership_type", campaign.audience);
+      if (campaign.target_groups?.length) recipientsQuery = recipientsQuery.overlaps("target_groups", campaign.target_groups);
+      const { data: page, error: membersError } = await recipientsQuery.order("id").range(offset, offset + 499);
+      if (membersError) throw new Error("Failed to load recipients");
+      members.push(...(page || []));
+      if (members.length > 50000) throw new Error("Audience exceeds the maximum campaign size");
+      if (!page || page.length < 500) break;
     }
-
-    const admin = await verifyAdminToken(token);
-    if (!admin) {
-      return NextResponse.json(
-        { error: 'Unauthorized - Invalid admin token' },
-        { status: 401 }
-      );
-    }
-
-    // Get campaign ID from request
-    const { campaignId } = await req.json();
-
-    if (!campaignId) {
-      return NextResponse.json(
-        { error: 'Missing campaignId' },
-        { status: 400 }
-      );
-    }
-
-    // 1. Fetch campaign details
-    const { data: campaign, error: campaignError } = await supabaseAdmin
-      .from('email_campaigns')
-      .select('*')
-      .eq('id', campaignId)
-      .single();
-
-    if (campaignError || !campaign) {
-      return NextResponse.json(
-        { error: 'Campaign not found' },
-        { status: 404 }
-      );
-    }
-
-    // 2. Validate campaign status
-    if (campaign.status === 'sent') {
-      return NextResponse.json(
-        { error: 'Campaign has already been sent' },
-        { status: 400 }
-      );
-    }
-
-    if (campaign.status === 'sending') {
-      return NextResponse.json(
-        { error: 'Campaign is currently being sent' },
-        { status: 400 }
-      );
-    }
-
-    // 3. Update campaign status to 'sending'
-    await supabaseAdmin
-      .from('email_campaigns')
-      .update({
-        status: 'sending',
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', campaignId);
-
-    // 4. Build recipient query based on target criteria
-    let recipientsQuery = supabaseAdmin
-      .from('members')
-      .select('id, email, full_name');
-
-    // Filter by status (default to 'active' if not specified)
-    const targetStatuses = campaign.target_statuses?.length > 0
-      ? campaign.target_statuses
-      : ['active'];
-    recipientsQuery = recipientsQuery.in('status', targetStatuses);
-
-    // Filter by target groups if specified
-    if (campaign.target_groups?.length > 0) {
-      recipientsQuery = recipientsQuery.contains('target_groups', campaign.target_groups);
-    }
-
-    const { data: members, error: membersError } = await recipientsQuery;
-
-    if (membersError || !members || members.length === 0) {
-      await supabaseAdmin
-        .from('email_campaigns')
-        .update({
-          status: 'failed',
-          error_message: 'No recipients found matching criteria',
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', campaignId);
-
-      return NextResponse.json(
-        { error: 'No recipients found matching criteria' },
-        { status: 400 }
-      );
-    }
-
-    // 5. Update recipient count
-    await supabaseAdmin
-      .from('email_campaigns')
-      .update({
-        recipient_count: members.length,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', campaignId);
-
-    // 6. Create recipient records
-    const recipientRecords = members.map((member) => ({
-      campaign_id: campaignId,
-      member_id: member.id,
-      email: member.email,
-      full_name: member.full_name,
-      status: 'pending',
-    }));
-
-    await supabaseAdmin
-      .from('campaign_recipients')
-      .insert(recipientRecords);
-
-    // 7. Generate email HTML
-    const emailHtml = generateEmailTemplate(
-      campaign.body_html,
-      campaign.preheader,
-      campaign.cover_image
-    );
-
-    // 8. Send emails via Resend
-    const recipients = members.map((member) => ({
-      email: member.email,
-      name: member.full_name || 'Member',
-    }));
-
-    const sendResult = await sendCampaignEmails(
-      recipients,
-      campaign.subject,
-      emailHtml,
-      campaign.body_text,
-      async (sent, total) => {
-        // Progress callback - update campaign stats
-        console.log(`Campaign ${campaignId}: Sent ${sent}/${total} emails`);
-      }
-    );
-
-    // 9. Update recipient records with send results
-    for (const result of sendResult.results) {
-      const member = members.find((m) => m.email === result.email);
-      if (!member) continue;
-
-      const updateData: any = {
-        updated_at: new Date().toISOString(),
-      };
-
-      if (result.emailId) {
-        updateData.status = 'sent';
-        updateData.sent_at = new Date().toISOString();
-        updateData.resend_email_id = result.emailId;
-      } else {
-        updateData.status = 'failed';
-        updateData.error_message = result.error;
-      }
-
-      await supabaseAdmin
-        .from('campaign_recipients')
-        .update(updateData)
-        .eq('campaign_id', campaignId)
-        .eq('member_id', member.id);
-    }
-
-    // 10. Update campaign final status
-    await supabaseAdmin
-      .from('email_campaigns')
-      .update({
-        status: sendResult.totalFailed === 0 ? 'sent' : 'failed',
-        sent_at: new Date().toISOString(),
-        completed_at: new Date().toISOString(),
-        error_message: sendResult.totalFailed > 0
-          ? `Failed to send ${sendResult.totalFailed} emails`
-          : null,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', campaignId);
-
-    return NextResponse.json({
-      success: true,
-      totalRecipients: members.length,
-      totalSent: sendResult.totalSent,
-      totalFailed: sendResult.totalFailed,
-      message: sendResult.totalFailed === 0
-        ? `Campaign sent successfully to ${sendResult.totalSent} recipients`
-        : `Campaign partially sent: ${sendResult.totalSent} succeeded, ${sendResult.totalFailed} failed`,
+    const seenEmails = new Set<string>();
+    const recipients = members.filter((member) => {
+      if (typeof member.email !== "string" || !member.email.trim()) return false;
+      const email = member.email.trim().toLowerCase();
+      if (seenEmails.has(email)) return false;
+      seenEmails.add(email);
+      return true;
     });
-  } catch (error) {
-    console.error('[POST /api/broadcast/send] Error:', error);
-
-    // Try to update campaign status to failed
-    try {
-      const { campaignId } = await req.json();
-      if (campaignId) {
-        await supabaseAdmin
-          .from('email_campaigns')
-          .update({
-            status: 'failed',
-            error_message: error instanceof Error ? error.message : 'Unknown error',
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', campaignId);
-      }
-    } catch (updateError) {
-      console.error('[POST /api/broadcast/send] Failed to update campaign status:', updateError);
+    if (!recipients.length) {
+      await supabaseAdmin.from("email_campaigns").update({ status: "draft", error_message: "No recipients found matching criteria", recipient_count: 0 }).eq("id", campaignId);
+      return fail("No recipients found matching criteria", 400);
     }
 
-    return NextResponse.json(
-      { error: 'Failed to send campaign' },
-      { status: 500 }
+    for (let index = 0; index < recipients.length; index += 500) {
+      const records = recipients.slice(index, index + 500).map((member) => ({
+        campaign_id: campaignId, member_id: member.id, email: member.email,
+        full_name: member.full_name, status: "pending",
+      }));
+      const { error: insertError } = await supabaseAdmin.from("campaign_recipients").insert(records);
+      if (insertError) throw new Error("Failed to persist recipient records");
+    }
+    const { error: countError } = await supabaseAdmin.from("email_campaigns")
+      .update({ recipient_count: recipients.length }).eq("id", campaignId);
+    if (countError) throw new Error("Failed to persist recipient count");
+
+    const html = generateEmailTemplate(campaign.body_html, campaign.preheader, campaign.cover_image);
+    deliveryStarted = true;
+    const result = await sendCampaignEmails(
+      recipients.map((member) => ({ email: member.email, name: member.full_name || "Member" })),
+      campaign.subject, html, campaign.body_text || undefined,
     );
+
+    const resultsByEmail = new Map(result.results.map((item) => [item.email, item]));
+    let sent = 0;
+    let failed = 0;
+    for (const member of recipients) {
+      const item = resultsByEmail.get(member.email);
+      const succeeded = Boolean(item?.emailId);
+      const { error } = await supabaseAdmin.from("campaign_recipients").update({
+        status: succeeded ? "sent" : "failed",
+        sent_at: succeeded ? new Date().toISOString() : null,
+        resend_email_id: item?.emailId || null,
+        error_message: succeeded ? null : item?.error || "Delivery service returned no result",
+      }).eq("campaign_id", campaignId).eq("member_id", member.id);
+      if (error) {
+        console.error("[POST /api/broadcast/send] Failed to persist recipient result", { campaignId, memberId: member.id, error });
+        throw new Error("Failed to persist delivery result");
+      }
+      if (succeeded) sent++; else failed++;
+    }
+
+    const { error: finalError } = await supabaseAdmin.from("email_campaigns").update({
+      status: failed ? "failed" : "sent",
+      sent_at: sent ? new Date().toISOString() : null,
+      completed_at: new Date().toISOString(),
+      error_message: failed ? `${failed} recipients failed` : null,
+    }).eq("id", campaignId);
+    if (finalError) throw new Error("Failed to persist campaign status");
+
+    return NextResponse.json({ success: failed === 0, totalRecipients: recipients.length, totalSent: sent, totalFailed: failed });
+  } catch (error) {
+    console.error("[POST /api/broadcast/send]", error);
+    const message = error instanceof Error ? error.message : "Campaign send failed";
+    let status = "failed";
+    if (!deliveryStarted) {
+      const cleanup = await supabaseAdmin.from("campaign_recipients").delete().eq("campaign_id", campaignId);
+      if (!cleanup.error) status = "draft";
+    }
+    await supabaseAdmin.from("email_campaigns").update({ status, error_message: message, completed_at: new Date().toISOString() }).eq("id", campaignId);
+    return fail(message, 500);
   }
 }

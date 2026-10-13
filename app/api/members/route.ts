@@ -37,6 +37,8 @@ type MemberRow = {
   license?: string | null;
   experience_years?: number | null;
   target_groups?: string[] | null;
+  review_note?: string;
+  reviewed_at?: string | null;
 };
 
 const normalizeEmail = (value: string) => value.trim().toLowerCase();
@@ -97,6 +99,8 @@ const rowToMember = (row: MemberRow) => ({
   license: row.license ?? undefined,
   experienceYears: row.experience_years ?? undefined,
   targetGroups: row.target_groups ?? undefined,
+  reviewNote: row.review_note ?? "",
+  reviewedAt: row.reviewed_at ?? undefined,
 });
 
 /** Run a Supabase thenable with a 10s timeout so we fail fast when the table
@@ -344,11 +348,28 @@ export async function PATCH(request: NextRequest) {
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const canReview = MEMBER_REVIEW_ROLES.includes(session.role);
     if (!canReview && (session.memberId !== id ||
-        ["status", "email", "role", "password", "passwordHash", "joinedAt"].some((key) => key in payload))) {
+        ["status", "reviewNote", "email", "role", "password", "passwordHash", "joinedAt"].some((key) => key in payload))) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const updates: Record<string, unknown> = {};
+    if (canReview && ("status" in payload || "reviewNote" in payload)) {
+      if (Object.keys(payload).some((key) => !["id", "status", "reviewNote"].includes(key))) {
+        return NextResponse.json({ error: "Submit account review separately from profile changes" }, { status: 400 });
+      }
+      const current = await getMemberById(id);
+      if (!current) return NextResponse.json({ error: "Member not found" }, { status: 404 });
+      const status = payload.status ?? current.status;
+      if (!["pending", "active", "suspended"].includes(String(status))) {
+        return NextResponse.json({ error: "Invalid member status" }, { status: 400 });
+      }
+      const { error } = await supabaseAdmin.rpc("admin_review_member", {
+        p_member_id: id, p_status: status, p_actor_id: session.id,
+        p_review_note: payload.reviewNote === undefined ? null : sanitizeText(payload.reviewNote),
+      });
+      if (error) throw new Error(error.message);
+      return NextResponse.json({ member: await getMemberById(id) });
+    }
     const fieldMap: Array<[string, string, (v: unknown) => unknown]> = [
       ["fullName", "full_name", sanitizeText],
       ["firstName", "first_name", sanitizeText],
@@ -406,8 +427,9 @@ export async function DELETE(request: NextRequest) {
   }
 
   // Only admin can delete members
+  let actor;
   try {
-    await requireRole(request, ["admin"]);
+    actor = await requireRole(request, ["admin"]);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unexpected error";
     const status = message === "Unauthorized" ? 401 : 403;
@@ -416,6 +438,12 @@ export async function DELETE(request: NextRequest) {
 
   const id = request.nextUrl.searchParams.get("id");
   if (!id) return NextResponse.json({ error: "id is required" }, { status: 400 });
+  const { data: target, error: targetError } = await supabaseAdmin.from("members").select("id, role").eq("id", id).maybeSingle();
+  if (targetError) return NextResponse.json({ error: targetError.message }, { status: 500 });
+  if (!target) return NextResponse.json({ error: "Member not found" }, { status: 404 });
+  if (actor.id === id || target.role === "admin" || target.role === "super-admin") {
+    return NextResponse.json({ error: "Cannot delete your own account or an administrator" }, { status: 403 });
+  }
 
   const { error } = await withTimeout(
     () => supabaseAdmin!.from("members").delete().eq("id", id),

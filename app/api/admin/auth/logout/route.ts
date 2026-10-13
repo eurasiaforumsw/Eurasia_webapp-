@@ -14,7 +14,11 @@ export async function POST(request: NextRequest) {
     });
 
     const response = NextResponse.json({ success: true });
-    response.headers.set('Set-Cookie', cookie);
+    response.headers.append('Set-Cookie', cookie);
+    response.headers.append('Set-Cookie', stringifySetCookie({
+      name: 'member_token', value: '', httpOnly: true,
+      secure: process.env.NODE_ENV === 'production', sameSite: 'lax', maxAge: 0, path: '/'
+    }));
 
     return response;
   } catch (error) {

@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useMemo, useState, type CSSProperties } from "react";
+import { memo, useEffect, useMemo, useState, type CSSProperties } from "react";
 import {
   Mail,
   Send,
@@ -11,7 +11,6 @@ import {
   Eye,
   Users,
   Filter,
-  Calendar,
   ChevronRight,
   FileText,
   Newspaper,
@@ -22,7 +21,7 @@ import {
   X,
 } from "lucide-react";
 import { AdminContentItem, AdminContentKind } from "@/lib/admin-data";
-import { BroadcastCampaign, BroadcastRecipient, DEFAULT_TARGET_GROUPS, buildEmailBody, calculateRecipients, deleteBroadcast, generateBroadcastId, getBroadcasts, saveBroadcast } from "@/lib/broadcast";
+import { BroadcastCampaign, DEFAULT_TARGET_GROUPS, buildEmailBody, createBroadcast, listBroadcasts, removeBroadcast, sendBroadcast } from "@/lib/broadcast";
 import { AdminMember } from "@/lib/admin-data";
 
 /* ── Constants ─────────────────────────────────────────────────── */
@@ -76,18 +75,22 @@ interface AdminBroadcastViewProps {
 
 export const AdminBroadcastView = memo(function AdminBroadcastView({
   content,
-  members,
 }: AdminBroadcastViewProps) {
   const [view, setView] = useState<"list" | "compose">("list");
-  const [campaigns, setCampaigns] = useState<BroadcastCampaign[]>(() => getBroadcasts());
+  const [campaigns, setCampaigns] = useState<BroadcastCampaign[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [draftId, setDraftId] = useState<string | null>(null);
   const [selectedContent, setSelectedContent] = useState<AdminContentItem | null>(null);
   const [subject, setSubject] = useState("");
   const [preheader, setPreheader] = useState("");
   const [customMessage, setCustomMessage] = useState("");
+  const [draftBodyOverride, setDraftBodyOverride] = useState<string | null>(null);
   const [targetGroups, setTargetGroups] = useState<string[]>([]);
   const [targetStatuses, setTargetStatuses] = useState<string[]>(["active"]);
   const [selectedAudience, setSelectedAudience] = useState<string>("all");
-  const [scheduledAt, setScheduledAt] = useState("");
+  const [remoteRecipientCount, setRemoteRecipientCount] = useState<number | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
@@ -95,22 +98,10 @@ export const AdminBroadcastView = memo(function AdminBroadcastView({
   /* ── Derived data ─────────────────────────────────────────────── */
 
   const publishedContent = useMemo(() => content.filter((c) => c.status === "published"), [content]);
-  const recipientMembers = useMemo(() => members.map((m) => ({
-    id: m.id,
-    fullName: m.fullName,
-    email: m.email,
-    membershipType: m.membershipType,
-    status: m.status,
-  }) as BroadcastRecipient), [members]);
-
-  const audience = DEFAULT_TARGET_GROUPS.find((a) => a.id === selectedAudience) ?? null;
-
-  const recipientCount = useMemo(
-    () => calculateRecipients(recipientMembers, audience, targetGroups, targetStatuses).length,
-    [recipientMembers, audience, targetGroups, targetStatuses],
-  );
+  const recipientCount = remoteRecipientCount;
 
   const emailBody = useMemo(() => {
+    if (draftBodyOverride !== null) return draftBodyOverride;
     if (!selectedContent) return "";
     return buildEmailBody(
       selectedContent.title,
@@ -119,7 +110,33 @@ export const AdminBroadcastView = memo(function AdminBroadcastView({
       customMessage || "Please see the latest update from EFSW below.",
       "EFSW Editorial",
     );
-  }, [selectedContent, customMessage]);
+  }, [selectedContent, customMessage, draftBodyOverride]);
+
+  useEffect(() => {
+    let active = true;
+    listBroadcasts().then((items) => {
+      if (active) { setCampaigns(items); setLoading(false); }
+    }).catch((cause) => {
+      if (active) { setError(cause instanceof Error ? cause.message : "Could not load broadcasts"); setLoading(false); }
+    });
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    if (view !== "compose") return;
+    let active = true;
+    setRemoteRecipientCount(null);
+    fetch("/api/broadcast/recipients", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ audience: selectedAudience, targetGroups, targetStatuses }),
+    }).then(async (response) => {
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Could not count recipients");
+      if (active) setRemoteRecipientCount(typeof data.count === "number" ? data.count : 0);
+    }).catch(() => { if (active) setRemoteRecipientCount(null); });
+    return () => { active = false; };
+  }, [view, selectedAudience, targetGroups, targetStatuses]);
 
   /* ── Handlers ────────────────────────────────────────────────── */
 
@@ -129,6 +146,7 @@ export const AdminBroadcastView = memo(function AdminBroadcastView({
   };
 
   const handleSelectContent = (item: AdminContentItem) => {
+    setDraftBodyOverride(null);
     setSelectedContent(item);
     if (!subject) setSubject(item.title);
     if (!preheader) setPreheader(item.summary.slice(0, 100));
@@ -143,57 +161,78 @@ export const AdminBroadcastView = memo(function AdminBroadcastView({
     setTargetStatuses((prev) => prev.includes(status) ? prev.filter((s) => s !== status) : [...prev, status]);
   };
 
-  const handleSend = () => {
-    if (!selectedContent) return;
-    const campaign: BroadcastCampaign = {
-      id: generateBroadcastId(),
-      contentId: selectedContent.id,
-      contentTitle: selectedContent.title,
-      contentKind: selectedContent.kind,
-      subject: subject || selectedContent.title,
-      preheader: preheader || selectedContent.summary.slice(0, 100),
-      body: emailBody,
-      coverImage: selectedContent.coverImage,
-      targetGroups,
-      targetStatuses,
-      scheduledAt: scheduledAt || undefined,
-      status: scheduledAt ? "scheduled" : "sent",
-      recipientCount,
-      sentAt: scheduledAt ? undefined : new Date().toISOString(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    saveBroadcast(campaign);
-    setCampaigns(getBroadcasts());
-    showToast(scheduledAt ? "Broadcast scheduled" : "Broadcast sent");
-    setView("list");
-    setSelectedContent(null);
-    setSubject("");
-    setPreheader("");
-    setCustomMessage("");
-    setTargetGroups([]);
-    setTargetStatuses(["active"]);
-    setScheduledAt("");
+  const campaignInput = () => ({
+    title: selectedContent?.title || subject,
+    subject: subject.trim() || selectedContent?.title || "",
+    preheader: preheader.trim(),
+    body_html: emailBody,
+    content_id: selectedContent?.id,
+    content_kind: selectedContent?.kind || "custom",
+    cover_image: selectedContent?.coverImage,
+    audience: selectedAudience,
+    target_groups: targetGroups,
+    target_statuses: targetStatuses,
+  });
+
+  const resetComposer = () => {
+    setView("list"); setSelectedContent(null); setDraftId(null);
+    setSubject(""); setPreheader(""); setCustomMessage(""); setDraftBodyOverride(null);
+    setTargetGroups([]); setTargetStatuses(["active"]); setSelectedAudience("all"); setRemoteRecipientCount(null);
   };
 
-  const handleDelete = (id: string) => {
-    setCampaigns(deleteBroadcast(id));
-    setDeleteConfirm(null);
-    showToast("Broadcast deleted");
+  const saveOrSend = async (sendNow: boolean) => {
+    if (!selectedContent || busy) return;
+    if (!targetStatuses.length) { setError("Select at least one member status"); return; }
+    setBusy(true); setError(null);
+    try {
+      let campaign: BroadcastCampaign;
+      if (draftId) {
+        const response = await fetch("/api/broadcast", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ campaignId: draftId, ...campaignInput() }) });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "Failed to save draft");
+        campaign = { ...data.campaign, id: draftId } as BroadcastCampaign;
+      } else {
+        campaign = await createBroadcast(campaignInput());
+      }
+      if (sendNow) {
+        const result = await sendBroadcast(campaign.id);
+        showToast(result.totalFailed ? `Sent ${result.totalSent}; ${result.totalFailed} failed` : `Sent to ${result.totalSent} members`);
+      } else showToast("Draft saved");
+      setCampaigns(await listBroadcasts());
+      resetComposer();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Broadcast request failed");
+      setCampaigns(await listBroadcasts().catch(() => campaigns));
+    } finally { setBusy(false); }
   };
 
-  const handleDuplicate = (campaign: BroadcastCampaign) => {
-    const duplicate: BroadcastCampaign = {
-      ...campaign,
-      id: generateBroadcastId(),
-      status: "draft",
-      sentAt: undefined,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    saveBroadcast(duplicate);
-    setCampaigns(getBroadcasts());
-    showToast("Broadcast duplicated");
+  const handleDelete = async (id: string) => {
+    setBusy(true); setError(null);
+    try { await removeBroadcast(id); setCampaigns((items) => items.filter((item) => item.id !== id)); setDeleteConfirm(null); showToast("Draft deleted"); }
+    catch (cause) { setError(cause instanceof Error ? cause.message : "Delete failed"); }
+    finally { setBusy(false); }
+  };
+
+  const handleDuplicate = async (campaign: BroadcastCampaign) => {
+    setBusy(true); setError(null);
+    try {
+      await createBroadcast({ title: campaign.contentTitle, subject: campaign.subject, preheader: campaign.preheader, body_html: campaign.body, content_id: campaign.contentId, content_kind: campaign.contentKind, cover_image: campaign.coverImage, audience: campaign.audience, target_groups: campaign.targetGroups, target_statuses: campaign.targetStatuses });
+      setCampaigns(await listBroadcasts()); showToast("Draft duplicated");
+    } catch (cause) { setError(cause instanceof Error ? cause.message : "Duplicate failed"); }
+    finally { setBusy(false); }
+  };
+
+  const handleSendExisting = async (id: string) => {
+    if (busy) return;
+    setBusy(true); setError(null);
+    try {
+      const result = await sendBroadcast(id);
+      showToast(result.totalFailed ? `Sent ${result.totalSent}; ${result.totalFailed} failed` : `Sent to ${result.totalSent} members`);
+      setCampaigns(await listBroadcasts());
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Broadcast failed");
+      setCampaigns(await listBroadcasts().catch(() => campaigns));
+    } finally { setBusy(false); }
   };
 
   /* ── Format date ─────────────────────────────────────────────── */
@@ -243,6 +282,8 @@ export const AdminBroadcastView = memo(function AdminBroadcastView({
             <i aria-hidden /> Failed
           </span>
         );
+      case "sending":
+        return <span className="efsw-admin-status is-pending"><i aria-hidden /> Sending</span>;
       default:
         return null;
     }
@@ -250,23 +291,26 @@ export const AdminBroadcastView = memo(function AdminBroadcastView({
 
   /* ── Compose view ────────────────────────────────────────────── */
 
-  if (view === "compose" && selectedContent) {
+  if (view === "compose") {
     return (
       <div style={{ display: "grid", gap: "0.85rem" }}>
         {/* Header */}
         <div className="efsw-admin-toolbar" style={{ justifyContent: "space-between", marginBottom: 0 }}>
-          <button onClick={() => setView("list")} className="efsw-admin-quiet-action">
+          <button onClick={resetComposer} className="efsw-admin-quiet-action">
             <ChevronRight size={14} style={{ transform: "rotate(180deg)" }} /> Back to broadcasts
           </button>
           <div className="efsw-admin-topbar__actions">
             <button
-              onClick={() => { setView("list"); setSelectedContent(null); }}
+              onClick={resetComposer}
               className="efsw-admin-outline-action"
             >
               Discard
             </button>
-            <button onClick={handleSend} className="efsw-admin-primary">
-              <Send size={14} /> {scheduledAt ? "Schedule" : "Send"} broadcast
+            <button onClick={() => saveOrSend(false)} disabled={busy || !selectedContent} className="efsw-admin-outline-action">
+              Save draft
+            </button>
+            <button onClick={() => saveOrSend(true)} disabled={busy || !selectedContent} className="efsw-admin-primary">
+              <Send size={14} /> {busy ? "Working…" : "Send broadcast"}
             </button>
           </div>
         </div>
@@ -290,6 +334,7 @@ export const AdminBroadcastView = memo(function AdminBroadcastView({
             <Check size={14} /> {toast}
           </div>
         )}
+        {error && <p role="alert" style={{ color: "var(--admin-danger)", margin: 0 }}>{error}</p>}
 
         <div style={{ display: "grid", gap: "0.8rem", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", alignItems: "start" }}>
           {/* Left: Content selector */}
@@ -379,7 +424,7 @@ export const AdminBroadcastView = memo(function AdminBroadcastView({
                     style={{ ...inputStyle, minHeight: "6rem", resize: "vertical" }}
                     rows={3}
                     value={customMessage}
-                    onChange={(e) => setCustomMessage(e.target.value)}
+                    onChange={(e) => { setDraftBodyOverride(null); setCustomMessage(e.target.value); }}
                     placeholder="Add a personal note to include at the top of the email..."
                   />
                 </label>
@@ -430,31 +475,6 @@ export const AdminBroadcastView = memo(function AdminBroadcastView({
               </div>
             </section>
 
-            {/* Schedule */}
-            <section className="efsw-admin-panel">
-              <header className="efsw-admin-panel__head">
-                <h2 style={{ display: "inline-flex", alignItems: "center", gap: "0.45rem" }}>
-                  <Calendar size={15} /> Schedule
-                </h2>
-              </header>
-              <div style={{ display: "flex", alignItems: "flex-end", gap: "0.75rem", padding: "0.35rem 1.35rem 1.25rem" }}>
-                <label style={{ display: "grid", gap: "0.4rem", color: "var(--admin-muted)", fontSize: "0.74rem", fontWeight: 750, flex: 1 }}>
-                  Send at (leave empty to send now)
-                  <input
-                    style={inputStyle}
-                    type="datetime-local"
-                    value={scheduledAt}
-                    onChange={(e) => setScheduledAt(e.target.value)}
-                  />
-                </label>
-                {scheduledAt && (
-                  <button onClick={() => setScheduledAt("")} className="efsw-admin-outline-action">
-                    Clear
-                  </button>
-                )}
-              </div>
-            </section>
-
             {/* Preview */}
             <section className="efsw-admin-panel">
               <header className="efsw-admin-panel__head">
@@ -493,8 +513,8 @@ export const AdminBroadcastView = memo(function AdminBroadcastView({
                 }}
               >
                 <div>
-                  <strong style={{ color: "var(--admin-ink)" }}>Recipients: </strong>
-                  <span style={{ color: "var(--admin-green)", fontWeight: 800 }}>{recipientCount}</span>
+                  <strong style={{ color: "var(--admin-ink)" }}>Estimated recipients: </strong>
+                  <span style={{ color: "var(--admin-green)", fontWeight: 800 }}>{recipientCount ?? "…"}</span>
                   <span style={{ color: "var(--admin-muted)" }}> members</span>
                 </div>
                 <div style={{ color: "var(--admin-muted)", fontSize: "0.65rem" }}>
@@ -520,7 +540,7 @@ export const AdminBroadcastView = memo(function AdminBroadcastView({
             <Mail size={16} /> Broadcasts
           </h2>
           <p style={{ margin: "0.35rem 0 0", color: "var(--admin-muted)", fontSize: "0.72rem", lineHeight: 1.5 }}>
-            Send email campaigns to members, sourced from published content. Connect Resend for production delivery.
+            Send email campaigns to members, sourced from published content.
           </p>
         </div>
         <button onClick={() => setView("compose")} className="efsw-admin-primary">
@@ -547,9 +567,11 @@ export const AdminBroadcastView = memo(function AdminBroadcastView({
           <Check size={14} /> {toast}
         </div>
       )}
+      {error && <p role="alert" style={{ color: "var(--admin-danger)", margin: 0 }}>{error}</p>}
+      {loading && <p style={{ color: "var(--admin-muted)" }}>Loading broadcasts…</p>}
 
       {/* Campaign list */}
-      {campaigns.length === 0 ? (
+      {!loading && campaigns.length === 0 ? (
         <div className="efsw-admin-empty">
           <Mail size={40} style={{ color: "var(--admin-green)" }} />
           <h2>No broadcasts yet</h2>
@@ -576,21 +598,35 @@ export const AdminBroadcastView = memo(function AdminBroadcastView({
                   {statusBadge(c.status)}
                 </span>
                 <span style={{ display: "inline-flex", gap: "0.35rem" }}>
+                  {c.status === "draft" && <button
+                    onClick={() => handleSendExisting(c.id)} disabled={busy}
+                    title="Send draft" className="efsw-admin-icon-button"
+                  ><Send size={12} /></button>}
+                  {c.status === "draft" && publishedContent.some((item) => item.id === c.contentId) && <button
+                    onClick={() => {
+                      setSelectedContent(publishedContent.find((item) => item.id === c.contentId) || null);
+                      setDraftId(c.id); setSubject(c.subject); setPreheader(c.preheader);
+                      setTargetGroups(c.targetGroups); setTargetStatuses(c.targetStatuses);
+                      setSelectedAudience(c.audience); setCustomMessage(""); setDraftBodyOverride(c.body); setView("compose");
+                    }}
+                    className="efsw-admin-icon-button" title="Edit draft"
+                  >Edit</button>}
                   <button
                     onClick={() => handleDuplicate(c)}
+                    disabled={busy}
                     title="Duplicate"
                     className="efsw-admin-icon-button"
                   >
                     <Copy size={12} />
                   </button>
-                  <button
+                  {c.status === "draft" && <button
                     onClick={() => setDeleteConfirm(c.id)}
                     title="Delete"
                     className="efsw-admin-icon-button"
                     style={{ color: "var(--admin-danger)" }}
                   >
                     <Trash2 size={12} />
-                  </button>
+                  </button>}
                 </span>
               </div>
             </article>
@@ -636,6 +672,7 @@ export const AdminBroadcastView = memo(function AdminBroadcastView({
               <button
                 type="button"
                 onClick={() => handleDelete(deleteConfirm)}
+                disabled={busy}
                 className="efsw-admin-danger-action"
               >
                 Delete

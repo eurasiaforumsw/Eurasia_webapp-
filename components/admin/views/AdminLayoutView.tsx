@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, FormEvent, memo, useState } from "react";
+import { ChangeEvent, FormEvent, memo, useEffect, useState } from "react";
 import {
   Layout,
   Layers,
@@ -38,7 +38,7 @@ export type LayoutTab =
 
 interface AdminLayoutViewProps {
   layout: AdminLayoutConfig;
-  onSaveLayout: (updatedLayout: AdminLayoutConfig) => void;
+  onSaveLayout: (updatedLayout: AdminLayoutConfig) => Promise<void>;
   onOpenLeaderEditor: (leader?: AdminLeaderProfile) => void;
   onDeleteLeader: (leader: AdminLeaderProfile) => void;
 }
@@ -55,10 +55,34 @@ export const AdminLayoutView = memo(function AdminLayoutView({
     heroScenes: layout.heroScenes ?? [],
   });
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
   const [boardEditorMember, setBoardEditorMember] = useState<AdminBoardMember | null>(null);
   const [isBoardEditorOpen, setIsBoardEditorOpen] = useState(false);
   const [boardDeleteMember, setBoardDeleteMember] = useState<AdminBoardMember | null>(null);
   const [historyCompressingId, setHistoryCompressingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setFormData({ ...layout, heroScenes: layout.heroScenes ?? [] });
+  }, [layout]);
+
+  const persistLayout = async (nextLayout: AdminLayoutConfig): Promise<boolean> => {
+    setSaving(true);
+    setSavedSuccess(false);
+    setSaveError("");
+    try {
+      await onSaveLayout(nextLayout);
+      setFormData(nextLayout);
+      setSavedSuccess(true);
+      setTimeout(() => setSavedSuccess(false), 2500);
+      return true;
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : "Unable to save layout. Please try again.");
+      return false;
+    } finally {
+      setSaving(false);
+    }
+  };
 
   // ── Hero scene helpers ───────────────────────────────────
   const addHeroScene = () => {
@@ -187,11 +211,9 @@ export const AdminLayoutView = memo(function AdminLayoutView({
     });
   };
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    onSaveLayout(formData);
-    setSavedSuccess(true);
-    setTimeout(() => setSavedSuccess(false), 2500);
+    if (!saving) await persistLayout(formData);
   };
 
   const handleToggleSection = (key: keyof AdminLayoutConfig["sectionVisibility"]) => {
@@ -1384,6 +1406,7 @@ export const AdminLayoutView = memo(function AdminLayoutView({
         )}
 
         {/* Save Bar */}
+        {saveError && <p role="alert" className="text-sm text-red-400">{saveError}</p>}
         <div className="flex items-center justify-between border-t border-surface-subtle pt-5">
           {savedSuccess ? (
             <div className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-400">
@@ -1398,10 +1421,11 @@ export const AdminLayoutView = memo(function AdminLayoutView({
 
           <button
             type="submit"
+            disabled={saving}
             className="inline-flex items-center gap-2 rounded-xl bg-teal px-5 py-2.5 text-xs font-bold text-white shadow-md shadow-teal/20 hover:bg-teal-vivid transition-all"
           >
             <Save size={15} />
-            <span>Save layout</span>
+            <span>{saving ? "Saving…" : "Save layout"}</span>
           </button>
         </div>
       </form>
@@ -1410,15 +1434,16 @@ export const AdminLayoutView = memo(function AdminLayoutView({
         initialMember={boardEditorMember}
         isOpen={isBoardEditorOpen}
         onClose={() => { setIsBoardEditorOpen(false); setBoardEditorMember(null); }}
-        onSave={(member) => {
+        onSave={async (member) => {
+          if (saving) return;
           const boardMembers = formData.boardMembers.some((entry) => entry.id === member.id)
             ? formData.boardMembers.map((entry) => entry.id === member.id ? member : entry)
             : [...formData.boardMembers, member];
           const nextLayout = { ...formData, boardMembers };
-          setFormData(nextLayout);
-          onSaveLayout(nextLayout);
-          setIsBoardEditorOpen(false);
-          setBoardEditorMember(null);
+          if (await persistLayout(nextLayout)) {
+            setIsBoardEditorOpen(false);
+            setBoardEditorMember(null);
+          }
         }}
       />
 
@@ -1428,14 +1453,13 @@ export const AdminLayoutView = memo(function AdminLayoutView({
           title="Confirm board member deletion"
           description={`Delete \"${boardDeleteMember.name}\" from the executive board?`}
           onCancel={() => setBoardDeleteMember(null)}
-          onConfirm={() => {
+          onConfirm={async () => {
+            if (saving) return;
             const nextLayout = {
               ...formData,
               boardMembers: formData.boardMembers.filter((entry) => entry.id !== boardDeleteMember.id),
             };
-            setFormData(nextLayout);
-            onSaveLayout(nextLayout);
-            setBoardDeleteMember(null);
+            if (await persistLayout(nextLayout)) setBoardDeleteMember(null);
           }}
         />
       )}

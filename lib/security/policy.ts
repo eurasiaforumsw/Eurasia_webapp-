@@ -13,12 +13,14 @@ const PUBLIC_API_METHODS: Record<string, string[]> = {
   "/api/members/reset-password": ["POST"],
   "/api/auth/status": ["GET"],
   "/api/content/public": ["GET"],
+  "/api/content/categories": ["GET"],
   "/api/layout": ["GET"],
   "/api/settings": ["GET"],
   "/api/translate": ["POST"],
   "/api/engagement": ["GET"],
   "/api/engagement/view": ["POST"],
   "/api/engagement/share": ["POST"],
+  "/api/academic/engagement": ["GET", "POST"],
 };
 
 // null = public, [] = authenticated, otherwise one of the listed roles.
@@ -28,6 +30,9 @@ export function apiRoles(path: string, method: string): UserRole[] | null {
   if (/^\/api\/events\/[^/]+\/registration-(settings|fields)$/.test(path) && method === "GET") return null;
   if (path.startsWith("/api/content/") || path === "/api/content" || path === "/api/upload" || path === "/api/admin/content/upload-file") return CONTENT_ROLES;
   if (path === "/api/layout" || path === "/api/settings") return ADMIN_ROLES;
+  if (path === "/api/admin/categories") return CONTENT_ROLES;
+  if (path === "/api/admin/activity") return CONSOLE_ROLES;
+  if (path === "/api/announcements") return method === "GET" || method === "PATCH" ? [] : [...ADMIN_ROLES, "pr"];
   if (path.startsWith("/api/broadcast")) return [...ADMIN_ROLES, "pr"];
   if (path.startsWith("/api/admin/members/") || path === "/api/admin/suspensions" || path === "/api/members/bulk") return MEMBER_REVIEW_ROLES;
   if (path.startsWith("/api/admin/") || path === "/api/messages/suspend") return ADMIN_ROLES;

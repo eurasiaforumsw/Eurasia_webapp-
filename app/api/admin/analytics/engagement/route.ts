@@ -1,111 +1,52 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase';
-import { requireRole } from '@/lib/api-auth';
+import { NextRequest, NextResponse } from "next/server";
+import { supabaseAdmin } from "@/lib/supabase";
+import { requireRole } from "@/lib/api-auth";
+import { analyticsError, analyticsRows, analyticsWindow } from "../_shared";
 
-export const runtime = 'nodejs';
-export const dynamic = 'force-dynamic';
-
-type TimeSeriesData = {
-  date: string;
-  value: number;
-};
-
-type EngagementResponse = {
-  likes: TimeSeriesData[];
-  saves: TimeSeriesData[];
-  views: TimeSeriesData[];
-  newMembers: TimeSeriesData[];
-};
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
   try {
-    const user = await requireRole(request, ['admin']);
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    const thirtyDaysAgoISO = thirtyDaysAgo.toISOString();
-
-    // Likes per day (last 30 days)
-    const { data: likesData, error: likesError } = await supabaseAdmin
-      .from('engagement_likes')
-      .select('created_at')
-      .gte('created_at', thirtyDaysAgoISO);
-
-    if (likesError) throw likesError;
-
-    // Saves (interests) per day
-    const { data: savesData, error: savesError } = await supabaseAdmin
-      .from('engagement_interests')
-      .select('created_at')
-      .gte('created_at', thirtyDaysAgoISO);
-
-    if (savesError) throw savesError;
-
-    // Views per day
-    const { data: viewsData, error: viewsError } = await supabaseAdmin
-      .from('engagement_views')
-      .select('created_at')
-      .gte('created_at', thirtyDaysAgoISO);
-
-    if (viewsError) throw viewsError;
-
-    // New members per day
-    const { data: membersData, error: membersError } = await supabaseAdmin
-      .from('members')
-      .select('joined_at')
-      .gte('joined_at', thirtyDaysAgoISO);
-
-    if (membersError) throw membersError;
-
-    // Helper to aggregate by date
-    const aggregateByDate = (data: Array<{ created_at?: string; joined_at?: string }>): TimeSeriesData[] => {
+    await requireRole(request, ["admin"]);
+    const window = analyticsWindow(request);
+    const sources = [
+      ["content_likes", "created_at"], ["member_interests", "created_at"],
+      ["content_views", "viewed_at"], ["members", "joined_at"],
+    ];
+    const data = await Promise.all(sources.map(([table, timestamp]) =>
+      analyticsRows<Record<string, string>>(() => supabaseAdmin.from(table)
+        .select(timestamp).gte(timestamp, window.start.toISOString())
+        .lte(timestamp, window.now.toISOString()).order("id"), table),
+    ));
+    const academicEvents = await analyticsRows<{ event_type: string; occurred_at: string }>(() => supabaseAdmin
+      .from("academic_document_engagement").select("event_type, occurred_at")
+      .gte("occurred_at", window.start.toISOString()).lte("occurred_at", window.now.toISOString()).order("id"), "Academic engagement");
+    academicEvents.forEach((event) => {
+      if (event.event_type === "like") data[0].push({ created_at: event.occurred_at });
+      if (event.event_type === "view") data[2].push({ viewed_at: event.occurred_at });
+    });
+    const aggregate = (rows: Record<string, string>[], timestamp: string) => {
       const counts: Record<string, number> = {};
-
-      data.forEach(item => {
-        const timestamp = item.created_at || item.joined_at;
-        if (!timestamp) return;
-
-        const date = timestamp.split('T')[0]; // Extract YYYY-MM-DD
+      rows.forEach((row) => {
+        const date = row[timestamp].slice(0, 10);
         counts[date] = (counts[date] || 0) + 1;
       });
-
-      // Fill missing dates with 0
-      const result: TimeSeriesData[] = [];
-      for (let i = 29; i >= 0; i--) {
-        const date = new Date();
-        date.setDate(date.getDate() - i);
-        const dateStr = date.toISOString().split('T')[0];
-        result.push({
-          date: dateStr,
-          value: counts[dateStr] || 0
-        });
-      }
-
-      return result;
+      return Array.from({ length: window.days }, (_, index) => {
+        const date = new Date(window.start);
+        date.setUTCDate(date.getUTCDate() + index);
+        const day = date.toISOString().slice(0, 10);
+        return { date: day, value: counts[day] || 0 };
+      });
     };
-
-    const response: EngagementResponse = {
-      likes: aggregateByDate(likesData || []),
-      saves: aggregateByDate(savesData || []),
-      views: aggregateByDate(viewsData || []),
-      newMembers: aggregateByDate(membersData || [])
-    };
-
-    return NextResponse.json(response);
+    return NextResponse.json({
+      range: window.range,
+      likes: aggregate(data[0], "created_at"),
+      saves: aggregate(data[1], "created_at"),
+      views: aggregate(data[2], "viewed_at"),
+      newMembers: aggregate(data[3], "joined_at"),
+    });
   } catch (error) {
-    console.error('Analytics engagement error:', error);
-
-    if (error instanceof Error) {
-      if (error.message === 'Unauthorized') {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-      }
-      if (error.message === 'Forbidden') {
-        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-      }
-    }
-
-    return NextResponse.json(
-      { error: 'Failed to fetch engagement analytics' },
-      { status: 500 }
-    );
+    return analyticsError(error, "Analytics engagement error");
   }
 }

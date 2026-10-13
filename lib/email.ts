@@ -283,13 +283,19 @@ export function generateEmailTemplate(
   preheader?: string,
   headerImageUrl?: string
 ): string {
+  const escapeHtml = (value: string) => value.replace(/[&<>"']/g, (character) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  })[character] || character);
+  const safePreheader = preheader ? escapeHtml(preheader) : '';
+  const safeImageUrl = headerImageUrl && /^https?:\/\//i.test(headerImageUrl)
+    ? escapeHtml(headerImageUrl) : '';
   return `
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  ${preheader ? `<meta name="description" content="${preheader}">` : ''}
+  ${safePreheader ? `<meta name="description" content="${safePreheader}">` : ''}
   <title>Eurasia Forum for Social Work</title>
   <style>
     body {
@@ -342,14 +348,14 @@ export function generateEmailTemplate(
   </style>
 </head>
 <body>
-  ${preheader ? `<div style="display:none;font-size:1px;line-height:1px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;">${preheader}</div>` : ''}
+  ${safePreheader ? `<div style="display:none;font-size:1px;line-height:1px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;">${safePreheader}</div>` : ''}
 
   <div class="container">
     <div class="header">
       <h1 style="color: #ffffff; margin: 0;">Eurasia Forum for Social Work</h1>
     </div>
 
-    ${headerImageUrl ? `<img src="${headerImageUrl}" alt="Header" style="width: 100%; height: auto;">` : ''}
+    ${safeImageUrl ? `<img src="${safeImageUrl}" alt="Header" style="width: 100%; height: auto;">` : ''}
 
     <div class="content">
       ${body}

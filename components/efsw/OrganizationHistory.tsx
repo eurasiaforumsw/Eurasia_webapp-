@@ -1,22 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { ArrowUpRight } from "lucide-react";
-import { AdminHistoryItem, defaultLayoutConfig, getAdminLayout } from "@/lib/admin-data";
+import { AdminHistoryItem } from "@/lib/admin-data";
+import { usePublicLayout } from "@/hooks/use-public-site-data";
 
 const ordered = (items: AdminHistoryItem[]) => [...items].sort((a, b) => a.year - b.year);
 
 export function OrganizationHistory() {
-  const [items, setItems] = useState<AdminHistoryItem[]>(defaultLayoutConfig.historyItems);
-  const [sectionTitle, setSectionTitle] = useState(defaultLayoutConfig.historySectionTitle);
-  const [sectionIntro, setSectionIntro] = useState(defaultLayoutConfig.historySectionIntro);
-
-  useEffect(() => {
-    const layout = getAdminLayout();
-    setItems(ordered(layout.historyItems));
-    setSectionTitle(layout.historySectionTitle);
-    setSectionIntro(layout.historySectionIntro);
-  }, []);
+  const layout = usePublicLayout();
+  const items = ordered(layout.historyItems);
+  const sectionTitle = layout.historySectionTitle;
+  const sectionIntro = layout.historySectionIntro;
 
   const current = items.find((item) => item.isCurrent) || items[items.length - 1];
 

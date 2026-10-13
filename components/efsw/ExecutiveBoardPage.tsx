@@ -4,23 +4,8 @@ import { useState } from "react";
 import { useI18n } from "@/contexts/I18nContext";
 import { ArrowUpRight, ChevronDown, MapPin } from "lucide-react";
 import { SiteNav } from "@/components/efsw/SiteNav";
-import {
-  type AdminBoardMember,
-  type AdminLayoutConfig,
-  defaultLayoutConfig,
-  getAdminLayout,
-} from "@/lib/admin-data";
-
-/* Read board members at render time from the same admin layout the editor
-   uses — additions / reorders / photo swaps in Admin → Layout → Executive
-   Board show up here on the next page load, without a deploy. */
-function readBoardMembers(): AdminLayoutConfig["boardMembers"] {
-  try {
-    return getAdminLayout().boardMembers || [];
-  } catch {
-    return defaultLayoutConfig.boardMembers;
-  }
-}
+import { type AdminBoardMember } from "@/lib/admin-data";
+import { usePublicLayout } from "@/hooks/use-public-site-data";
 
 /* Avatar fallback — initials on a calm surface, used when no image is set. */
 function initialsOf(name: string): string {
@@ -100,7 +85,7 @@ function BoardCard({ member }: { member: AdminBoardMember }) {
 
 export default function ExecutiveBoardPage() {
   const { t } = useI18n();
-  const members = readBoardMembers();
+  const members = usePublicLayout().boardMembers;
 
   return (
     <>

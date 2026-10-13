@@ -8,6 +8,8 @@ import {
   Calendar,
   Clock,
   Download,
+  Eye,
+  Heart,
   Image as ImageIcon,
   MapPin,
   Tag,
@@ -33,6 +35,8 @@ import { getSessionMember, type MemberProfile } from "@/lib/member-auth";
 import { EngagementRow, RecordView } from "@/components/efsw/EngagementRow";
 import { articleBodyText } from "@/lib/article-body";
 import { getLibraryDocuments } from "@/lib/academic-library";
+import { getContentEngagement, hasUserLiked, incrementDownloadCount, incrementViewCount,
+  toggleLike, type ContentEngagement } from "@/lib/content-engagement";
 
 export type ArticleSeed = Pick<
   AdminContentItem,
@@ -136,6 +140,55 @@ export default function ArticleView({ kind, slug, seed, backHref, contentSource 
   const [progress, setProgress] = useState(0);
   const [member, setMember] = useState<MemberProfile | null>(null);
   const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
+  const isAcademic = kind === "academic" || kind === "document";
+  const [academicStats, setAcademicStats] = useState<ContentEngagement>(() => getContentEngagement(seed.id));
+  const [engagementError, setEngagementError] = useState<string | null>(null);
+  const [savingLike, setSavingLike] = useState(false);
+
+  useEffect(() => {
+    if (!isAcademic || contentSource === "local-library") return;
+    let disposed = false;
+    const load = async () => {
+      try {
+        const engagement = await incrementViewCount(article.id);
+        if (!disposed) setAcademicStats(engagement);
+      } catch (error) {
+        if (!disposed) setEngagementError(error instanceof Error ? error.message : "Document statistics are unavailable");
+      }
+    };
+    void load();
+    return () => { disposed = true; };
+  }, [article.id, isAcademic, contentSource]);
+
+  const likeDocument = async () => {
+    if (savingLike) return;
+    setSavingLike(true);
+    try {
+      const { engagement } = await toggleLike(article.id);
+      setAcademicStats(engagement);
+      setEngagementError(null);
+    } catch (error) {
+      setEngagementError(error instanceof Error ? error.message : "Could not save this like");
+    } finally { setSavingLike(false); }
+  };
+  const trackDownload = async () => {
+    try {
+      setAcademicStats(await incrementDownloadCount(article.id));
+    } catch (error) {
+      setEngagementError(error instanceof Error ? error.message : "Download statistics could not be saved");
+    }
+  };
+  const academicEngagementRow = <div className="efsw-engagement">
+    <button type="button" className="efsw-engagement__btn" disabled={savingLike || contentSource === "local-library"}
+      aria-label={hasUserLiked(article.id) ? "Unlike document" : "Like document"}
+      aria-pressed={hasUserLiked(article.id)} onClick={() => void likeDocument()}>
+      <Heart size={15} aria-hidden fill={hasUserLiked(article.id) ? "currentColor" : "none"} />
+      <span className="efsw-engagement__count">{academicStats.likeCount}</span>
+    </button>
+    <span className="efsw-engagement__btn efsw-engagement__view" aria-label={`${academicStats.viewCount} views`}>
+      <Eye size={15} aria-hidden /><span className="efsw-engagement__count">{academicStats.viewCount}</span>
+    </span>
+  </div>;
 
   // Track the current member so engagement actions know who to credit.
   useEffect(() => {
@@ -166,11 +219,11 @@ export default function ArticleView({ kind, slug, seed, backHref, contentSource 
       setArticle(seed);
       const refresh = async () => {
         try {
-          const response = await fetch("/api/content/public", { signal: controller.signal });
+          const response = await fetch("/api/content/public", { cache: "no-store", signal: controller.signal });
           if (!response.ok) throw new Error("Failed to load related documents");
           const { items } = await response.json() as { items: AdminContentItem[] };
           setRelated(items
-            .filter((item) => (item.kind === "academic" || item.kind === "document") && item.id !== slug)
+            .filter((item) => (isAcademic ? item.kind === "academic" || item.kind === "document" : item.kind === kind) && item.id !== slug)
             .sort((a, b) => (b.updatedAt ?? "").localeCompare(a.updatedAt ?? ""))
             .slice(0, 3));
         } catch (error) {
@@ -335,10 +388,11 @@ export default function ArticleView({ kind, slug, seed, backHref, contentSource 
                same horizontal band. The view counter auto-increments via
                RecordView on first mount; members can toggle the heart and
                thumbs-up, anonymous visitors see the buttons disabled. */}
-            <RecordView contentId={article.id} />
+            {!isAcademic && <RecordView contentId={article.id} />}
             <div className="efsw-article__engagement">
-              <EngagementRow contentId={article.id} memberId={member?.id ?? null} />
+              {isAcademic ? academicEngagementRow : <EngagementRow contentId={article.id} memberId={member?.id ?? null} />}
             </div>
+            {engagementError && <p role="alert">{engagementError}</p>}
 
             {kind === "event" && article.registrationUrl && (
               <div className="efsw-article__register">
@@ -353,7 +407,7 @@ export default function ArticleView({ kind, slug, seed, backHref, contentSource 
             {downloadHref && (
               <div className="efsw-article__register">
                 <Button variant="default" size="lg" asChild>
-                  <a href={downloadHref} download={article.fileName || true} target="_blank" rel="noopener noreferrer">
+                  <a href={downloadHref} download={article.fileName || true} target="_blank" rel="noopener noreferrer" onClick={isAcademic && contentSource !== "local-library" ? () => void trackDownload() : undefined}>
                     <Download size={16} aria-hidden /> {t("documents.download")}
                   </a>
                 </Button>
@@ -392,7 +446,7 @@ export default function ArticleView({ kind, slug, seed, backHref, contentSource 
             <aside className="efsw-article__rail">
               <ShareBar title={shown.title} summary={shown.summary} heading={t("article.share")} variant="inline" path={`${backHref}/${slug}`} />
               <div className="efsw-article__rail-engagement">
-                <EngagementRow contentId={article.id} memberId={member?.id ?? null} />
+                {isAcademic ? academicEngagementRow : <EngagementRow contentId={article.id} memberId={member?.id ?? null} />}
               </div>
             </aside>
 

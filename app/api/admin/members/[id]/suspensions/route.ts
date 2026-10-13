@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
-import { verifyAdminRequest as verifyAdmin } from "@/lib/auth/session";
+import { requireRole } from "@/lib/api-auth";
+import { MEMBER_REVIEW_ROLES } from "@/lib/auth/session";
+
+export const dynamic = "force-dynamic";
 
 // GET: Fetch member suspension history
 export async function GET(
@@ -8,14 +11,7 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    // Verify admin authentication
-    const admin = await verifyAdmin(request);
-    if (!admin) {
-      return NextResponse.json(
-        { error: 'Unauthorized. Admin access required.' },
-        { status: 401 }
-      );
-    }
+    await requireRole(request, MEMBER_REVIEW_ROLES);
 
     const memberId = params.id;
 
@@ -49,7 +45,8 @@ export async function GET(
     console.error('Get member suspensions error:', error);
     return NextResponse.json(
       { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
+      { status: error instanceof Error && error.message === 'Unauthorized' ? 401 :
+        error instanceof Error && error.message === 'Forbidden' ? 403 : 500 }
     );
   }
 }

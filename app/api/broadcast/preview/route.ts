@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { verifyAdminToken } from '@/lib/auth/session';
 import { generateEmailTemplate } from '@/lib/email';
+import { broadcastActor } from '../_auth';
 
 /**
  * POST /api/broadcast/preview
@@ -9,21 +8,9 @@ import { generateEmailTemplate } from '@/lib/email';
  */
 export async function POST(req: NextRequest) {
   try {
-    // Verify admin authentication
-    const cookieStore = cookies();
-    const token = cookieStore.get('admin_token')?.value;
-
-    if (!token) {
+    if (!await broadcastActor(req)) {
       return NextResponse.json(
-        { error: 'Unauthorized - Admin token required' },
-        { status: 401 }
-      );
-    }
-
-    const admin = await verifyAdminToken(token);
-    if (!admin) {
-      return NextResponse.json(
-        { error: 'Unauthorized - Invalid admin token' },
+        { error: 'Unauthorized' },
         { status: 401 }
       );
     }

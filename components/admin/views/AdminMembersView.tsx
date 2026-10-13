@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useMemo, useState } from "react";
+import { memo, useMemo, useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import {
   Search,
@@ -25,6 +25,7 @@ import {
   ChevronDown as ChevronDownIcon,
 } from "lucide-react";
 import { AdminMember } from "@/lib/admin-data";
+import { executeMemberBulk } from "@/lib/admin-members";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useFilterPersistence } from "@/hooks/useFilterPersistence";
 import { BulkSelectCheckbox } from "@/components/admin/BulkSelectCheckbox";
@@ -60,6 +61,8 @@ interface AdminMembersViewProps {
   onOpenMember: (member: AdminMember) => void;
   onUpdateStatus: (member: AdminMember, status: AdminMember["status"]) => void;
   onExportCsv: () => void;
+  onRefresh: () => Promise<void>;
+  canDelete?: boolean;
 }
 
 const ITEMS_PER_PAGE = 8;
@@ -71,6 +74,8 @@ export const AdminMembersView = memo(function AdminMembersView({
   onOpenMember,
   onUpdateStatus,
   onExportCsv,
+  onRefresh,
+  canDelete = false,
 }: AdminMembersViewProps) {
   // Filter persistence with localStorage and URL state
   const {
@@ -165,7 +170,7 @@ export const AdminMembersView = memo(function AdminMembersView({
   }, [members, statusFilters, typeFilters, countryFilters, experienceFilters, debouncedQuery]);
 
   /* Reset to first page whenever any filter or search changes. */
-  useMemo(() => {
+  useEffect(() => {
     setCurrentPage(1);
   }, [debouncedQuery, statusFilters, typeFilters, countryFilters, experienceFilters]);
 
@@ -228,6 +233,9 @@ export const AdminMembersView = memo(function AdminMembersView({
 
   // ── Pagination ────────────────────────────────────────────────
   const totalPages = Math.max(1, Math.ceil(filteredMembers.length / ITEMS_PER_PAGE));
+  useEffect(() => {
+    setCurrentPage((page) => Math.min(page, totalPages));
+  }, [totalPages]);
   const paginatedMembers = useMemo(() => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
     return filteredMembers.slice(startIndex, startIndex + ITEMS_PER_PAGE);
@@ -267,8 +275,7 @@ export const AdminMembersView = memo(function AdminMembersView({
     setShowBulkProgress(false);
     setBulkAction(null);
     setSelectedIds(new Set());
-    // Trigger refresh by calling parent's refresh method if available
-    // For now, we rely on the parent component to re-fetch data
+    void onRefresh();
   };
 
   // ── Helpers ───────────────────────────────────────────────────
@@ -356,12 +363,12 @@ export const AdminMembersView = memo(function AdminMembersView({
               onClick: () => handleBulkAction("approve"),
               variant: "success",
             },
-            {
+            ...(canDelete ? [{
               label: "Delete selected",
               icon: Ban,
               onClick: () => handleBulkAction("delete"),
-              variant: "danger",
-            },
+              variant: "danger" as const,
+            }] : []),
           ]}
         />
       )}
@@ -370,28 +377,12 @@ export const AdminMembersView = memo(function AdminMembersView({
       {showBulkProgress && bulkAction && (
         <BulkProgressModal
           isOpen={showBulkProgress}
-          onClose={() => {
-            setShowBulkProgress(false);
-            setBulkAction(null);
-          }}
+          onClose={handleBulkComplete}
           action={bulkAction}
           selectedIds={Array.from(selectedIds)}
           entityType="members"
-          onExecute={async (ids) => {
-            if (bulkAction === "delete") {
-              await fetch("/api/members/bulk", {
-                method: "DELETE",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ ids }),
-              });
-            } else if (bulkAction === "approve") {
-              await fetch("/api/members/bulk", {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ ids, action: "approve" }),
-              });
-            }
-          }}
+          onExecute={async () => {}}
+          onExecuteBatch={(ids) => executeMemberBulk(bulkAction, ids)}
         />
       )}
 

@@ -33,7 +33,7 @@ import {
   getContentEngagement,
   hasUserLiked,
   incrementDownloadCount,
-  incrementViewCount,
+  loadContentEngagement,
   toggleLike,
 } from "@/lib/content-engagement";
 import { AuthorMarquee } from "@/components/academic/AuthorMarquee";
@@ -68,6 +68,8 @@ export default function AcademicDocumentsPage() {
   const [selectedAuthor, setSelectedAuthor] = useState<string | null>(null);
   const [likedDocs, setLikedDocs] = useState<Set<string>>(new Set());
   const [engagementRevision, setEngagementRevision] = useState(0);
+  const [engagementError, setEngagementError] = useState<string | null>(null);
+  const pendingLikes = useRef(new Set<string>());
 
   useEffect(() => {
     let disposed = false;
@@ -141,7 +143,7 @@ export default function AcademicDocumentsPage() {
         const engagement = getContentEngagement(doc.id);
         return {
           ...doc,
-          downloadCount: (doc.downloadCount || 0) + engagement.downloadCount,
+          downloadCount: engagement.downloadCount,
         };
       }),
     [items, engagementRevision],
@@ -201,12 +203,21 @@ export default function AcademicDocumentsPage() {
   );
 
   useEffect(() => {
-    setLikedDocs(
-      new Set(
-        allDocuments.filter((doc) => hasUserLiked(doc.id)).map((doc) => doc.id),
-      ),
-    );
-  }, [allDocuments]);
+    const controller = new AbortController();
+    const refresh = async () => {
+      try {
+        await loadContentEngagement(getLibraryDocuments(items).map((item) => item.id), controller.signal);
+        if (controller.signal.aborted) return;
+        setEngagementError(null);
+        setEngagementRevision((value) => value + 1);
+        setLikedDocs(new Set(getLibraryDocuments(items).filter((doc) => hasUserLiked(doc.id)).map((doc) => doc.id)));
+      } catch (error) {
+        if (!controller.signal.aborted) setEngagementError(error instanceof Error ? error.message : "Document statistics are unavailable");
+      }
+    };
+    void refresh();
+    return () => controller.abort();
+  }, [items]);
 
   useEffect(() => {
     const requested = new URLSearchParams(window.location.search).get(
@@ -235,19 +246,33 @@ export default function AcademicDocumentsPage() {
     setSelectedTags([]);
     setSelectedAuthor(null);
   };
-  const handleLike = (id: string, event: React.MouseEvent) => {
+  const handleLike = async (id: string, event: React.MouseEvent) => {
     event.preventDefault();
-    const { liked } = toggleLike(id);
-    setLikedDocs((previous) => {
-      const next = new Set(previous);
-      if (liked) next.add(id);
-      else next.delete(id);
-      return next;
-    });
+    if (pendingLikes.current.has(id)) return;
+    pendingLikes.current.add(id);
+    try {
+      const { liked } = await toggleLike(id);
+      setLikedDocs((previous) => {
+        const next = new Set(previous);
+        if (liked) next.add(id);
+        else next.delete(id);
+        return next;
+      });
+      setEngagementError(null);
+      setEngagementRevision((value) => value + 1);
+    } catch (error) {
+      setEngagementError(error instanceof Error ? error.message : "Could not save this like");
+    } finally {
+      pendingLikes.current.delete(id);
+    }
   };
-  const handleDownload = (id: string) => {
-    incrementDownloadCount(id);
-    setEngagementRevision((value) => value + 1);
+  const handleDownload = async (id: string) => {
+    try {
+      await incrementDownloadCount(id);
+      setEngagementRevision((value) => value + 1);
+    } catch (error) {
+      setEngagementError(error instanceof Error ? error.message : "Download statistics could not be saved");
+    }
   };
 
   return (
@@ -312,7 +337,6 @@ export default function AcademicDocumentsPage() {
                 <Link
                   href={`/academic-documents/${encodeURIComponent(spotlight.id)}`}
                   className="academic-preview"
-                  onClick={() => incrementViewCount(spotlight.id)}
                 >
                   <div className="academic-preview__cover">
                     {spotlight.coverImage ? (
@@ -435,6 +459,7 @@ export default function AcademicDocumentsPage() {
             resultsCount={filteredDocuments.length}
           />
           <div className="academic-results" aria-busy={loading}>
+            {engagementError && <p role="alert">{engagementError}</p>}
             {selectedAuthor && (
               <div className="academic-results__filter-notice">
                 <span>
@@ -514,8 +539,8 @@ export default function AcademicDocumentsPage() {
                         tags={doc.tags}
                         downloads={doc.downloadCount || 0}
                         featured={doc.featured}
-                        viewCount={(doc.viewCount || 0) + engagement.viewCount}
-                        likeCount={(doc.likeCount || 0) + engagement.likeCount}
+                        viewCount={engagement.viewCount}
+                        likeCount={engagement.likeCount}
                         isLiked={likedDocs.has(doc.id)}
                         coverImage={doc.coverImage}
                         coverImageCrop={doc.coverImageCrop}
@@ -523,7 +548,7 @@ export default function AcademicDocumentsPage() {
                         fileName={doc.fileName}
                         fileSize={doc.fileSize}
                         pageCount={doc.pageCount}
-                        onView={() => incrementViewCount(doc.id)}
+                        onView={() => {}}
                         onLike={(event) => handleLike(doc.id, event)}
                         onDownload={() => handleDownload(doc.id)}
                       />

@@ -40,12 +40,12 @@ import {
 type TimeRange = "7d" | "30d" | "90d";
 
 interface OverviewData {
-  members: { total: number; growth: number; newThisMonth: number };
-  content: { total: number; news: number; events: number; announcements: number };
+  members: { total: number; growth: number; newInPeriod: number };
+  content: { total: number; news: number; events: number; academic: number };
   engagement: {
-    likes: { total: number; today: number; week: number; month: number };
-    saves: { total: number; today: number; week: number; month: number };
-    views: { total: number; today: number; week: number; month: number };
+    likes: { total: number; period: number; previous: number };
+    saves: { total: number; period: number; previous: number };
+    views: { total: number; period: number; previous: number };
     shares: { today: number; week: number; month: number };
   };
   sessions: { active: number };
@@ -192,44 +192,40 @@ export const AnalyticsDashboard = memo(function AnalyticsDashboard({
   const [error, setError] = useState<string | null>(null);
   const [selectedRange, setSelectedRange] = useState<TimeRange>(timeRange);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [retry, setRetry] = useState(0);
 
   useEffect(() => {
+    const controller = new AbortController();
     const fetchAnalytics = async () => {
       setLoading(true);
       setError(null);
 
       try {
-        const [overviewRes, membersRes, contentRes, engagementRes] = await Promise.all([
-          fetch("/api/admin/analytics/overview"),
-          fetch("/api/admin/analytics/members"),
-          fetch("/api/admin/analytics/content"),
-          fetch("/api/admin/analytics/engagement"),
-        ]);
-
-        if (!overviewRes.ok || !membersRes.ok || !contentRes.ok || !engagementRes.ok) {
-          throw new Error("Failed to fetch analytics data");
-        }
-
         const [overviewData, membersData, contentData, engagementData] = await Promise.all([
-          overviewRes.json(),
-          membersRes.json(),
-          contentRes.json(),
-          engagementRes.json(),
-        ]);
-
+          "overview", "members", "content", "engagement",
+        ].map(async (endpoint) => {
+          const response = await fetch(`/api/admin/analytics/${endpoint}?range=${selectedRange}`, {
+            cache: "no-store", signal: controller.signal,
+          });
+          const data = await response.json();
+          if (!response.ok) throw new Error(data.error || `Could not load ${endpoint} analytics`);
+          return data;
+        }));
+        if (controller.signal.aborted) return;
         setOverview(overviewData);
         setMembers(membersData);
         setContent(contentData);
         setEngagement(engagementData);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Unknown error");
+        if (!controller.signal.aborted) setError(err instanceof Error ? err.message : "Unknown error");
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       }
     };
 
-    fetchAnalytics();
-  }, [selectedRange]);
+    void fetchAnalytics();
+    return () => controller.abort();
+  }, [selectedRange, retry]);
 
   const timeRangeLabel = useMemo(() => {
     switch (selectedRange) {
@@ -320,7 +316,7 @@ export const AnalyticsDashboard = memo(function AnalyticsDashboard({
           <p style={{ fontSize: "var(--text-sm)", color: "var(--text-tertiary)" }}>{error}</p>
           <button
             className="btn btn--primary"
-            onClick={() => window.location.reload()}
+            onClick={() => setRetry((value) => value + 1)}
             style={{
               marginTop: "var(--space-2)",
             }}
@@ -338,19 +334,17 @@ export const AnalyticsDashboard = memo(function AnalyticsDashboard({
   }
 
   const totalEngagement =
-    overview.engagement.likes.total +
-    overview.engagement.saves.total +
-    overview.engagement.views.total;
+    overview.engagement.likes.period +
+    overview.engagement.saves.period +
+    overview.engagement.views.period;
 
-  const weekEngagement =
-    overview.engagement.likes.week +
-    overview.engagement.saves.week +
-    overview.engagement.views.week;
-
-  const prevWeekEngagement = totalEngagement - weekEngagement;
+  const previousEngagement =
+    overview.engagement.likes.previous +
+    overview.engagement.saves.previous +
+    overview.engagement.views.previous;
   const engagementTrend =
-    prevWeekEngagement > 0
-      ? ((weekEngagement - prevWeekEngagement) / prevWeekEngagement) * 100
+    previousEngagement > 0
+      ? ((totalEngagement - previousEngagement) / previousEngagement) * 100
       : 0;
 
   return (
@@ -411,16 +405,16 @@ export const AnalyticsDashboard = memo(function AnalyticsDashboard({
         <div className="dashboard-grid">
           <div className="stat-card">
             <div className="stat-card__header">
-              <span className="stat-card__label">Total Views</span>
+              <span className="stat-card__label">Views in Period</span>
             </div>
-            <div className="stat-card__value">{formatNumber(overview.engagement.views.total)}</div>
+            <div className="stat-card__value">{formatNumber(overview.engagement.views.period)}</div>
             <div className="stat-card__icon">
               <Eye size={20} />
             </div>
             <div className="stat-card__footer">
               <span className="stat-card__trend stat-card__trend--neutral">
                 <Activity size={14} />
-                {formatNumber(overview.engagement.views.week)} this week
+                {timeRangeLabel}
               </span>
             </div>
           </div>
@@ -452,7 +446,7 @@ export const AnalyticsDashboard = memo(function AnalyticsDashboard({
                 )}
                 {Math.abs(engagementTrend).toFixed(1)}%
               </span>
-              <span>vs previous week</span>
+              <span>{previousEngagement > 0 ? "vs previous period" : "No prior activity"}</span>
             </div>
           </div>
 
@@ -473,7 +467,7 @@ export const AnalyticsDashboard = memo(function AnalyticsDashboard({
                 {overview.members.growth > 0 ? <TrendingUp size={14} /> : <Activity size={14} />}
                 {overview.members.growth > 0 ? `+${overview.members.growth.toFixed(1)}%` : "0%"}
               </span>
-              <span>{overview.members.newThisMonth} new this month</span>
+              <span>{overview.members.newInPeriod} new in this period</span>
             </div>
           </div>
 
@@ -500,7 +494,7 @@ export const AnalyticsDashboard = memo(function AnalyticsDashboard({
             <div className="chart-container__header">
               <div>
                 <h3 className="chart-container__title">Engagement Timeline</h3>
-                <p className="chart-container__subtitle">Last 30 days activity</p>
+                <p className="chart-container__subtitle">{timeRangeLabel} activity (UTC)</p>
               </div>
             </div>
             <div className="chart-container__body">
@@ -581,7 +575,7 @@ export const AnalyticsDashboard = memo(function AnalyticsDashboard({
             <div className="chart-container__header">
               <div>
                 <h3 className="chart-container__title">Member Growth</h3>
-                <p className="chart-container__subtitle">Last 6 months</p>
+                <p className="chart-container__subtitle">{timeRangeLabel}</p>
               </div>
             </div>
             <div className="chart-container__body">
@@ -780,7 +774,7 @@ export const AnalyticsDashboard = memo(function AnalyticsDashboard({
             <div className="chart-container__header">
               <div>
                 <h3 className="chart-container__title">New Members</h3>
-                <p className="chart-container__subtitle">Last 7 days</p>
+                <p className="chart-container__subtitle">{timeRangeLabel}</p>
               </div>
             </div>
             <div className="data-table">
@@ -842,7 +836,7 @@ export const AnalyticsDashboard = memo(function AnalyticsDashboard({
                 <div>Share</div>
               </div>
               {members.membersByCountry.map((item) => {
-                const percentage = ((item.count / members.totalMembers) * 100).toFixed(1);
+                const percentage = (members.totalMembers > 0 ? (item.count / members.totalMembers) * 100 : 0).toFixed(1);
                 return (
                   <div
                     key={item.country}

@@ -160,7 +160,7 @@ export default function AdminLoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   autoComplete="username"
-                  placeholder="admin@efsw.local"
+                  placeholder="Your admin email"
                 />
               </div>
 
@@ -190,10 +190,10 @@ export default function AdminLoginPage() {
               </button>
             </form>
 
+            {process.env.NODE_ENV !== "production" && <>
             <div className="efsw-signin__card-divider">
               <ShieldCheck size={13} /> Demo access
             </div>
-
             <div className="efsw-signin__demo">
               <div className="efsw-signin__demo-row">
                 <span className="efsw-signin__demo-label">Email</span>
@@ -227,6 +227,7 @@ export default function AdminLoginPage() {
                 <Sparkles size={13} /> Fill the form with demo credentials
               </button>
             </div>
+            </>}
           </div>
         </section>
       </div>
@@ -236,7 +237,7 @@ export default function AdminLoginPage() {
       </a>
 
       <p className="efsw-signin__note">
-        Prototype mode · Admin session stored locally
+        Protected administrator access
       </p>
     </main>
   );

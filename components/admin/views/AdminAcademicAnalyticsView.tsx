@@ -1,9 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { Download, Eye, TrendingUp, Calendar } from "lucide-react";
-import { getPublishedAdminContent } from "@/lib/admin-data";
-import { getContentEngagement } from "@/lib/content-engagement";
+import { useState, useMemo, useEffect } from "react";
+import { Download, Eye, TrendingUp } from "lucide-react";
 
 interface DocumentStats {
   id: string;
@@ -19,23 +17,33 @@ interface DocumentStats {
 
 export function AdminAcademicAnalyticsView() {
   const [sortBy, setSortBy] = useState<"downloads" | "views" | "recent">("downloads");
+  const [documents, setDocuments] = useState<DocumentStats[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [retry, setRetry] = useState(0);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    setLoading(true);
+    setError(null);
+    const load = async () => {
+      try {
+        const response = await fetch("/api/admin/analytics/academic", { cache: "no-store", signal: controller.signal });
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error || "Could not load document statistics");
+        if (!controller.signal.aborted) setDocuments(payload.documents);
+      } catch (error) {
+        if (!controller.signal.aborted) setError(error instanceof Error ? error.message : "Could not load document statistics");
+      } finally {
+        if (!controller.signal.aborted) setLoading(false);
+      }
+    };
+    void load();
+    return () => controller.abort();
+  }, [retry]);
 
   const documentStats = useMemo(() => {
-    const docs = getPublishedAdminContent("academic");
-    const stats: DocumentStats[] = docs.map((doc) => {
-      const engagement = getContentEngagement(doc.id);
-      return {
-        id: doc.id,
-        title: doc.title,
-        author: doc.author || "Unknown",
-        downloads: engagement.downloadCount || 0,
-        views: engagement.viewCount || 0,
-        likes: engagement.likeCount || 0,
-        fileName: doc.fileName,
-        fileSize: doc.fileSize,
-        publishedAt: doc.publishAt,
-      };
-    });
+    const stats = [...documents];
 
     // Sort
     stats.sort((a, b) => {
@@ -54,7 +62,7 @@ export function AdminAcademicAnalyticsView() {
     });
 
     return stats;
-  }, [sortBy]);
+  }, [sortBy, documents]);
 
   const totalStats = useMemo(() => {
     return documentStats.reduce(
@@ -84,6 +92,10 @@ export function AdminAcademicAnalyticsView() {
         </div>
       </header>
 
+      {error && <div role="alert"><p>{error}</p><button type="button" onClick={() => setRetry((value) => value + 1)}>Retry</button></div>}
+      {loading && <p role="status">Loading document statistics…</p>}
+
+      {!loading && !error && <>
       {/* Summary Stats */}
       <div className="admin-academic-analytics__summary">
         <div className="admin-academic-analytics__stat">
@@ -204,6 +216,7 @@ export function AdminAcademicAnalyticsView() {
           </table>
         )}
       </div>
+      </>}
 
       <style>{`
         .admin-academic-analytics {

@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, memo, useState } from "react";
+import { FormEvent, memo, useEffect, useState } from "react";
 import {
   Settings,
   Building,
@@ -16,7 +16,7 @@ import { AdminSettings } from "@/lib/admin-data";
 
 interface AdminSettingsViewProps {
   settings: AdminSettings;
-  onSaveSettings: (settings: AdminSettings) => void;
+  onSaveSettings: (settings: AdminSettings) => Promise<void>;
   onClearCache?: () => void;
 }
 
@@ -27,12 +27,26 @@ export const AdminSettingsView = memo(function AdminSettingsView({
 }: AdminSettingsViewProps) {
   const [formData, setFormData] = useState<AdminSettings>(settings);
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
 
-  const handleSubmit = (e: FormEvent) => {
+  useEffect(() => { setFormData(settings); }, [settings]);
+
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    onSaveSettings(formData);
-    setSavedSuccess(true);
-    setTimeout(() => setSavedSuccess(false), 2500);
+    if (saving) return;
+    setSaving(true);
+    setSavedSuccess(false);
+    setSaveError("");
+    try {
+      await onSaveSettings(formData);
+      setSavedSuccess(true);
+      setTimeout(() => setSavedSuccess(false), 2500);
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : "Unable to save settings. Please try again.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -120,6 +134,7 @@ export const AdminSettingsView = memo(function AdminSettingsView({
         </fieldset>
 
         {/* Save Bar */}
+        {saveError && <p role="alert">{saveError}</p>}
         <div className="efsw-admin-settings-actions" style={{ justifyContent: "space-between", paddingTop: "1.2rem", borderTop: "1px solid var(--admin-line)" }}>
           {savedSuccess ? (
             <div className="efsw-admin-status is-active">
@@ -132,10 +147,11 @@ export const AdminSettingsView = memo(function AdminSettingsView({
 
           <button
             type="submit"
+            disabled={saving}
             className="efsw-admin-primary"
           >
             <Save size={15} />
-            <span>Save settings</span>
+            <span>{saving ? "Saving…" : "Save settings"}</span>
           </button>
         </div>
       </form>

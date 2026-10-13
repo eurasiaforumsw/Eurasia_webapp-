@@ -1,141 +1,47 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import { requireRole } from "@/lib/api-auth";
+import { analyticsError, analyticsRows, analyticsWindow } from "../_shared";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-type ContentAnalytics = {
-  topLiked: ContentItem[];
-  topViewed: ContentItem[];
-  topSaved: ContentItem[];
-  byType: TypeDistribution[];
-  byStatus: StatusDistribution[];
-};
+type ContentRow = { id: string; title: string; kind: string; author: string | null; status: string; created_at: string };
 
-type ContentItem = {
-  id: string;
-  title: string;
-  kind: string;
-  author: string | null;
-  count: number;
-  status: string;
-  created_at: string;
-};
-
-type TypeDistribution = {
-  kind: string;
-  count: number;
-};
-
-type StatusDistribution = {
-  status: string;
-  count: number;
-};
-
-/**
- * GET /api/admin/analytics/content
- * Returns content analytics for admin dashboard
- * Requires admin role
- */
-export async function GET(req: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
-    // Require admin role
-    await requireRole(req, ["admin"]);
-
-    // Top 10 most liked content
-    const { data: topLiked, error: likedError } = await supabaseAdmin.rpc(
-      "get_top_liked_content",
-      { limit_count: 10 }
-    );
-
-    if (likedError) {
-      console.error("Error fetching top liked content:", likedError);
-    }
-
-    // Top 10 most viewed content
-    const { data: topViewed, error: viewedError } = await supabaseAdmin.rpc(
-      "get_top_viewed_content",
-      { limit_count: 10 }
-    );
-
-    if (viewedError) {
-      console.error("Error fetching top viewed content:", viewedError);
-    }
-
-    // Top 10 most saved content
-    const { data: topSaved, error: savedError } = await supabaseAdmin.rpc(
-      "get_top_saved_content",
-      { limit_count: 10 }
-    );
-
-    if (savedError) {
-      console.error("Error fetching top saved content:", savedError);
-    }
-
-    // Content by type distribution
-    const { data: byType, error: typeError } = await supabaseAdmin
-      .from("content")
-      .select("kind")
-      .then(({ data, error }) => {
-        if (error) return { data: null, error };
-
-        const distribution = data?.reduce((acc: Record<string, number>, item) => {
-          acc[item.kind] = (acc[item.kind] || 0) + 1;
-          return acc;
-        }, {} as Record<string, number>);
-
-        return {
-          data: Object.entries(distribution || {}).map(([kind, count]) => ({
-            kind,
-            count,
-          })),
-          error: null,
-        };
-      });
-
-    if (typeError) {
-      console.error("Error fetching type distribution:", typeError);
-    }
-
-    // Content by status distribution
-    const { data: byStatus, error: statusError } = await supabaseAdmin
-      .from("content")
-      .select("status")
-      .then(({ data, error }) => {
-        if (error) return { data: null, error };
-
-        const distribution = data?.reduce((acc: Record<string, number>, item) => {
-          acc[item.status] = (acc[item.status] || 0) + 1;
-          return acc;
-        }, {} as Record<string, number>);
-
-        return {
-          data: Object.entries(distribution || {}).map(([status, count]) => ({
-            status,
-            count,
-          })),
-          error: null,
-        };
-      });
-
-    if (statusError) {
-      console.error("Error fetching status distribution:", statusError);
-    }
-
-    const analytics: ContentAnalytics = {
-      topLiked: topLiked || [],
-      topViewed: topViewed || [],
-      topSaved: topSaved || [],
-      byType: byType || [],
-      byStatus: byStatus || [],
+    await requireRole(request, ["admin"]);
+    const window = analyticsWindow(request);
+    const [content, likes, views, saves] = await Promise.all([
+      analyticsRows<ContentRow>(() => supabaseAdmin.from("content")
+        .select("id, title, kind, author, status, created_at").order("id"), "Content"),
+      ...[["content_likes", "created_at"], ["content_views", "viewed_at"], ["member_interests", "created_at"]]
+        .map(([table, timestamp]) => analyticsRows<{ content_id: string }>(() => supabaseAdmin.from(table)
+          .select("content_id").gte(timestamp, window.start.toISOString())
+          .lte(timestamp, window.now.toISOString()).order("id"), table)),
+    ]);
+    const academicEvents = await analyticsRows<{ content_id: string; event_type: string }>(() => supabaseAdmin
+      .from("academic_document_engagement").select("content_id, event_type")
+      .gte("occurred_at", window.start.toISOString()).lte("occurred_at", window.now.toISOString()).order("id"), "Academic engagement");
+    academicEvents.forEach((event) => {
+      if (event.event_type === "like") likes.push(event);
+      if (event.event_type === "view") views.push(event);
+    });
+    const ranked = (events: { content_id: string }[]) => {
+      const counts = new Map<string, number>();
+      events.forEach((event) => counts.set(event.content_id, (counts.get(event.content_id) || 0) + 1));
+      return content.filter((item) => counts.has(item.id))
+        .map((item) => ({ ...item, count: counts.get(item.id)! }))
+        .sort((a, b) => b.count - a.count || a.id.localeCompare(b.id)).slice(0, 10);
     };
-
-    return NextResponse.json(analytics);
+    const distribution = (field: "kind" | "status") => {
+      const counts: Record<string, number> = {};
+      content.forEach((item) => { counts[item[field]] = (counts[item[field]] || 0) + 1; });
+      return Object.entries(counts).map(([value, count]) => ({ [field]: value, count }));
+    };
+    return NextResponse.json({ range: window.range, topLiked: ranked(likes), topViewed: ranked(views),
+      topSaved: ranked(saves), byType: distribution("kind"), byStatus: distribution("status") });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unexpected error";
-    const status = message === "Unauthorized" ? 401 : message === "Forbidden" ? 403 : 500;
-    console.error("/api/admin/analytics/content error:", error);
-    return NextResponse.json({ error: message }, { status });
+    return analyticsError(error, "Analytics content error");
   }
 }

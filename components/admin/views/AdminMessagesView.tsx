@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useState, useMemo, type CSSProperties } from "react";
+import { memo, useState, useMemo, useEffect, type CSSProperties } from "react";
 import {
   MessageSquare,
   Send,
@@ -32,64 +32,18 @@ export interface InAppMessage {
   readBy: string[]; // member IDs who have read the message
 }
 
-/* ── Helpers ────────────────────────────────────────────────────── */
+/* ── API ────────────────────────────────────────────────────────── */
 
-function generateMessageId(): string {
-  return `msg_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+async function announcementRequest(path: string, init?: RequestInit): Promise<any> {
+  const response = await fetch(path, { ...init, headers: { "Content-Type": "application/json", ...init?.headers } });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.error || `Request failed (${response.status})`);
+  return data;
 }
 
-function calculateExpiryDate(createdAt: string): string {
-  const created = new Date(createdAt);
-  const expiry = new Date(created);
-  expiry.setDate(expiry.getDate() + 120);
-  return expiry.toISOString();
-}
-
-function getMessages(): InAppMessage[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const stored = localStorage.getItem("efsw_messages");
-    if (!stored) return [];
-    const messages: InAppMessage[] = JSON.parse(stored);
-    // Mark expired messages
-    const now = Date.now();
-    return messages.map((msg) => ({
-      ...msg,
-      status: new Date(msg.expiresAt).getTime() < now ? "expired" : "active",
-    }));
-  } catch {
-    return [];
-  }
-}
-
-function saveMessages(messages: InAppMessage[]): void {
-  if (typeof window === "undefined") return;
-  try {
-    localStorage.setItem("efsw_messages", JSON.stringify(messages));
-  } catch (error) {
-    console.error("Failed to save messages:", error);
-  }
-}
-
-function deleteMessage(messageId: string): void {
-  const messages = getMessages();
-  const updated = messages.filter((m) => m.id !== messageId);
-  saveMessages(updated);
-}
-
-function createMessage(draft: Omit<InAppMessage, "id" | "createdAt" | "expiresAt" | "status" | "readBy">): InAppMessage {
-  const createdAt = new Date().toISOString();
-  const message: InAppMessage = {
-    ...draft,
-    id: generateMessageId(),
-    createdAt,
-    expiresAt: calculateExpiryDate(createdAt),
-    status: "active",
-    readBy: [],
-  };
-  const messages = getMessages();
-  saveMessages([message, ...messages]);
-  return message;
+async function loadMessages(): Promise<InAppMessage[]> {
+  const data = await announcementRequest("/api/announcements");
+  return data.announcements || [];
 }
 
 /* ── Styles ─────────────────────────────────────────────────────── */
@@ -123,7 +77,11 @@ interface AdminMessagesViewProps {
 export const AdminMessagesView = memo(function AdminMessagesView({
   members,
 }: AdminMessagesViewProps) {
-  const [messages, setMessages] = useState<InAppMessage[]>(() => getMessages());
+  const [messages, setMessages] = useState<InAppMessage[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState<"all" | "active" | "expired">("all");
   const [composing, setComposing] = useState(false);
@@ -135,6 +93,13 @@ export const AdminMessagesView = memo(function AdminMessagesView({
   const [draftRecipientIds, setDraftRecipientIds] = useState<string[]>([]);
   const [recipientSearchOpen, setRecipientSearchOpen] = useState(false);
   const [recipientSearchQuery, setRecipientSearchQuery] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    loadMessages().then((items) => { if (active) { setMessages(items); setLoading(false); } })
+      .catch((cause) => { if (active) { setError(cause instanceof Error ? cause.message : "Could not load messages"); setLoading(false); } });
+    return () => { active = false; };
+  }, []);
 
   const filteredMessages = useMemo(() => {
     let result = messages;
@@ -160,36 +125,42 @@ export const AdminMessagesView = memo(function AdminMessagesView({
   const activeCount = messages.filter((m) => m.status === "active").length;
   const expiredCount = messages.filter((m) => m.status === "expired").length;
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!draftSubject.trim() || !draftBody.trim()) {
-      alert("Subject and body are required.");
+      setError("Subject and body are required.");
       return;
     }
 
     if (draftRecipientType === "individual" && draftRecipientIds.length === 0) {
-      alert("Please select at least one recipient.");
+      setError("Please select at least one recipient.");
       return;
     }
 
-    const newMessage = createMessage({
-      subject: draftSubject,
-      body: draftBody,
-      recipientType: draftRecipientType,
-      recipientIds: draftRecipientType === "individual" ? draftRecipientIds : undefined,
-    });
-
-    setMessages([newMessage, ...messages]);
-    setComposing(false);
-    setDraftSubject("");
-    setDraftBody("");
-    setDraftRecipientType("all");
-    setDraftRecipientIds([]);
+    setBusy(true); setError(null);
+    try {
+      await announcementRequest("/api/announcements", {
+        method: editingId ? "PATCH" : "POST",
+        body: JSON.stringify({
+          announcementId: editingId, subject: draftSubject, body: draftBody,
+          recipientType: draftRecipientType,
+          recipientIds: draftRecipientType === "individual" ? draftRecipientIds : [],
+        }),
+      });
+      setMessages(await loadMessages());
+      setComposing(false); setEditingId(null); setDraftSubject(""); setDraftBody("");
+      setDraftRecipientType("all"); setDraftRecipientIds([]);
+    } catch (cause) { setError(cause instanceof Error ? cause.message : "Could not save message"); }
+    finally { setBusy(false); }
   };
 
-  const handleDeleteMessage = (messageId: string) => {
+  const handleDeleteMessage = async (messageId: string) => {
     if (!confirm("Delete this message? This cannot be undone.")) return;
-    deleteMessage(messageId);
-    setMessages(getMessages());
+    setBusy(true); setError(null);
+    try {
+      await announcementRequest("/api/announcements", { method: "DELETE", body: JSON.stringify({ announcementId: messageId }) });
+      setMessages((items) => items.filter((item) => item.id !== messageId));
+    } catch (cause) { setError(cause instanceof Error ? cause.message : "Could not delete message"); }
+    finally { setBusy(false); }
   };
 
   const handleToggleRecipient = (memberId: string) => {
@@ -227,12 +198,14 @@ export const AdminMessagesView = memo(function AdminMessagesView({
         </div>
         <button
           type="button"
-          onClick={() => setComposing(true)}
+          onClick={() => { setEditingId(null); setDraftSubject(""); setDraftBody(""); setDraftRecipientType("all"); setDraftRecipientIds([]); setComposing(true); }}
           className="efsw-admin-primary"
         >
           <Plus size={15} /> New message
         </button>
       </header>
+      {error && <p role="alert" style={{ color: "var(--admin-danger)", margin: 0 }}>{error}</p>}
+      {loading && <p style={{ color: "var(--admin-muted)" }}>Loading messages…</p>}
 
       {/* Stats */}
       <div className="efsw-admin-quick-grid">
@@ -277,7 +250,7 @@ export const AdminMessagesView = memo(function AdminMessagesView({
           <h2>All messages ({filteredMessages.length})</h2>
         </div>
 
-        {filteredMessages.length === 0 ? (
+        {!loading && filteredMessages.length === 0 ? (
           <div style={{ padding: "3rem 1.5rem", textAlign: "center", color: "var(--admin-muted)" }}>
             <MessageSquare size={40} style={{ margin: "0 auto 1rem", opacity: 0.4 }} />
             <p style={{ margin: 0, fontSize: "0.85rem" }}>
@@ -322,14 +295,16 @@ export const AdminMessagesView = memo(function AdminMessagesView({
                         {msg.body}
                       </p>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteMessage(msg.id)}
-                      className="efsw-admin-danger-action"
-                      style={{ flexShrink: 0 }}
-                    >
-                      <Trash2 size={14} />
-                    </button>
+                    <span style={{ display: "inline-flex", gap: "0.35rem" }}>
+                      <button type="button" className="efsw-admin-outline-action" disabled={busy}
+                        onClick={() => { setEditingId(msg.id); setDraftSubject(msg.subject); setDraftBody(msg.body); setDraftRecipientType(msg.recipientType); setDraftRecipientIds(msg.recipientIds || []); setComposing(true); }}>
+                        Edit
+                      </button>
+                      <button type="button" onClick={() => handleDeleteMessage(msg.id)} disabled={busy}
+                        className="efsw-admin-danger-action" style={{ flexShrink: 0 }}>
+                        <Trash2 size={14} />
+                      </button>
+                    </span>
                   </div>
 
                   <div style={{ display: "flex", alignItems: "center", gap: "1rem", fontSize: "0.68rem", color: "var(--admin-muted)" }}>
@@ -383,7 +358,7 @@ export const AdminMessagesView = memo(function AdminMessagesView({
           >
             <header style={{ display: "flex", alignItems: "start", justifyContent: "space-between", marginBottom: "1.5rem" }}>
               <div>
-                <h2 style={{ margin: 0, fontSize: "1.4rem", fontWeight: 700 }}>New message</h2>
+                <h2 style={{ margin: 0, fontSize: "1.4rem", fontWeight: 700 }}>{editingId ? "Edit message" : "New message"}</h2>
                 <p style={{ margin: "0.3rem 0 0", fontSize: "0.78rem", color: "var(--admin-muted)" }}>
                   Message expires in 120 days
                 </p>
@@ -396,6 +371,7 @@ export const AdminMessagesView = memo(function AdminMessagesView({
                 <X size={20} />
               </button>
             </header>
+            {error && <p role="alert" style={{ color: "var(--admin-danger)", margin: "0 0 1rem" }}>{error}</p>}
 
             <div style={{ display: "grid", gap: "1rem" }}>
               {/* Recipients */}
@@ -581,9 +557,10 @@ export const AdminMessagesView = memo(function AdminMessagesView({
                 <button
                   type="button"
                   onClick={handleSendMessage}
+                  disabled={busy}
                   className="efsw-admin-primary"
                 >
-                  <Send size={15} /> Send message
+                  <Send size={15} /> {busy ? "Saving…" : editingId ? "Save changes" : "Send message"}
                 </button>
               </div>
             </div>
