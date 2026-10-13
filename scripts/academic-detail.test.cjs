@@ -113,6 +113,58 @@ test("metadata follows the persisted academic entry and its SEO fields", async (
   assert.equal(metadata.title, `${academic.seoTitle} | EFSW Academic Documents`);
   assert.equal(metadata.description, academic.seoDescription);
   assert.deepEqual(metadata.openGraph.images, [academic.ogImage]);
+  assert.deepEqual(metadata.twitter.images, [academic.ogImage]);
+});
+
+test("relative cover images resolve against the public site for social previews", async () => {
+  const previousSiteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+  items = [{ ...academic, ogImage: undefined, coverImage: "/uploads/research-cover.webp" }];
+  try {
+    for (const siteUrl of ["https://documents.example.invalid", undefined]) {
+      if (siteUrl) process.env.NEXT_PUBLIC_SITE_URL = siteUrl;
+      else delete process.env.NEXT_PUBLIC_SITE_URL;
+      const metadata = await page.generateMetadata({ params: { slug: academic.id } });
+      const origin = siteUrl || "https://eurasiaforumsw.org";
+      assert.equal(metadata.metadataBase.origin, origin);
+      assert.equal(new URL(metadata.openGraph.images[0], metadata.metadataBase).href, `${origin}/uploads/research-cover.webp`);
+      assert.equal(new URL(metadata.twitter.images[0], metadata.metadataBase).href, `${origin}/uploads/research-cover.webp`);
+    }
+  } finally {
+    if (previousSiteUrl === undefined) delete process.env.NEXT_PUBLIC_SITE_URL;
+    else process.env.NEXT_PUBLIC_SITE_URL = previousSiteUrl;
+  }
+});
+
+test("direct document links resolve the matching record and share metadata keeps special IDs intact", async () => {
+  const second = { ...academic, id: "paper #2?ภาษาไทย/guide", title: "A different paper", fileUrl: "/second.pdf" };
+  items = [academic, second];
+  const firstPage = await page.default({ params: { slug: academic.id } });
+  const secondPage = await page.default({ params: { slug: second.id } });
+  assert.equal(firstPage.props.seed.id, academic.id);
+  assert.equal(secondPage.props.seed.id, second.id);
+  assert.equal(secondPage.props.seed.title, second.title);
+  assert.equal(secondPage.props.seed.fileUrl, second.fileUrl);
+  assert.notEqual(firstPage.key, secondPage.key);
+
+  const previousSiteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+  process.env.NEXT_PUBLIC_SITE_URL = "https://documents.example.invalid";
+  try {
+    const metadata = await page.generateMetadata({ params: { slug: second.id } });
+    const shared = new URL(metadata.openGraph.url);
+    assert.equal(shared.origin, "https://documents.example.invalid");
+    assert.equal(decodeURIComponent(shared.pathname.split("/").at(-1)), second.id);
+    assert.equal(shared.search, "");
+    assert.equal(shared.hash, "");
+    assert.equal(metadata.alternates.canonical, shared.href);
+
+    items = [{ ...second, canonicalUrl: "https://publisher.example.invalid/original" }];
+    const original = await page.generateMetadata({ params: { slug: second.id } });
+    assert.equal(original.alternates.canonical, "https://publisher.example.invalid/original");
+    assert.equal(original.openGraph.url, shared.href);
+  } finally {
+    if (previousSiteUrl === undefined) delete process.env.NEXT_PUBLIC_SITE_URL;
+    else process.env.NEXT_PUBLIC_SITE_URL = previousSiteUrl;
+  }
 });
 
 test("deleted or hidden records never fall back to bundled content", async () => {

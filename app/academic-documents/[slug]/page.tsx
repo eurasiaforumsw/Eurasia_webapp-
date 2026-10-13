@@ -32,13 +32,17 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const title = seed.seoTitle || seed.title;
   const description = seed.seoDescription || seed.summary;
   const image = seed.ogImage || seed.coverImage;
+  const metadataBase = new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://eurasiaforumsw.org");
+  const documentUrl = new URL(`/academic-documents/${encodeURIComponent(seed.id)}`, metadataBase).toString();
   return {
+    metadataBase,
     title: `${title} | EFSW Academic Documents`,
     description,
     keywords: seed.seoKeywords,
-    alternates: seed.canonicalUrl ? { canonical: seed.canonicalUrl } : undefined,
+    alternates: { canonical: seed.canonicalUrl || documentUrl },
     openGraph: {
       type: "article",
+      url: documentUrl,
       title,
       description,
       images: image ? [image] : undefined,
@@ -47,17 +51,19 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       card: "summary_large_image",
       title,
       description,
+      images: image ? [image] : undefined,
     },
   };
 }
 
 export default async function DocumentPage({ params }: PageProps) {
-  if (!hasRemoteContent()) return <LocalDocumentView slug={params.slug} />;
+  if (!hasRemoteContent()) return <LocalDocumentView key={params.slug} slug={params.slug} />;
   const seed = await findDocument(params.slug);
   if (!seed) notFound();
 
   return (
     <ArticleView
+      key={seed.id}
       kind={seed.kind}
       slug={params.slug}
       seed={seed}

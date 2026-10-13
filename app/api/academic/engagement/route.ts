@@ -28,9 +28,10 @@ function isVisitorId(value: unknown): value is string {
 }
 
 export async function GET(request: NextRequest) {
-  const ids = request.nextUrl.searchParams.get("ids")?.split(",").filter(Boolean) || [];
+  const ids = request.nextUrl.searchParams.has("id") ? request.nextUrl.searchParams.getAll("id")
+    : request.nextUrl.searchParams.get("ids")?.split(",").filter(Boolean) || [];
   const visitorId = request.nextUrl.searchParams.get("visitorId");
-  if (!ids.length || ids.length > 100 || ids.some((id) => id.length > 200)) {
+  if (!ids.length || ids.length > 100 || ids.some((id) => !id || id.length > 200)) {
     return NextResponse.json({ error: "Provide between 1 and 100 document IDs" }, { status: 400 });
   }
   try {

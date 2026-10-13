@@ -500,12 +500,18 @@ export function SiteNav() {
         </span>
       </header>
 
-      <div className="efsw-sheet" id="efsw-mobile-menu" data-open={sheetOpen}>
+      <div
+        className="efsw-sheet"
+        id="efsw-mobile-menu"
+        data-open={sheetOpen}
+        aria-hidden={!sheetOpen}
+        ref={(element) => { if (element) element.inert = !sheetOpen; }}
+      >
         <div className="efsw-sheet__scrim" role="presentation" onClick={() => setSheetOpen(false)} />
         <div
           className="efsw-sheet__panel"
           role="dialog"
-          aria-modal="true"
+          aria-modal={sheetOpen ? true : undefined}
           aria-label={menuLabel}
           data-lenis-prevent
         >

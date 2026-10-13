@@ -14,6 +14,8 @@ export type ContentEngagement = {
 
 type RemoteEngagement = Omit<ContentEngagement, "likedBy" | "lastUpdated"> & { liked: boolean };
 const cache = new Map<string, ContentEngagement>();
+const versions = new Map<string, number>();
+const mutations = new Map<string, Promise<void>>();
 let visitorId: string | undefined;
 
 function getVisitorId() {
@@ -48,14 +50,41 @@ export function getContentEngagement(contentId: string): ContentEngagement {
     likedBy: [], lastUpdated: "" };
 }
 
+function nextVersion(contentId: string) {
+  const version = (versions.get(contentId) || 0) + 1;
+  versions.set(contentId, version);
+  return version;
+}
+
+async function read(ids: string[], signal?: AbortSignal): Promise<RemoteEngagement[]> {
+  const params = new URLSearchParams({ visitorId: getVisitorId() });
+  ids.forEach((id) => params.append("id", id));
+  const data = await payload(await fetch(`/api/academic/engagement?${params}`, { cache: "no-store", signal }));
+  return data.items as RemoteEngagement[];
+}
+
 export async function loadContentEngagement(ids: string[], signal?: AbortSignal): Promise<ContentEngagement[]> {
   const items: ContentEngagement[] = [];
   for (let offset = 0; offset < ids.length; offset += 100) {
-    const params = new URLSearchParams({ ids: ids.slice(offset, offset + 100).join(","), visitorId: getVisitorId() });
-    const data = await payload(await fetch(`/api/academic/engagement?${params}`, { cache: "no-store", signal }));
-    items.push(...(data.items as RemoteEngagement[]).map(remember));
+    const batch = ids.slice(offset, offset + 100);
+    const requests = new Map(batch.map((id) => [id, { version: nextVersion(id), pending: mutations.has(id) }]));
+    const data = await read(batch, signal);
+    items.push(...data.map((item) => {
+      const request = requests.get(item.contentId);
+      return request && !request.pending && !mutations.has(item.contentId)
+        && request.version === versions.get(item.contentId) ? remember(item) : getContentEngagement(item.contentId);
+    }));
   }
   return items;
+}
+
+function queueMutation<T>(contentId: string, action: () => Promise<T>): Promise<T> {
+  nextVersion(contentId);
+  const result = (mutations.get(contentId) || Promise.resolve()).then(action);
+  const settled = result.then(() => undefined, () => undefined);
+  mutations.set(contentId, settled);
+  void settled.then(() => { if (mutations.get(contentId) === settled) mutations.delete(contentId); });
+  return result;
 }
 
 async function record(contentId: string, action: "view" | "download" | "like" | "unlike") {
@@ -68,12 +97,19 @@ async function record(contentId: string, action: "view" | "download" | "like" | 
   return engagement;
 }
 
-export const incrementViewCount = (contentId: string) => record(contentId, "view");
-export const incrementDownloadCount = (contentId: string) => record(contentId, "download");
+export const incrementViewCount = (contentId: string) => queueMutation(contentId, () => record(contentId, "view"));
+export const incrementDownloadCount = (contentId: string) => queueMutation(contentId, () => record(contentId, "download"));
 export const hasUserLiked = (contentId: string) => getContentEngagement(contentId).likedBy.includes(getVisitorId());
 export async function toggleLike(contentId: string) {
-  const engagement = await record(contentId, hasUserLiked(contentId) ? "unlike" : "like");
-  return { liked: hasUserLiked(contentId), engagement };
+  return queueMutation(contentId, async () => {
+    if (!cache.has(contentId)) {
+      const [item] = await read([contentId]);
+      if (!item) throw new Error("Document statistics are unavailable");
+      remember(item);
+    }
+    const engagement = await record(contentId, hasUserLiked(contentId) ? "unlike" : "like");
+    return { liked: engagement.likedBy.includes(getVisitorId()), engagement };
+  });
 }
 export const getAllEngagement = () => Array.from(cache.values());
 export const clearEngagementData = () => cache.clear();

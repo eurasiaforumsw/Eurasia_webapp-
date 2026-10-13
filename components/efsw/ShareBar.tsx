@@ -92,14 +92,15 @@ export default function ShareBar({ title, summary, heading, variant = "block", p
   const { t } = useI18n();
   // Seeded server-side so the anchors ship with a real href (focusable, and
   // usable without JS); replaced with the live URL once mounted.
-  const [pageUrl, setPageUrl] = useState(() => (SITE_URL && path ? `${SITE_URL}${path}` : SITE_URL));
+  const [pageUrl, setPageUrl] = useState(() => (SITE_URL && path ? new URL(path, SITE_URL).href : SITE_URL));
   const [copied, setCopied] = useState(false);
   const [canNativeShare, setCanNativeShare] = useState(false);
 
   useEffect(() => {
-    setPageUrl(window.location.href);
+    setPageUrl(path ? new URL(path, window.location.origin).href : window.location.href);
     setCanNativeShare(typeof navigator !== "undefined" && typeof navigator.share === "function");
-  }, []);
+    setCopied(false);
+  }, [path]);
 
   const trackShare = (platform: string) => {
     if (!contentId) return;

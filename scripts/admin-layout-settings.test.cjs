@@ -10,10 +10,11 @@ const resolve = Module._resolveFilename;
 const load = Module._load;
 const writes = [];
 let databaseError = null;
+let storedLayout = { config: {} };
 const database = {
   from(table) {
     let payload;
-    const result = () => ({ data: payload || { config: {} }, error: databaseError });
+    const result = () => ({ data: payload || storedLayout, error: databaseError });
     const query = {
       select() { return query; }, eq() { return query; },
       upsert(value) { payload = value; writes.push({ table, value }); return query; },
@@ -89,6 +90,15 @@ test('layout and settings accept verified administrator cookie, member cookie an
     assert.equal((await layout.POST(request('/api/layout', { config: { heroHeadline: 'Shared heading' } }, headers))).status, 200);
     assert.equal((await settings.POST(request('/api/settings', { settings: { organizationName: 'Shared name' } }, headers))).status, 200);
   }
+});
+
+test('a missing default layout row returns an empty config while a missing table remains a visible failure', async () => {
+  storedLayout = null;
+  assert.equal((await layout.GET()).status, 200);
+  assert.deepEqual(await (await layout.GET()).json(), { config: {} });
+  databaseError = { code: 'PGRST205', message: 'layout_config is absent from the schema cache' };
+  try { assert.equal((await layout.GET()).status, 500); }
+  finally { databaseError = null; storedLayout = { config: {} }; }
 });
 
 test('forged cookies and content editor roles cannot write layout or settings directly', async () => {

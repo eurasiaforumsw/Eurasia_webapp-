@@ -180,6 +180,35 @@ test('public activity supports slug IDs, deduplicates repeated views, and saves/
   assert.equal((await (await send('unlike')).json()).item.likeCount, 0);
 });
 
+test('repeated ID parameters preserve punctuation and Unicode IDs with distinct persisted counts and likes', async () => {
+  const ids = ['paper,a', 'เอกสารไทย&?#/一', 'paper', 'a'];
+  const visitorId = 'visitor1234567890';
+  tables.content.push(...ids.filter((id) => id !== 'paper').map((id) => document(id)));
+  const send = (contentId, action) => activity.POST(request('/api/academic/engagement', { contentId, visitorId, action }));
+  await send(ids[0], 'view');
+  await send(ids[0], 'like');
+  await send(ids[1], 'view');
+  await send(ids[1], 'download');
+  const params = new URLSearchParams({ visitorId, ids: 'legacy' });
+  ids.forEach((id) => params.append('id', id));
+  const response = await activity.GET(request(`/api/academic/engagement?${params}`));
+  assert.equal(response.status, 200);
+  const { items } = await response.json();
+  assert.deepEqual(items.map((item) => item.contentId).sort(), [...ids].sort());
+  const byId = Object.fromEntries(items.map((item) => [item.contentId, item]));
+  assert.equal(byId[ids[0]].viewCount, 1);
+  assert.equal(byId[ids[0]].likeCount, 1);
+  assert.equal(byId[ids[0]].liked, true);
+  assert.equal(byId[ids[1]].viewCount, 1);
+  assert.equal(byId[ids[1]].downloadCount, 1);
+  assert.equal(byId[ids[1]].liked, false);
+  assert.equal(byId.paper.viewCount, 0);
+  assert.equal(byId.paper.liked, false);
+  assert.equal(byId.a.likeCount, 0);
+  const legacy = await (await activity.GET(request('/api/academic/engagement?ids=paper,legacy'))).json();
+  assert.deepEqual(legacy.items.map((item) => item.contentId).sort(), ['legacy', 'paper']);
+});
+
 test('activity cannot expose/record hidden documents or download without attachment', async () => {
   assert.equal((await activity.POST(request('/api/academic/engagement', { contentId: 'paper', visitorId: 'visitor1234567890', action: ['view'] }))).status, 400);
   for (const patch of [{ status: 'draft' }, { publish_at: ago(-10) }, { expires_at: ago(1) }, { target_groups: ['private'] }, { kind: 'news' }]) {

@@ -143,25 +143,34 @@ export default function ArticleView({ kind, slug, seed, backHref, contentSource 
   const isAcademic = kind === "academic" || kind === "document";
   const [academicStats, setAcademicStats] = useState<ContentEngagement>(() => getContentEngagement(seed.id));
   const [engagementError, setEngagementError] = useState<string | null>(null);
+  const [engagementLoaded, setEngagementLoaded] = useState(false);
+  const [engagementRetry, setEngagementRetry] = useState(0);
   const [savingLike, setSavingLike] = useState(false);
 
   useEffect(() => {
     if (!isAcademic || contentSource === "local-library") return;
     let disposed = false;
+    setEngagementLoaded(false);
+    setEngagementError(null);
+    setAcademicStats(getContentEngagement(article.id));
     const load = async () => {
       try {
         const engagement = await incrementViewCount(article.id);
-        if (!disposed) setAcademicStats(engagement);
+        if (!disposed) {
+          setAcademicStats(engagement);
+          setEngagementLoaded(true);
+          setEngagementError(null);
+        }
       } catch (error) {
         if (!disposed) setEngagementError(error instanceof Error ? error.message : "Document statistics are unavailable");
       }
     };
     void load();
     return () => { disposed = true; };
-  }, [article.id, isAcademic, contentSource]);
+  }, [article.id, isAcademic, contentSource, engagementRetry]);
 
   const likeDocument = async () => {
-    if (savingLike) return;
+    if (savingLike || !engagementLoaded) return;
     setSavingLike(true);
     try {
       const { engagement } = await toggleLike(article.id);
@@ -179,14 +188,14 @@ export default function ArticleView({ kind, slug, seed, backHref, contentSource 
     }
   };
   const academicEngagementRow = <div className="efsw-engagement">
-    <button type="button" className="efsw-engagement__btn" disabled={savingLike || contentSource === "local-library"}
+    <button type="button" className="efsw-engagement__btn" disabled={savingLike || !engagementLoaded || contentSource === "local-library"}
       aria-label={hasUserLiked(article.id) ? "Unlike document" : "Like document"}
       aria-pressed={hasUserLiked(article.id)} onClick={() => void likeDocument()}>
       <Heart size={15} aria-hidden fill={hasUserLiked(article.id) ? "currentColor" : "none"} />
-      <span className="efsw-engagement__count">{academicStats.likeCount}</span>
+      <span className="efsw-engagement__count">{engagementLoaded ? academicStats.likeCount : "—"}</span>
     </button>
-    <span className="efsw-engagement__btn efsw-engagement__view" aria-label={`${academicStats.viewCount} views`}>
-      <Eye size={15} aria-hidden /><span className="efsw-engagement__count">{academicStats.viewCount}</span>
+    <span className="efsw-engagement__btn efsw-engagement__view" aria-label={engagementLoaded ? `${academicStats.viewCount} views` : "Loading document views"}>
+      <Eye size={15} aria-hidden /><span className="efsw-engagement__count">{engagementLoaded ? academicStats.viewCount : "—"}</span>
     </span>
   </div>;
 
@@ -313,6 +322,7 @@ export default function ArticleView({ kind, slug, seed, backHref, contentSource 
   const publishedLabel = formatDate(article.updatedAt);
   const downloadHref = (kind === "academic" || kind === "document") && article.fileUrl &&
     /^(https?:\/\/|\/(?!\/))/i.test(article.fileUrl) ? article.fileUrl : null;
+  const sharePath = `${backHref}/${encodeURIComponent(slug)}`;
 
   // Reader-triggered machine translation of the article copy.
   const translatable = useMemo(() => ({
@@ -392,7 +402,12 @@ export default function ArticleView({ kind, slug, seed, backHref, contentSource 
             <div className="efsw-article__engagement">
               {isAcademic ? academicEngagementRow : <EngagementRow contentId={article.id} memberId={member?.id ?? null} />}
             </div>
-            {engagementError && <p role="alert">{engagementError}</p>}
+            {engagementError && <div role="alert">
+              <p>{engagementError}</p>
+              {isAcademic && !engagementLoaded && contentSource !== "local-library" && (
+                <button type="button" onClick={() => setEngagementRetry((value) => value + 1)}>Retry document statistics</button>
+              )}
+            </div>}
 
             {kind === "event" && article.registrationUrl && (
               <div className="efsw-article__register">
@@ -444,7 +459,7 @@ export default function ArticleView({ kind, slug, seed, backHref, contentSource 
           <div className="efsw-article__layout">
             {/* Desktop rail: stays with the reader while scrolling the body. */}
             <aside className="efsw-article__rail">
-              <ShareBar title={shown.title} summary={shown.summary} heading={t("article.share")} variant="inline" path={`${backHref}/${slug}`} />
+              <ShareBar title={shown.title} summary={shown.summary} heading={t("article.share")} variant="inline" path={sharePath} />
               <div className="efsw-article__rail-engagement">
                 {isAcademic ? academicEngagementRow : <EngagementRow contentId={article.id} memberId={member?.id ?? null} />}
               </div>
@@ -478,7 +493,7 @@ export default function ArticleView({ kind, slug, seed, backHref, contentSource 
 
               {/* Mobile/tablet placement — the rail is hidden below 68rem. */}
               <div className="efsw-article__share-inline">
-                <ShareBar title={shown.title} summary={shown.summary} heading={t(kind === "news" ? "article.shareStory" : "article.shareDocument")} path={`${backHref}/${slug}`} />
+                <ShareBar title={shown.title} summary={shown.summary} heading={t(kind === "news" ? "article.shareStory" : "article.shareDocument")} path={sharePath} />
               </div>
 
               {/* Image Gallery — show if there are gallery images */}
@@ -512,7 +527,7 @@ export default function ArticleView({ kind, slug, seed, backHref, contentSource 
               </div>
               <div className="efsw-article__related-grid">
                 {related.map((item) => (
-                  <Link key={item.id} href={`${backHref}/${item.id}`} className="efsw-article__related-card">
+                  <Link key={item.id} href={`${backHref}/${encodeURIComponent(item.id)}`} className="efsw-article__related-card">
                     <span className="efsw-article__related-media">
                       {item.coverImage ? (
                         <img src={item.coverImage} alt={item.imageCaption || item.title} loading="lazy" />

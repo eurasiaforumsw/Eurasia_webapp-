@@ -36,7 +36,7 @@ export default function LocalDocumentView({ slug }: { slug: string }) {
   }, [slug]);
 
   if (!loading && document) {
-    return <ArticleView kind={document.kind} slug={slug} seed={document} backHref="/academic-documents" contentSource="local-library" />;
+    return <ArticleView key={document.id} kind={document.kind} slug={slug} seed={document} backHref="/academic-documents" contentSource="local-library" />;
   }
 
   return <>

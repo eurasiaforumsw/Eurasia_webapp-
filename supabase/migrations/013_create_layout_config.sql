@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS layout_config (
     id TEXT PRIMARY KEY DEFAULT 'default',
     config JSONB NOT NULL,
     updated_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_by UUID REFERENCES members(id) ON DELETE SET NULL
+    updated_by TEXT REFERENCES members(id) ON DELETE SET NULL
 );
 
 -- Insert default config (will be populated from code)
@@ -25,31 +25,34 @@ ON layout_config(updated_at DESC);
 ALTER TABLE layout_config ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policy: Anyone can read layout config (for public site)
+DROP POLICY IF EXISTS "Anyone can view layout config" ON layout_config;
 CREATE POLICY "Anyone can view layout config"
 ON layout_config
 FOR SELECT
 USING (true);
 
 -- RLS Policy: Only admins can update layout config
+DROP POLICY IF EXISTS "Admins can update layout config" ON layout_config;
 CREATE POLICY "Admins can update layout config"
 ON layout_config
 FOR UPDATE
 USING (
     EXISTS (
         SELECT 1 FROM members
-        WHERE members.id = auth.uid()
+        WHERE members.id = auth.uid()::text
         AND members.role = 'admin'
     )
 );
 
 -- RLS Policy: Only admins can insert layout config
+DROP POLICY IF EXISTS "Admins can insert layout config" ON layout_config;
 CREATE POLICY "Admins can insert layout config"
 ON layout_config
 FOR INSERT
 WITH CHECK (
     EXISTS (
         SELECT 1 FROM members
-        WHERE members.id = auth.uid()
+        WHERE members.id = auth.uid()::text
         AND members.role = 'admin'
     )
 );

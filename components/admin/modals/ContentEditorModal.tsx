@@ -1220,6 +1220,7 @@ export const ContentEditorModal = memo(function ContentEditorModal({
                     fileName: undefined,
                     fileSize: undefined,
                     fileType: undefined,
+                    pageCount: undefined,
                   }));
                 }}
               />
