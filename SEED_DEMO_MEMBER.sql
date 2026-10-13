@@ -7,55 +7,43 @@
 -- 3. Click "Run"
 -- ============================================================================
 
--- Insert demo member account
+-- Password: EFSW-member-demo-2024
 INSERT INTO members (
     id,
     email,
     password_hash,
     full_name,
-    first_name,
-    last_name,
     country,
-    city,
     membership_type,
     organization,
     position,
     expertise,
     bio,
     status,
-    email_verified,
-    education_level,
-    experience_years,
-    license,
+    email_verified_at,
     joined_at,
     created_at,
     updated_at
 ) VALUES (
     gen_random_uuid(),
     'member@efsw.local',
-    '$2b$12$LtzLj2jjS4WzecTRs7nWi.GFE07pXsw4MenGww/Zfmn9Gu84kJNTS',
+    '$2b$12$STpxQLlNBCnlqbkqxqSnQ.YJZ.ZeZ35GQfOl8or9G50a0B.YMUphO',
     'Demo Member',
-    'Demo',
-    'Member',
     'Thailand',
-    'Bangkok',
     'professional',
     'Eurasia Forum for Social Workers',
     'Social Worker',
     'Community Development, Mental Health, Child Protection',
     'Demo account for testing member features including like, save, view, and share functionalities.',
     'active',
-    true,
-    'master',
-    5.0,
-    'SW-TH-2024-001',
+    NOW(),
     NOW(),
     NOW(),
     NOW()
 ) ON CONFLICT (email) DO UPDATE SET
     password_hash = EXCLUDED.password_hash,
     status = 'active',
-    email_verified = true,
+    email_verified_at = NOW(),
     updated_at = NOW();
 
 -- Verify the member was created
@@ -64,7 +52,7 @@ SELECT
     email,
     full_name,
     status,
-    email_verified,
+    email_verified_at,
     membership_type,
     joined_at
 FROM members

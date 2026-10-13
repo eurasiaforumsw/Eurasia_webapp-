@@ -1,0 +1,141 @@
+- generic [active] [ref=e1]:
+  - link "ข้ามไปยังเนื้อหาหลัก" [ref=e2] [cursor=pointer]:
+    - /url: "#main-content"
+  - alert [ref=e174]
+  - main [ref=e175]:
+    - generic [ref=e391]:
+      - link "Eurasia Forum for Social Workers — home" [ref=e392] [cursor=pointer]:
+        - /url: /
+        - generic [ref=e394]:
+          - generic [ref=e395]: Eurasia Forum
+          - generic [ref=e396]: of Social Workers
+      - navigation "Primary" [ref=e397]:
+        - link "Home" [ref=e398] [cursor=pointer]:
+          - /url: /
+        - link "About" [ref=e400] [cursor=pointer]:
+          - /url: /about
+        - link "Events" [ref=e403] [cursor=pointer]:
+          - /url: /events
+        - link "News" [ref=e404] [cursor=pointer]:
+          - /url: /news
+        - link "Academic Documents" [ref=e405] [cursor=pointer]:
+          - /url: /academic-documents
+      - generic [ref=e406]:
+        - 'button "Language: English" [ref=e408] [cursor=pointer]':
+          - generic [ref=e414]: EN
+        - link "Login" [ref=e417] [cursor=pointer]:
+          - /url: /member/login
+        - link "Register" [ref=e422] [cursor=pointer]:
+          - /url: /member/register
+    - generic:
+      - dialog "Menu":
+        - paragraph: Menu
+        - navigation "Mobile":
+          - generic:
+            - link "01 Home":
+              - /url: /
+              - generic: "01"
+              - generic: Home
+          - generic:
+            - button "02 About":
+              - generic: "02"
+              - generic: About
+            - generic:
+              - link "About us":
+                - /url: /about
+              - link "Executive Board":
+                - /url: /about/executive-board
+          - generic:
+            - link "03 Events":
+              - /url: /events
+              - generic: "03"
+              - generic: Events
+          - generic:
+            - link "04 News":
+              - /url: /news
+              - generic: "04"
+              - generic: News
+          - generic:
+            - link "05 Academic Documents":
+              - /url: /academic-documents
+              - generic: "05"
+              - generic: Academic Documents
+        - group "Language":
+          - button "English" [pressed]
+          - button "ไทย"
+          - button "한국어"
+        - generic:
+          - link "Login":
+            - /url: /member/login
+          - link "Register":
+            - /url: /member/register
+    - generic [ref=e432]:
+      - region [ref=e433]:
+        - generic [ref=e434]:
+          - generic [ref=e435]:
+            - generic [ref=e436]: The EFSW knowledge hub
+            - heading "Academic Documents." [level=1] [ref=e439]: AcademicDocuments.
+            - paragraph [ref=e440]: Research that informs. Practice that connects. Explore a shared library of ideas and resources from social workers across Eurasia.
+            - link "Explore the library" [ref=e441] [cursor=pointer]:
+              - /url: "#documents"
+            - generic "Library overview" [ref=e444]:
+              - generic [ref=e445]:
+                - strong [ref=e446]: —
+                - generic [ref=e447]: Documents
+              - generic [ref=e448]:
+                - strong [ref=e449]: —
+                - generic [ref=e450]: Contributors
+              - generic [ref=e451]:
+                - strong [ref=e452]: —
+                - generic [ref=e453]: Topics to explore
+          - generic [ref=e454]:
+            - generic [ref=e455]: From the library
+            - generic [ref=e461]:
+              - heading "Knowledge moves practice forward." [level=2] [ref=e464]: Knowledge movespractice forward.
+              - paragraph [ref=e465]: Research papers, practice guides, and policy perspectives. One shared space.
+              - link "Browse the collection" [ref=e466] [cursor=pointer]:
+                - /url: "#documents"
+            - paragraph [ref=e469]: Shared knowledge. Stronger communities.
+      - region [ref=e470]:
+        - generic [ref=e472]:
+          - heading "The people behind the ideas." [level=2] [ref=e473]
+          - paragraph [ref=e474]: Select a contributor to discover their work.
+        - status [ref=e475]:
+          - heading "Loading contributors..." [level=3] [ref=e476]
+          - paragraph [ref=e477]: Gathering the people behind the library.
+      - region [ref=e478]:
+        - generic [ref=e480]:
+          - heading "Find your next perspective." [level=2] [ref=e481]
+          - paragraph [ref=e482]: Explore the collection by topic, author, or the questions that matter to you.
+        - generic [ref=e486]:
+          - generic [ref=e487]:
+            - generic [ref=e488]:
+              - generic [ref=e489]: Search the library
+              - searchbox "Search the library" [ref=e490]
+            - generic [ref=e491]:
+              - button "Topics" [ref=e492] [cursor=pointer]
+              - generic [ref=e494]:
+                - generic [ref=e495]: Sort documents
+                - combobox "Sort documents" [ref=e496]:
+                  - option "Newest first" [selected]
+                  - option "Oldest first"
+                  - option "Most downloaded"
+                  - option "Title A–Z"
+              - group "Document layout" [ref=e497]:
+                - button "Grid view" [pressed] [ref=e498] [cursor=pointer]
+                - button "List view" [ref=e501] [cursor=pointer]
+          - generic [ref=e503]:
+            - group "Document categories" [ref=e504]:
+              - button "All documents" [pressed] [ref=e505] [cursor=pointer]
+            - status [ref=e506]: 0 documents
+        - status [ref=e508]: Loading the library…
+      - generic [ref=e512]:
+        - generic [ref=e513]:
+          - heading "Share your knowledge. Grow our collective impact." [level=2] [ref=e514]: Share your knowledge.Grow our collective impact.
+          - paragraph [ref=e515]: Have research or resources to contribute? Share your work with the EFSW community.
+        - link "Submit a document" [ref=e516] [cursor=pointer]:
+          - /url: mailto:support@eurasiaforumsw.org
+      - generic [ref=e520]:
+        - link "Eurasia Forum for Social Workers" [ref=e521] [cursor=pointer]:
+          - /url: /
+        - generic [ref=e522]: © 2026 EFSW · Connect. Empower. Advocate.

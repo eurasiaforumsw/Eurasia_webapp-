@@ -32,14 +32,31 @@ create index if not exists content_updated_idx    on public.content (updated_at 
 -- allow anonymous/public read of published rows only.
 alter table public.content enable row level security;
 
-create policy "public read published" on public.content
-  for select
-  using (status = 'published');
+-- SQL Editor setup may have created these policies before CLI migrations were tracked.
+-- Preserve existing policy definitions when adopting or re-running this migration.
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public' and tablename = 'content'
+      and policyname = 'public read published'
+  ) then
+    create policy "public read published" on public.content
+      for select
+      using (status = 'published');
+  end if;
 
-create policy "admin full access" on public.content
-  for all
-  using (auth.role() = 'service_role')
-  with check (auth.role() = 'service_role');
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public' and tablename = 'content'
+      and policyname = 'admin full access'
+  ) then
+    create policy "admin full access" on public.content
+      for all
+      using (auth.role() = 'service_role')
+      with check (auth.role() = 'service_role');
+  end if;
+end $$;
 
 -- Tell PostgREST the table is readable by the anon key for public reads.
 -- (The service role bypasses RLS anyway.)

@@ -53,7 +53,7 @@ INSERT INTO members (
   'admin2@efsw.local',
   'admin2@efsw.local',
   'Secondary Administrator',
-  '$2a$12$chSKYvYg6bIy7ouWLhWFCOZv9VbEwyfn7nqSSqOjbr0oEBAMTRVFu',
+  '$2a$12$chSKYvYg6bIy7ouWLhWFCOZv9VbEwyfn7nqSSqOjbr0oEBAMTRVFu ',
   'admin',
   'active',
   NOW(),

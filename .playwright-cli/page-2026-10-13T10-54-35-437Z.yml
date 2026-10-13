@@ -1,0 +1,45 @@
+- generic [active] [ref=e1]:
+  - link "ข้ามไปยังเนื้อหาหลัก" [ref=e2] [cursor=pointer]:
+    - /url: "#main-content"
+  - alert [ref=e3]
+  - main [ref=e4]:
+    - main [ref=e7]:
+      - link "EFSW home" [ref=e8] [cursor=pointer]:
+        - /url: /
+        - img "EFSW" [ref=e10]
+        - generic [ref=e11]: Eurasia Forumfor Social Workers
+      - generic [ref=e12]:
+        - complementary "EFSW admin console" [ref=e13]:
+          - paragraph [ref=e14]: Operations console · Admin only
+          - heading [level=1] [ref=e15]:
+            - text: Control room.
+            - emphasis [ref=e16]: One workspace.
+          - paragraph [ref=e17]: Manage members, publications, events, broadcasts, and site settings from one unified console.
+          - generic [ref=e19]:
+            - generic [ref=e20]: EFSW
+            - paragraph [ref=e22]: Secure admin access
+          - list [ref=e23]:
+            - listitem [ref=e24]: Members, content & broadcasts in one place
+            - listitem [ref=e29]: Layout, hero, and section visibility controls
+            - listitem [ref=e35]: Email campaigns to targeted member groups
+        - region [ref=e39]:
+          - generic [ref=e40]:
+            - generic [ref=e41]: Administrator access
+            - heading [level=2] [ref=e48]:
+              - text: Enter the
+              - emphasis [ref=e49]: control room.
+            - paragraph [ref=e50]: Manage members, publications, academic resources, and site settings from one workspace.
+            - generic [ref=e51]:
+              - generic [ref=e52]:
+                - generic [ref=e53]: Admin email
+                - textbox "Admin email" [ref=e54]:
+                  - /placeholder: Your admin email
+              - generic [ref=e55]:
+                - generic [ref=e56]: Password
+                - textbox "Password" [ref=e57]:
+                  - /placeholder: Your password
+                - button "Show password" [ref=e58] [cursor=pointer]
+              - button "Sign in to admin" [ref=e62] [cursor=pointer]
+      - link "Back to home" [ref=e66] [cursor=pointer]:
+        - /url: /
+      - paragraph [ref=e69]: Protected administrator access

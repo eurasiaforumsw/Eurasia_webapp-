@@ -21,6 +21,8 @@
     "@radix-ui/react-slot": "^1.1.0",
     "@react-three/drei": "^9.105.0",
     "@react-three/fiber": "^8.16.0",
+    "@supabase/server": "^1.9.1",
+    "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.117.3",
     "@tiptap/extension-image": "^3.31.4",
     "@tiptap/extension-link": "^3.31.4",
