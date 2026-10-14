@@ -8,6 +8,7 @@ interface RegistrationSettings {
   id?: string;
   event_id: string;
   is_enabled: boolean;
+  require_approval: boolean;
   opens_at: string | null;
   closes_at: string | null;
   max_attendees: number | null;
@@ -43,6 +44,7 @@ export default function RegistrationSettings({ eventId, onClose }: RegistrationS
   const [settings, setSettings] = useState<RegistrationSettings>({
     event_id: eventId,
     is_enabled: false,
+    require_approval: false,
     opens_at: null,
     closes_at: null,
     max_attendees: null,
@@ -64,6 +66,7 @@ export default function RegistrationSettings({ eventId, onClose }: RegistrationS
         const data = await response.json();
         setSettings({
           ...data,
+          event_id: eventId,
           confirmation_email_template: data.confirmation_email_template || DEFAULT_EMAIL_TEMPLATE,
         });
       } else if (response.status === 404) {
@@ -128,7 +131,8 @@ export default function RegistrationSettings({ eventId, onClose }: RegistrationS
       });
 
       if (!response.ok) {
-        throw new Error("Failed to save settings");
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to save settings");
       }
 
       const savedSettings = await response.json();
@@ -148,7 +152,7 @@ export default function RegistrationSettings({ eventId, onClose }: RegistrationS
       addToast({
         type: "error",
         title: "Save failed",
-        description: "Could not save registration settings",
+        description: error instanceof Error ? error.message : "Could not save registration settings",
       });
     } finally {
       setSaving(false);
@@ -158,7 +162,9 @@ export default function RegistrationSettings({ eventId, onClose }: RegistrationS
   const formatDateTimeLocal = (isoString: string | null): string => {
     if (!isoString) return "";
     // Convert ISO to datetime-local format (YYYY-MM-DDTHH:mm)
-    return isoString.slice(0, 16);
+    const date = new Date(isoString);
+    const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+    return local.toISOString().slice(0, 16);
   };
 
   const handleDateTimeChange = (field: "opens_at" | "closes_at", value: string) => {
@@ -194,6 +200,7 @@ export default function RegistrationSettings({ eventId, onClose }: RegistrationS
         </div>
         {onClose && (
           <button
+            type="button"
             onClick={onClose}
             className="flex h-8 w-8 items-center justify-center rounded-lg text-text-muted hover:bg-surface-raised hover:text-text-primary transition-colors"
           >
@@ -228,6 +235,12 @@ export default function RegistrationSettings({ eventId, onClose }: RegistrationS
               </div>
             </label>
           </div>
+
+          <label className="flex items-center gap-3 rounded-xl border border-surface-raised bg-surface-base p-5">
+            <input type="checkbox" checked={settings.require_approval === true}
+              onChange={(event) => setSettings((current) => ({ ...current, require_approval: event.target.checked }))} />
+            Require administrator approval before confirming registrations
+          </label>
 
           {/* Current Attendee Count */}
           {settings.current_attendee_count !== undefined && settings.current_attendee_count > 0 && (
@@ -347,6 +360,7 @@ export default function RegistrationSettings({ eventId, onClose }: RegistrationS
             Changes will be saved to the database
           </div>
           <button
+            type="button"
             onClick={handleSave}
             disabled={saving}
             className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-teal to-teal-vivid text-white font-medium hover:shadow-lg hover:shadow-teal/25 disabled:opacity-50 disabled:cursor-not-allowed transition-all"

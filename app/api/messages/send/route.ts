@@ -1,11 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase';
+import { db } from '@/lib/db';
 import { checkRateLimit, detectSpam, validateMessageLength } from '@/lib/message-rate-limit';
 import { checkMemberSuspension } from '@/lib/member-suspension';
+import { ADMIN_ROLES, verifyRequestSession } from '@/lib/auth/session';
 
 export async function POST(req: NextRequest) {
   try {
-    const { conversationId, senderId, content } = await req.json();
+    const session = await verifyRequestSession(req);
+    if (!session?.memberId) return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    const input = await req.json().catch(() => null);
+    if (!input || typeof input.conversationId !== 'string' || typeof input.content !== 'string') {
+      return NextResponse.json({ error: 'Invalid message' }, { status: 400 });
+    }
+    const { conversationId, content } = input;
+    const senderId = session.memberId;
+    if (input.senderId !== undefined && input.senderId !== senderId) {
+      return NextResponse.json({ error: 'Sender does not match authenticated member' }, { status: 403 });
+    }
 
     // 1. Validate required fields
     if (!conversationId || !senderId || !content) {
@@ -62,7 +73,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 6. Verify sender is a participant in the conversation
-    const { data: participant, error: participantError } = await supabaseAdmin
+    const { data: participant, error: participantError } = await db
       .from('conversation_participants')
       .select('*')
       .eq('conversation_id', conversationId)
@@ -77,7 +88,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 7. Check messaging rules (Member → Admin: text only)
-    const { data: conversation } = await supabaseAdmin
+    const { data: conversation } = await db
       .from('conversations')
       .select('*')
       .eq('id', conversationId)
@@ -91,13 +102,13 @@ export async function POST(req: NextRequest) {
     }
 
     // Check if sender is admin
-    const { data: senderMember } = await supabaseAdmin
+    const { data: senderMember } = await db
       .from('members')
       .select('role')
       .eq('id', senderId)
       .single();
 
-    const isAdmin = senderMember?.role === 'admin';
+    const isAdmin = senderMember && ADMIN_ROLES.includes(senderMember.role);
 
     // If not admin, validate message doesn't contain links
     if (!isAdmin) {
@@ -111,12 +122,13 @@ export async function POST(req: NextRequest) {
     }
 
     // 8. Insert the message
-    const { data: newMessage, error: insertError } = await supabaseAdmin
+    const { data: newMessage, error: insertError } = await db
       .from('messages')
       .insert({
         conversation_id: conversationId,
         sender_id: senderId,
         content,
+        has_link: /https?:\/\/\S+/i.test(content),
       })
       .select()
       .single();

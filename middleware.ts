@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { queryNeonJson } from './lib/db-edge';
 import { verifyRequestSession, verifySessionToken, CONSOLE_ROLES } from './lib/auth/session';
 import { apiRoles, isSafeOrigin, isMutation, ratePolicy, maxBodyBytes } from './lib/security/policy';
 import { consumeRateLimit } from './lib/security/rate-limit';
@@ -38,16 +38,10 @@ async function checkMemberSuspension(memberId: string): Promise<{
   details?: any;
 }> {
   try {
-    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
-    const { data, error } = await supabase
-      .rpc('is_member_suspended', { p_member_id: memberId });
-
-    if (error) {
-      console.error('Error checking suspension');
-      throw new Error('Unable to verify suspension status');
-    }
-
-    const suspension = Array.isArray(data) ? data[0] : data;
+    const [suspension] = await queryNeonJson<any>(
+      'SELECT to_jsonb(s) AS result FROM public.is_member_suspended($1::text) AS s',
+      [memberId]
+    );
 
     return {
       isSuspended: suspension?.is_suspended || false,

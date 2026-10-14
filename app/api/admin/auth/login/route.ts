@@ -11,6 +11,7 @@ interface LoginRequest {
 }
 
 interface JWTPayload {
+  id: string;
   email: string;
   role: string;
   name: string;
@@ -38,7 +39,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate email
-    if (email !== 'admin@efsw.local') {
+    const adminEmail = (process.env.ADMIN_EMAIL || 'admin@efsw.local').trim().toLowerCase();
+    if (email.trim().toLowerCase() !== adminEmail) {
       return NextResponse.json(
         { error: 'Invalid credentials' },
         { status: 401 }
@@ -58,8 +60,7 @@ export async function POST(request: NextRequest) {
     const JWT_SECRET = getJwtSecret();
     const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH;
 
-    if (!ADMIN_PASSWORD_HASH || (process.env.NODE_ENV === 'production' &&
-        ADMIN_PASSWORD_HASH === '$2b$12$wHZkOiIcpUAq7DbR8LQkWefbHqNx6YTUfwEpBCKdWYOGALNn50Gnm')) {
+    if (!ADMIN_PASSWORD_HASH) {
       console.error('Missing required environment variables');
       return NextResponse.json(
         { error: 'Server configuration error' },
@@ -79,7 +80,8 @@ export async function POST(request: NextRequest) {
 
     // Create JWT payload
     const payload: JWTPayload = {
-      email: 'admin@efsw.local',
+      id: adminEmail,
+      email: adminEmail,
       role: 'super-admin',
       name: 'EFSW Administrator'
     };

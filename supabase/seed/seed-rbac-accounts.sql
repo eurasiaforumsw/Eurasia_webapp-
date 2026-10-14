@@ -6,7 +6,7 @@
 
 DO $$
 DECLARE
-  password_hash text := '$2b$12$LKKx3qZ8H.mY9xJj9FXJyOYLxK8nqZ8H.mY9xJj9FXJyOYLxK8nqZ';
+  password_hash text := '<replace-with-bcrypt-hash>';
 BEGIN
   -- Insert admin account 1
   INSERT INTO members (

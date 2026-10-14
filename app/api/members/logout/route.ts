@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createHash } from "node:crypto";
 import { supabaseAdmin } from "@/lib/supabase";
 import { verifyMemberToken } from "@/lib/auth/jwt";
 
@@ -12,15 +13,16 @@ export async function POST(request: NextRequest) {
     const memberId = session?.memberId;
 
     // Record logout in member_sessions table if configured
-    if (memberId && supabaseAdmin) {
+    const token = request.cookies.get("member_token")?.value;
+    if (memberId && token && supabaseAdmin) {
       try {
+        const tokenHash = createHash("sha256").update(token).digest("hex");
         await supabaseAdmin
           .from("member_sessions")
-          .update({ logged_out_at: new Date().toISOString() })
+          .update({ is_active: false, last_activity_at: new Date().toISOString() })
           .eq("member_id", memberId)
-          .is("logged_out_at", null)
-          .order("logged_in_at", { ascending: false })
-          .limit(1);
+          .eq("token", tokenHash)
+          .eq("is_active", true);
       } catch {
         // Session logging is optional, don't fail logout if it errors
       }

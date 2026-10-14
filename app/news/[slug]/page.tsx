@@ -9,7 +9,7 @@ type PageProps = { params: { slug: string } };
 const seeds = initialContent.filter((item) => item.kind === "news");
 
 const findSeed = (slug: string): ArticleSeed | undefined | Promise<ArticleSeed | undefined> => {
-  if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+  if (process.env.DATABASE_URL) {
     return findPublicContent("news", slug);
   }
   return seeds.find((item) => item.id === slug);

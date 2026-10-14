@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabaseAdmin } from "@/lib/supabase";
+import { query } from "@/lib/db";
 import { verifyAdminRequest as verifyAdmin, ADMIN_ROLES } from "@/lib/auth/session";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
@@ -35,15 +35,6 @@ type EventDetails = {
   title: string;
   type: string;
 };
-
-/** Run query with timeout */
-const withTimeout = <T extends PromiseLike<any>>(run: () => T, label = "query"): Promise<any> =>
-  Promise.race([
-    Promise.resolve(run()),
-    new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error(`${label} timed out`)), 15_000)
-    ),
-  ]);
 
 /** Format date to Thai locale */
 function formatThaiDate(isoString: string): string {
@@ -274,10 +265,6 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     return NextResponse.json({ error: "Admin authentication required" }, { status: 401 });
   }
 
-  if (!supabaseAdmin) {
-    return NextResponse.json({ error: "Service not configured" }, { status: 503 });
-  }
-
   const eventId = params.id;
   const url = new URL(request.url);
   const format = url.searchParams.get("format") || "excel";
@@ -290,83 +277,24 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   }
 
   try {
-    // Get event details
-    const { data: eventData, error: eventError } = await withTimeout(
-      () =>
-        supabaseAdmin!
-          .from("content")
-          .select("id, title, type")
-          .eq("id", eventId)
-          .single(),
-      "getEvent"
+    const { rows: eventRows } = await query("SELECT id, title, kind AS type FROM content WHERE id = $1 AND kind = 'event'", [eventId]);
+    if (!eventRows.length) return NextResponse.json({ error: "Event not found" }, { status: 404 });
+    const eventDetails = eventRows[0] as EventDetails;
+    const { rows: registrations } = await query(
+      `SELECT r.id, r.event_id, r.member_id, r.status, r.registered_at,
+              json_build_object('full_name', COALESCE(m.full_name, 'Deleted member'),
+                'email', COALESCE(m.email, ''), 'phone', to_jsonb(m)->>'phone') AS members
+         FROM event_registrations r LEFT JOIN members m ON m.id = r.member_id
+        WHERE r.event_id = $1 ORDER BY r.registered_at DESC`, [eventId],
     );
-
-    if (eventError || !eventData) {
-      return NextResponse.json({ error: "Event not found" }, { status: 404 });
-    }
-
-    const eventDetails = eventData as EventDetails;
-
-    // Get registrations with member details and answers
-    const { data: registrations, error: regError } = await withTimeout(
-      () =>
-        supabaseAdmin!
-          .from("event_registrations")
-          .select(
-            `
-            id,
-            event_id,
-            member_id,
-            status,
-            registered_at,
-            members:member_id (
-              full_name,
-              email,
-              phone
-            )
-          `
-          )
-          .eq("event_id", eventId)
-          .order("registered_at", { ascending: false }),
-      "getRegistrations"
+    if (!registrations.length) return NextResponse.json({ error: "No registrations found for this event" }, { status: 404 });
+    const { rows: answers } = await query(
+      `SELECT a.registration_id, a.field_id, a.answer_value,
+              json_build_object('field_label', f.field_label, 'field_type', f.field_type,
+                'sort_order', f.display_order) AS event_registration_fields
+         FROM event_registration_answers a JOIN event_registration_fields f ON f.id = a.field_id
+        WHERE a.registration_id = ANY($1::uuid[])`, [registrations.map((r: any) => r.id)],
     );
-
-    if (regError) {
-      return NextResponse.json({ error: regError.message }, { status: 500 });
-    }
-
-    if (!registrations || registrations.length === 0) {
-      return NextResponse.json(
-        { error: "No registrations found for this event" },
-        { status: 404 }
-      );
-    }
-
-    // Get all registration answers with field details
-    const registrationIds = registrations.map((r: any) => r.id);
-    const { data: answers, error: answersError } = await withTimeout(
-      () =>
-        supabaseAdmin!
-          .from("event_registration_answers")
-          .select(
-            `
-            registration_id,
-            field_id,
-            answer_value,
-            event_registration_fields:field_id (
-              field_label,
-              field_type,
-              sort_order
-            )
-          `
-          )
-          .in("registration_id", registrationIds),
-      "getAnswers"
-    );
-
-    if (answersError) {
-      console.error("[export] Failed to fetch answers:", answersError);
-    }
 
     // Map answers to registrations
     const answersByReg = new Map<string, any[]>();
@@ -398,11 +326,11 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 
     if (format === "excel") {
       buffer = await generateExcel(eventDetails, registrationsWithDetails);
-      filename = `event-registrations-${eventId}-${Date.now()}.xlsx`;
+      filename = `event-registrations-${eventId.replace(/[^a-zA-Z0-9_-]/g, "_")}-${Date.now()}.xlsx`;
       contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
     } else {
       buffer = await generatePDF(eventDetails, registrationsWithDetails);
-      filename = `event-registrations-${eventId}-${Date.now()}.pdf`;
+      filename = `event-registrations-${eventId.replace(/[^a-zA-Z0-9_-]/g, "_")}-${Date.now()}.pdf`;
       contentType = "application/pdf";
     }
 

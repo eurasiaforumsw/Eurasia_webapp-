@@ -13,7 +13,7 @@
 --   4. Verify in the "members" table that 3 new rows appear
 --
 -- CREDENTIALS:
---   Admin 1:  admin@efsw.local   / EFSW-secure-admin-2024
+--   Admin 1:  admin@efsw.local   / <configured-admin-password>
 --   Admin 2:  admin2@efsw.local  / EFSW-admin2-secure-2024
 --   PR/News:  news@efsw.local    / EFSW-news-pr-2024
 --
@@ -53,7 +53,7 @@ INSERT INTO members (
   'admin2@efsw.local',
   'admin2@efsw.local',
   'Secondary Administrator',
-  '$2a$12$chSKYvYg6bIy7ouWLhWFCOZv9VbEwyfn7nqSSqOjbr0oEBAMTRVFu ',
+  '<replace-with-bcrypt-hash> ',
   'admin',
   'active',
   NOW(),
@@ -95,7 +95,7 @@ INSERT INTO members (
   'news@efsw.local',
   'news@efsw.local',
   'News Editor',
-  '$2a$12$xjQ/noryZsiHWZAmIyNlzuNyq0OSCOMN8Q/Jw3.Jthkm/QF4VThh.',
+  '<replace-with-bcrypt-hash>',
   'pr',
   'active',
   NOW(),

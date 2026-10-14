@@ -2,24 +2,18 @@
 
 import { useEffect, useState } from "react";
 import { notFound } from "next/navigation";
-import ArticleView, { type ArticleSeed } from "@/components/efsw/ArticleView";
+import ArticleView from "@/components/efsw/ArticleView";
 import RegistrationButton from "@/components/events/RegistrationButton";
 import RegistrationModal from "@/components/events/RegistrationModal";
-import { initialContent } from "@/lib/admin-data";
 import { Users } from "lucide-react";
 import { SiteNav } from "@/components/efsw/SiteNav";
 import { usePublishedContent } from "@/hooks/use-public-site-data";
 
 type PageProps = { params: { slug: string } };
 
-const seeds = initialContent.filter((item) => item.kind === "event") as ArticleSeed[];
-
-const findSeed = (slug: string): ArticleSeed | undefined => seeds.find((item) => item.id === slug);
-
 export default function EventDetailPage({ params }: PageProps) {
   const { items, loading: contentLoading, loaded } = usePublishedContent("event");
-  const hasRemoteContent = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
-  const seed = loaded ? items.find((item) => item.id === params.slug) : !hasRemoteContent ? findSeed(params.slug) : undefined;
+  const seed = loaded ? items.find((item) => item.id === params.slug) : undefined;
   const [registrationEnabled, setRegistrationEnabled] = useState(false);
   const [registrationCount, setRegistrationCount] = useState<number | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);

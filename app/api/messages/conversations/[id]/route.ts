@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+import { db, query } from '@/lib/db';
+import { verifyRequestSession } from '@/lib/auth/session';
 
 interface Message {
   id: string;
@@ -13,8 +11,7 @@ interface Message {
   created_at: string;
   sender: {
     id: string;
-    first_name: string;
-    last_name: string;
+    full_name: string;
     email: string;
     avatar_url: string | null;
   } | null;
@@ -36,68 +33,44 @@ export async function GET(
   try {
     const conversationId = params.id;
     const { searchParams } = new URL(request.url);
-    const limit = parseInt(searchParams.get('limit') || '50', 10);
+    const requestedLimit = Number(searchParams.get('limit') || '50');
+    const limit = Number.isInteger(requestedLimit) ? Math.min(100, Math.max(1, requestedLimit)) : 50;
     const cursor = searchParams.get('cursor'); // created_at timestamp
+    if (cursor && !Number.isFinite(Date.parse(cursor))) {
+      return NextResponse.json({ error: 'Invalid message cursor' }, { status: 400 });
+    }
 
-    // Create Supabase client
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-    // Get auth token from header or cookie
-    const authHeader = request.headers.get('authorization');
-    const token = authHeader?.replace('Bearer ', '') || request.cookies.get('sb-access-token')?.value;
-
-    if (!token) {
+    // Get authenticated session
+    const session = await verifyRequestSession(request);
+    if (!session?.memberId) {
       return NextResponse.json(
         { error: 'Unauthorized - Authentication required' },
         { status: 401 }
       );
     }
 
-    // Get authenticated user from token
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser(token);
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized - Authentication required' },
-        { status: 401 }
-      );
-    }
-
-    // Get member record
-    const { data: member, error: memberError } = await supabase
-      .from('members')
-      .select('id, is_admin')
-      .eq('auth_id', user.id)
-      .single();
-
-    if (memberError || !member) {
-      return NextResponse.json(
-        { error: 'Member not found' },
-        { status: 404 }
-      );
-    }
+    const memberId = session.memberId;
 
     // Check if member is suspended
-    const { data: activeSuspension } = await supabase
-      .from('member_suspensions')
-      .select('*')
-      .eq('member_id', member.id)
-      .eq('is_active', true)
-      .or('expires_at.is.null,expires_at.gt.now()')
-      .single();
+    const { rows: suspensionRows } = await query(
+      `SELECT reason_category, reason_details, expires_at, suspension_type
+       FROM member_suspensions
+       WHERE member_id = $1 AND is_active = true
+       AND (expires_at IS NULL OR expires_at > NOW())
+       LIMIT 1`,
+      [memberId]
+    );
 
-    if (activeSuspension) {
+    if (suspensionRows.length > 0) {
+      const suspension = suspensionRows[0];
       return NextResponse.json(
         {
           error: 'Access denied - Account suspended',
           suspension: {
-            reason: activeSuspension.reason_category,
-            detail: activeSuspension.reason_detail,
-            expires_at: activeSuspension.expires_at,
-            is_permanent: activeSuspension.suspension_type === 'permanent',
+            reason: suspension.reason_category,
+            detail: suspension.reason_details,
+            expires_at: suspension.expires_at,
+            is_permanent: suspension.suspension_type === 'permanent',
           },
         },
         { status: 403 }
@@ -105,14 +78,12 @@ export async function GET(
     }
 
     // Verify user is participant of this conversation
-    const { data: participant, error: participantError } = await supabase
-      .from('conversation_participants')
-      .select('*')
-      .eq('conversation_id', conversationId)
-      .eq('member_id', member.id)
-      .single();
+    const { rows: participantRows } = await query(
+      'SELECT id FROM conversation_participants WHERE conversation_id = $1 AND member_id = $2',
+      [conversationId, memberId]
+    );
 
-    if (participantError || !participant) {
+    if (participantRows.length === 0) {
       return NextResponse.json(
         { error: 'Access denied - Not a participant of this conversation' },
         { status: 403 }
@@ -120,45 +91,38 @@ export async function GET(
     }
 
     // Build messages query with pagination
-    let messagesQuery = supabase
-      .from('messages')
-      .select(
-        `
-        id,
-        conversation_id,
-        sender_id,
-        content,
-        has_link,
-        created_at,
-        sender:members!sender_id (
-          id,
-          first_name,
-          last_name,
-          email,
-          avatar_url
-        )
-      `
-      )
-      .eq('conversation_id', conversationId)
-      .is('deleted_at', null)
-      .gt('expires_at', new Date().toISOString())
-      .order('created_at', { ascending: true })
-      .limit(limit + 1); // Fetch one extra to check if there are more
+    let messagesQuery = `
+      SELECT
+        m.id,
+        m.conversation_id,
+        m.sender_id,
+        m.content,
+        m.has_link,
+        m.created_at,
+        json_build_object(
+          'id', mem.id,
+          'full_name', mem.full_name,
+          'email', mem.email,
+          'avatar_url', (to_jsonb(mem)->>'avatar_url')
+        ) as sender
+      FROM messages m
+      LEFT JOIN members mem ON m.sender_id = mem.id
+      WHERE m.conversation_id = $1
+        AND m.deleted_at IS NULL
+        AND m.expires_at > NOW()
+    `;
 
-    // Apply cursor-based pagination
+    const queryParams: any[] = [conversationId];
+
     if (cursor) {
-      messagesQuery = messagesQuery.gt('created_at', cursor);
+      messagesQuery += ` AND m.created_at > $${queryParams.length + 1}`;
+      queryParams.push(cursor);
     }
 
-    const { data: messages, error: messagesError } = await messagesQuery;
+    messagesQuery += ` ORDER BY m.created_at ASC LIMIT $${queryParams.length + 1}`;
+    queryParams.push(limit + 1);
 
-    if (messagesError) {
-      console.error('Error fetching messages:', messagesError);
-      return NextResponse.json(
-        { error: 'Failed to fetch messages' },
-        { status: 500 }
-      );
-    }
+    const { rows: messages } = await query(messagesQuery, queryParams);
 
     // Check if there are more messages
     const hasMore = messages.length > limit;
@@ -171,11 +135,12 @@ export async function GET(
         : null;
 
     // Update last_read_at for the requester
-    await supabase
-      .from('conversation_participants')
-      .update({ last_read_at: new Date().toISOString() })
-      .eq('conversation_id', conversationId)
-      .eq('member_id', member.id);
+    await query(
+      `UPDATE conversation_participants
+       SET last_read_at = NOW()
+       WHERE conversation_id = $1 AND member_id = $2`,
+      [conversationId, memberId]
+    );
 
     // Format response
     const response: PaginatedResponse = {

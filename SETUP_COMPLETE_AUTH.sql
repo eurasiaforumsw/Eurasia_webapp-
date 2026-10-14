@@ -45,7 +45,7 @@ END $$;
 
 -- Step 3: Create/Update Admin Account
 -- ============================================================================
--- Password: EFSW-secure-admin-2024
+-- Password: <configured-admin-password>
 INSERT INTO members (
     id,
     email,
@@ -66,7 +66,7 @@ INSERT INTO members (
 ) VALUES (
     'admin@efsw.local',
     'admin@efsw.local',
-    '$2b$12$Jpy5lkUZv/pR3D3Q8JW6jeXz2tlMiOt.UuzBRutxaAs4HQz8KYwoO',
+    '<replace-with-bcrypt-hash>',
     'System Administrator',
     'Thailand',
     'institutional',
@@ -110,7 +110,7 @@ INSERT INTO members (
 ) VALUES (
     gen_random_uuid(),
     'member@efsw.local',
-    '$2b$12$STpxQLlNBCnlqbkqxqSnQ.YJZ.ZeZ35GQfOl8or9G50a0B.YMUphO',
+    '<replace-with-bcrypt-hash>',
     'Demo Member',
     'Thailand',
     'professional',
@@ -154,7 +154,7 @@ INSERT INTO members (
 ) VALUES (
     'news@efsw.local',
     'news@efsw.local',
-    '$2a$12$xjQ/noryZsiHWZAmIyNlzuNyq0OSCOMN8Q/Jw3.Jthkm/QF4VThh.',
+    '<replace-with-bcrypt-hash>',
     'News Editor',
     'Thailand',
     'professional',
@@ -206,7 +206,7 @@ ORDER BY
 -- ============================================================================
 -- CREDENTIALS FOR TESTING:
 -- ============================================================================
--- Admin:       admin@efsw.local    / EFSW-secure-admin-2024
+-- Admin:       admin@efsw.local    / <configured-admin-password>
 -- Member:      member@efsw.local   / EFSW-member-demo-2024
 -- PR Editor:   news@efsw.local     / EFSW-news-pr-2024
 -- ============================================================================

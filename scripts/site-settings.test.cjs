@@ -74,8 +74,7 @@ test('a saved visitor locale takes priority while new visitors get the persisted
 });
 
 test('root layout renders the saved default locale and honors a visitor cookie', async () => {
-  process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://settings-test.example.invalid';
-  process.env.SUPABASE_SERVICE_ROLE_KEY = 'test-key';
+  process.env.DATABASE_URL = 'postgresql://settings-test.example.invalid/db';
   cookieValue = undefined;
   const initial = await RootLayout({ children: null });
   assert.equal(initial.props.lang, 'th');

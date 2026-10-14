@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabaseAdmin } from "@/lib/supabase";
+import { db } from "@/lib/db";
 import { academicEngagement } from "@/app/api/admin/analytics/academic/_data";
 
 export const runtime = "nodejs";
@@ -17,10 +17,11 @@ function isPublicDocument(document: DocumentRow) {
 }
 
 async function publicDocuments(ids: string[]) {
-  const { data, error } = await supabaseAdmin.from("content")
-    .select("id, kind, status, file_url, publish_at, expires_at, target_membership_types, target_groups").in("id", ids);
-  if (error) throw new Error(error.message);
-  return (data as DocumentRow[] || []).filter(isPublicDocument);
+  const result = await db.from("content")
+    .select("id, kind, status, file_url, publish_at, expires_at, target_membership_types, target_groups")
+    .in("id", ids)
+    .execute();
+  return ((result.data as DocumentRow[]) || []).filter(isPublicDocument);
 }
 
 function isVisitorId(value: unknown): value is string {
@@ -60,16 +61,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Document has no attachment" }, { status: 400 });
     }
     if (action === "unlike") {
-      const { error } = await supabaseAdmin.from("academic_document_engagement").delete()
-        .eq("content_id", contentId).eq("visitor_id", visitorId).eq("event_type", "like");
-      if (error) throw new Error(error.message);
+      await db.from("academic_document_engagement").delete()
+        .eq("content_id", contentId).eq("visitor_id", visitorId).eq("event_type", "like")
+        .execute();
     } else {
       const interval = action === "view" ? 30 * 60 * 1000 : 60 * 1000;
       const bucket = action === "like" ? "like" : String(Math.floor(Date.now() / interval));
-      const { error } = await supabaseAdmin.from("academic_document_engagement").upsert({
+      await db.from("academic_document_engagement").upsert({
         content_id: contentId, visitor_id: visitorId, event_type: action, bucket_key: bucket,
-      }, { onConflict: "content_id,visitor_id,event_type,bucket_key", ignoreDuplicates: true });
-      if (error) throw new Error(error.message);
+      }, { onConflict: "content_id,visitor_id,event_type,bucket_key", ignoreDuplicates: true }).execute();
     }
     const stats = await academicEngagement([contentId], visitorId);
     return NextResponse.json({ item: stats[contentId] });

@@ -8,12 +8,9 @@ import {
   EyeOff,
   LockKeyhole,
   AlertCircle,
-  CheckCircle2,
   Database,
   LayoutGrid,
   Mail,
-  Sparkles,
-  Copy,
   ShieldCheck,
 } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
@@ -24,7 +21,6 @@ export default function AdminLoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [copied, setCopied] = useState<"" | "email" | "password">("");
   const { addToast } = useToast();
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
@@ -62,28 +58,6 @@ export default function AdminLoginPage() {
       });
       setSubmitting(false);
     }
-  };
-
-  const copyDemo = async (kind: "email" | "password") => {
-    const value = kind === "email" ? "admin@efsw.local" : "EFSW-demo-admin-2024";
-    try {
-      await navigator.clipboard.writeText(value);
-      setCopied(kind);
-      addToast({
-        type: "success",
-        title: `${kind === "email" ? "Email" : "Password"} copied`,
-        description: "Paste it into the sign-in form.",
-      });
-      setTimeout(() => setCopied(""), 1600);
-    } catch {
-      // ignore — clipboard may be unavailable
-    }
-  };
-
-  const fillDemo = () => {
-    setEmail("admin@efsw.local");
-    setPassword("EFSW-demo-admin-2024");
-    setError("");
   };
 
   return (
@@ -190,44 +164,12 @@ export default function AdminLoginPage() {
               </button>
             </form>
 
-            {process.env.NODE_ENV !== "production" && <>
             <div className="efsw-signin__card-divider">
-              <ShieldCheck size={13} /> Demo access
+              <ShieldCheck size={13} /> Protected access
             </div>
-            <div className="efsw-signin__demo">
-              <div className="efsw-signin__demo-row">
-                <span className="efsw-signin__demo-label">Email</span>
-                <code>admin@efsw.local</code>
-                <button
-                  type="button"
-                  className="efsw-signin__demo-copy"
-                  onClick={() => copyDemo("email")}
-                  aria-label="Copy demo email"
-                >
-                  {copied === "email" ? <CheckCircle2 size={12} /> : <Copy size={12} />}
-                </button>
-              </div>
-              <div className="efsw-signin__demo-row">
-                <span className="efsw-signin__demo-label">Password</span>
-                <code>EFSW-demo-admin-2024</code>
-                <button
-                  type="button"
-                  className="efsw-signin__demo-copy"
-                  onClick={() => copyDemo("password")}
-                  aria-label="Copy demo password"
-                >
-                  {copied === "password" ? <CheckCircle2 size={12} /> : <Copy size={12} />}
-                </button>
-              </div>
-              <button
-                type="button"
-                className="efsw-signin__demo-fill"
-                onClick={fillDemo}
-              >
-                <Sparkles size={13} /> Fill the form with demo credentials
-              </button>
-            </div>
-            </>}
+            <p className="efsw-signin__card-note">
+              Sign in with the administrator account configured in Vercel.
+            </p>
           </div>
         </section>
       </div>

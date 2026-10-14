@@ -35,6 +35,7 @@ const database = {
       if (action === 'upsert' && !tables[table].some((row) => ['content_id', 'visitor_id', 'event_type', 'bucket_key'].every((key) => row[key] === payload[key]))) {
         tables[table].push({ id: tables[table].length + 1, occurred_at: new Date().toISOString(), ...payload });
       }
+      if (fields === 'COUNT(*) as count') return { data: [{ count: String(matching.length) }], error: null };
       const rows = matching.slice(offset, end + 1);
       if (fields !== '*' && rows.length && fields.split(',').some((field) => !Object.hasOwn(rows[0], field.trim()))) {
         return { data: null, error: { message: `Invalid columns: ${fields}` } };
@@ -52,12 +53,14 @@ const database = {
       range(start, finish) { offset = start; end = finish; calls.push(['range', table, start]); return query; },
       delete() { action = 'delete'; return query; },
       upsert(value) { action = 'upsert'; payload = value; return query; },
+      execute() { return Promise.resolve(result()); },
       then(resolve, reject) { return Promise.resolve(result()).then(resolve, reject); },
     };
     return query;
   },
 };
 require.cache[path.join(root, 'lib/supabase.ts')] = { exports: { supabaseAdmin: database } };
+require.cache[path.join(root, 'lib/db.ts')] = { exports: { db: database } };
 require.cache[path.join(root, 'lib/api-auth.ts')] = { exports: { requireRole: async () => {
   if (!authorized) throw new Error('Unauthorized'); return { role: 'admin' };
 } } };

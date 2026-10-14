@@ -1,375 +1,277 @@
-/**
- * Resend Email Service Wrapper
- *
- * Handles email sending via Resend API
- * API Key: stored in RESEND_API_KEY environment variable
- * Docs: https://resend.com/docs
- */
+// Email service using Resend API
+let resendInstance: any = null;
 
-const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
-const RESEND_API_URL = 'https://api.resend.com/emails';
-const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'noreply@efsw.org';
+function getResend() {
+  if (!resendInstance && process.env.RESEND_API_KEY) {
+    try {
+      const { Resend } = require('resend');
+      resendInstance = new Resend(process.env.RESEND_API_KEY);
+    } catch (error) {
+      console.error('Failed to initialize Resend:', error);
+    }
+  }
+  return resendInstance;
+}
 
-export interface SendEmailOptions {
+const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'noreply@eurasiaforumsw.org';
+const FROM_NAME = process.env.RESEND_FROM_NAME || 'Eurasia Forum for Social Workers';
+
+export interface EmailOptions {
   to: string | string[];
   subject: string;
   html: string;
   text?: string;
-  from?: string;
   replyTo?: string;
-  tags?: { name: string; value: string }[];
 }
 
-export interface SendEmailResponse {
-  success: boolean;
-  emailId?: string;
-  error?: string;
-}
+export async function sendEmail(options: EmailOptions) {
+  if (!process.env.RESEND_API_KEY) {
+    console.warn('RESEND_API_KEY not configured, skipping email send');
+    return { success: false, error: 'Email service not configured' };
+  }
 
-export interface BatchEmailOptions {
-  emails: Array<{
-    to: string;
-    subject: string;
-    html: string;
-    text?: string;
-  }>;
-  from?: string;
-}
+  const resend = getResend();
+  if (!resend) {
+    console.error('Resend client not initialized');
+    return { success: false, error: 'Email service unavailable' };
+  }
 
-export interface BatchEmailResponse {
-  success: boolean;
-  results: Array<{
-    email: string;
-    emailId?: string;
-    error?: string;
-  }>;
-  totalSent: number;
-  totalFailed: number;
-}
-
-/**
- * Send a single email via Resend
- */
-export async function sendEmail(options: SendEmailOptions): Promise<SendEmailResponse> {
   try {
-    if (!RESEND_API_KEY) {
-      throw new Error('RESEND_API_KEY environment variable is not set');
-    }
-
-    const response = await fetch(RESEND_API_URL, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${RESEND_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        from: options.from || FROM_EMAIL,
-        to: Array.isArray(options.to) ? options.to : [options.to],
-        subject: options.subject,
-        html: options.html,
-        text: options.text,
-        reply_to: options.replyTo,
-        tags: options.tags,
-      }),
+    const { data, error } = await resend.emails.send({
+      from: `${FROM_NAME} <${FROM_EMAIL}>`,
+      to: Array.isArray(options.to) ? options.to : [options.to],
+      subject: options.subject,
+      html: options.html,
+      text: options.text,
+      reply_to: options.replyTo,
     });
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `Resend API error: ${response.status}`);
+    if (error) {
+      console.error('Resend email error:', error);
+      return { success: false, error: error.message };
     }
 
-    const data = await response.json();
-
-    return {
-      success: true,
-      emailId: data.id,
-    };
-  } catch (error) {
-    console.error('[sendEmail] Error:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
-    };
+    return { success: true, data };
+  } catch (err: any) {
+    console.error('Failed to send email:', err);
+    return { success: false, error: err.message };
   }
 }
 
-/**
- * Send batch emails via Resend (up to 100 per batch)
- * Automatically chunks large batches
- */
-export async function sendBatchEmails(options: BatchEmailOptions): Promise<BatchEmailResponse> {
-  const BATCH_SIZE = 100; // Resend's max batch size
-  const results: BatchEmailResponse['results'] = [];
-  let totalSent = 0;
-  let totalFailed = 0;
-
-  try {
-    if (!RESEND_API_KEY) {
-      throw new Error('RESEND_API_KEY environment variable is not set');
-    }
-
-    // Split into chunks of 100
-    const chunks = [];
-    for (let i = 0; i < options.emails.length; i += BATCH_SIZE) {
-      chunks.push(options.emails.slice(i, i + BATCH_SIZE));
-    }
-
-    // Send each chunk
-    for (const chunk of chunks) {
-      const batchPayload = chunk.map((email) => ({
-        from: options.from || FROM_EMAIL,
-        to: [email.to],
-        subject: email.subject,
-        html: email.html,
-        text: email.text,
-      }));
-
-      const response = await fetch(`${RESEND_API_URL}/batch`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${RESEND_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(batchPayload),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-
-        // Mark all emails in this chunk as failed
-        chunk.forEach((email) => {
-          results.push({
-            email: email.to,
-            error: errorData.message || `Batch send failed: ${response.status}`,
-          });
-          totalFailed++;
-        });
-        continue;
-      }
-
-      const data = await response.json();
-
-      // Resend returns array of results
-      if (Array.isArray(data.data)) {
-        data.data.forEach((item: any, index: number) => {
-          const email = chunk[index];
-          if (item.id) {
-            results.push({
-              email: email.to,
-              emailId: item.id,
-            });
-            totalSent++;
-          } else {
-            results.push({
-              email: email.to,
-              error: item.error || 'Unknown error',
-            });
-            totalFailed++;
+// Generate email template with layout
+export function generateEmailTemplate(bodyHtml: string, preheader?: string, coverImage?: string): string {
+  return `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        ${preheader ? `<meta name="description" content="${preheader}">` : ''}
+        <style>
+          body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
           }
-        });
-      }
-    }
-
-    return {
-      success: totalFailed === 0,
-      results,
-      totalSent,
-      totalFailed,
-    };
-  } catch (error) {
-    console.error('[sendBatchEmails] Error:', error);
-
-    // Mark all remaining emails as failed
-    options.emails.forEach((email) => {
-      if (!results.find((r) => r.email === email.to)) {
-        results.push({
-          email: email.to,
-          error: error instanceof Error ? error.message : 'Unknown error',
-        });
-        totalFailed++;
-      }
-    });
-
-    return {
-      success: false,
-      results,
-      totalSent,
-      totalFailed,
-    };
-  }
+          .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #ffffff;
+          }
+          .header {
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid #eee;
+          }
+          .cover-image {
+            width: 100%;
+            height: auto;
+            display: block;
+          }
+          .content {
+            padding: 30px 20px;
+          }
+          .button {
+            display: inline-block;
+            padding: 12px 24px;
+            background: #0066cc;
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 6px;
+            margin: 20px 0;
+          }
+          .footer {
+            margin-top: 40px;
+            padding: 20px;
+            border-top: 1px solid #eee;
+            font-size: 14px;
+            color: #666;
+            text-align: center;
+          }
+        </style>
+      </head>
+      <body>
+        ${preheader ? `<div style="display:none;max-height:0;overflow:hidden;">${preheader}</div>` : ''}
+        <div class="container">
+          <div class="header">
+            <h2 style="margin: 0; color: #0066cc;">Eurasia Forum for Social Workers</h2>
+          </div>
+          ${coverImage ? `<img src="${coverImage}" alt="Cover" class="cover-image">` : ''}
+          <div class="content">
+            ${bodyHtml}
+          </div>
+          <div class="footer">
+            <p>&copy; ${new Date().getFullYear()} Eurasia Forum for Social Workers. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
 }
 
-/**
- * Send campaign to multiple recipients
- * Handles batching and progress tracking
- */
+// Send campaign emails in batches
 export async function sendCampaignEmails(
   recipients: Array<{ email: string; name: string }>,
   subject: string,
   html: string,
-  text?: string,
-  onProgress?: (sent: number, total: number) => void
-): Promise<BatchEmailResponse> {
-  const emails = recipients.map((recipient) => ({
-    to: recipient.email,
-    subject,
-    html: html.replace('{{name}}', recipient.name || 'Member'),
-    text: text?.replace('{{name}}', recipient.name || 'Member'),
-  }));
+  text?: string
+): Promise<{ results: Array<{ email: string; emailId?: string; error?: string }> }> {
+  const results: Array<{ email: string; emailId?: string; error?: string }> = [];
+  const resend = getResend();
 
-  const BATCH_SIZE = 100;
-  const results: BatchEmailResponse['results'] = [];
-  let totalSent = 0;
-  let totalFailed = 0;
+  if (!resend) {
+    return {
+      results: recipients.map(r => ({ email: r.email, error: 'Email service not initialized' }))
+    };
+  }
 
-  for (let i = 0; i < emails.length; i += BATCH_SIZE) {
-    const chunk = emails.slice(i, i + BATCH_SIZE);
+  // Send in batches of 100 (Resend's batch limit)
+  for (let i = 0; i < recipients.length; i += 100) {
+    const batch = recipients.slice(i, i + 100);
 
-    const batchResult = await sendBatchEmails({
-      emails: chunk,
-    });
+    for (const recipient of batch) {
+      try {
+        const { data, error } = await resend.emails.send({
+          from: `${FROM_NAME} <${FROM_EMAIL}>`,
+          to: recipient.email,
+          subject,
+          html,
+          text,
+        });
 
-    results.push(...batchResult.results);
-    totalSent += batchResult.totalSent;
-    totalFailed += batchResult.totalFailed;
-
-    // Report progress
-    if (onProgress) {
-      onProgress(totalSent + totalFailed, emails.length);
-    }
-
-    // Rate limiting: wait 1 second between batches
-    if (i + BATCH_SIZE < emails.length) {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+        if (error) {
+          results.push({ email: recipient.email, error: error.message });
+        } else {
+          results.push({ email: recipient.email, emailId: data?.id });
+        }
+      } catch (err: any) {
+        results.push({ email: recipient.email, error: err.message });
+      }
     }
   }
 
-  return {
-    success: totalFailed === 0,
-    results,
-    totalSent,
-    totalFailed,
-  };
+  return { results };
 }
 
-/**
- * Verify Resend API key is valid
- */
-export async function verifyResendApiKey(): Promise<boolean> {
-  try {
-    if (!RESEND_API_KEY) {
-      return false;
-    }
+// Email templates
+export const emailTemplates = {
+  verification: (verificationUrl: string, memberName: string) => ({
+    subject: 'Verify your email address',
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .button { display: inline-block; padding: 12px 24px; background: #0066cc; color: #ffffff; text-decoration: none; border-radius: 6px; margin: 20px 0; }
+            .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; font-size: 14px; color: #666; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <h2>Welcome to Eurasia Forum for Social Workers</h2>
+            <p>Hi ${memberName},</p>
+            <p>Thank you for registering. Please verify your email address by clicking the button below:</p>
+            <a href="${verificationUrl}" class="button">Verify Email</a>
+            <p>Or copy this link to your browser:</p>
+            <p style="word-break: break-all; color: #666;">${verificationUrl}</p>
+            <p>This link will expire in 24 hours.</p>
+            <div class="footer">
+              <p>If you didn't create this account, you can safely ignore this email.</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `,
+    text: `Welcome to Eurasia Forum for Social Workers\n\nHi ${memberName},\n\nThank you for registering. Please verify your email address by visiting:\n\n${verificationUrl}\n\nThis link will expire in 24 hours.\n\nIf you didn't create this account, you can safely ignore this email.`
+  }),
 
-    const response = await fetch('https://api.resend.com/api-keys', {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${RESEND_API_KEY}`,
-      },
-    });
+  passwordReset: (resetUrl: string, memberName: string) => ({
+    subject: 'Reset your password',
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .button { display: inline-block; padding: 12px 24px; background: #0066cc; color: #ffffff; text-decoration: none; border-radius: 6px; margin: 20px 0; }
+            .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; font-size: 14px; color: #666; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <h2>Reset Your Password</h2>
+            <p>Hi ${memberName},</p>
+            <p>We received a request to reset your password. Click the button below to create a new password:</p>
+            <a href="${resetUrl}" class="button">Reset Password</a>
+            <p>Or copy this link to your browser:</p>
+            <p style="word-break: break-all; color: #666;">${resetUrl}</p>
+            <p>This link will expire in 1 hour.</p>
+            <div class="footer">
+              <p>If you didn't request a password reset, you can safely ignore this email. Your password will not be changed.</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `,
+    text: `Reset Your Password\n\nHi ${memberName},\n\nWe received a request to reset your password. Visit the link below to create a new password:\n\n${resetUrl}\n\nThis link will expire in 1 hour.\n\nIf you didn't request a password reset, you can safely ignore this email.`
+  }),
 
-    return response.ok;
-  } catch (error) {
-    console.error('[verifyResendApiKey] Error:', error);
-    return false;
-  }
-}
-
-/**
- * Generate HTML email template
- */
-export function generateEmailTemplate(
-  body: string,
-  preheader?: string,
-  headerImageUrl?: string
-): string {
-  const escapeHtml = (value: string) => value.replace(/[&<>"']/g, (character) => ({
-    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
-  })[character] || character);
-  const safePreheader = preheader ? escapeHtml(preheader) : '';
-  const safeImageUrl = headerImageUrl && /^https?:\/\//i.test(headerImageUrl)
-    ? escapeHtml(headerImageUrl) : '';
-  return `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  ${safePreheader ? `<meta name="description" content="${safePreheader}">` : ''}
-  <title>Eurasia Forum for Social Work</title>
-  <style>
-    body {
-      margin: 0;
-      padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-      line-height: 1.6;
-      color: #333;
-      background-color: #f4f4f4;
-    }
-    .container {
-      max-width: 600px;
-      margin: 0 auto;
-      background-color: #ffffff;
-    }
-    .header {
-      background-color: #1a1a2e;
-      padding: 30px 20px;
-      text-align: center;
-    }
-    .header img {
-      max-width: 200px;
-      height: auto;
-    }
-    .content {
-      padding: 40px 30px;
-    }
-    .footer {
-      background-color: #f8f8f8;
-      padding: 20px 30px;
-      text-align: center;
-      font-size: 14px;
-      color: #666;
-      border-top: 1px solid #e0e0e0;
-    }
-    .footer a {
-      color: #0066cc;
-      text-decoration: none;
-    }
-    a {
-      color: #0066cc;
-    }
-    h1, h2, h3 {
-      color: #1a1a2e;
-    }
-    img {
-      max-width: 100%;
-      height: auto;
-    }
-  </style>
-</head>
-<body>
-  ${safePreheader ? `<div style="display:none;font-size:1px;line-height:1px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;">${safePreheader}</div>` : ''}
-
-  <div class="container">
-    <div class="header">
-      <h1 style="color: #ffffff; margin: 0;">Eurasia Forum for Social Work</h1>
-    </div>
-
-    ${safeImageUrl ? `<img src="${safeImageUrl}" alt="Header" style="width: 100%; height: auto;">` : ''}
-
-    <div class="content">
-      ${body}
-    </div>
-
-    <div class="footer">
-      <p>© ${new Date().getFullYear()} Eurasia Forum for Social Work. All rights reserved.</p>
-      <p>
-        <a href="https://efsw.org">Visit our website</a> |
-        <a href="mailto:info@efsw.org">Contact us</a>
-      </p>
-    </div>
-  </div>
-</body>
-</html>
-  `.trim();
-}
+  welcomeEmail: (memberName: string, loginUrl: string) => ({
+    subject: 'Welcome to Eurasia Forum for Social Workers',
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .button { display: inline-block; padding: 12px 24px; background: #0066cc; color: #ffffff; text-decoration: none; border-radius: 6px; margin: 20px 0; }
+            .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; font-size: 14px; color: #666; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <h2>Your Email is Verified!</h2>
+            <p>Hi ${memberName},</p>
+            <p>Your email has been successfully verified. You can now access all member features.</p>
+            <a href="${loginUrl}" class="button">Sign In Now</a>
+            <p>We're excited to have you as part of our community.</p>
+            <div class="footer">
+              <p>If you have any questions, feel free to contact our support team.</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `,
+    text: `Your Email is Verified!\n\nHi ${memberName},\n\nYour email has been successfully verified. You can now access all member features.\n\nSign in at: ${loginUrl}\n\nWe're excited to have you as part of our community.`
+  })
+};

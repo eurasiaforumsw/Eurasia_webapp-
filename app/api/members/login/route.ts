@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createHash, randomUUID } from "node:crypto";
 import { supabaseAdmin } from "@/lib/supabase";
 import { SignJWT } from "jose";
 import { getJwtSecret } from "@/lib/auth/session";
@@ -101,7 +102,9 @@ export async function POST(request: NextRequest) {
 
       // Match password comparison cost so unknown addresses do not return immediately.
       const bcrypt = await import("bcrypt");
-      await bcrypt.compare(password, "$2b$12$wHZkOiIcpUAq7DbR8LQkWefbHqNx6YTUfwEpBCKdWYOGALNn50Gnm");
+      // Preserve a comparable password-work factor without shipping a known
+      // demo password hash in the application bundle.
+      await bcrypt.hash(password, 12);
       return NextResponse.json({ error: "Invalid email or password." }, { status: 401 });
     }
 
@@ -157,9 +160,27 @@ export async function POST(request: NextRequest) {
       role: member.role || 'member'
     })
       .setProtectedHeader({ alg: "HS256" })
+      .setJti(randomUUID())
       .setExpirationTime("7d")
       .setIssuedAt()
       .sign(secret);
+
+    // Keep an auditable active-session row for admin analytics and logout.
+    // Session tracking is best-effort so an older database without the
+    // optional table cannot prevent a member from signing in.
+    try {
+      const forwardedFor = request.headers.get("x-forwarded-for");
+      const ipAddress = forwardedFor?.split(",")[0]?.trim() || request.headers.get("x-real-ip") || undefined;
+      await supabaseAdmin.from("member_sessions").insert({
+        member_id: member.id,
+        token: createHash("sha256").update(token).digest("hex"),
+        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        ip_address: ipAddress,
+        user_agent: request.headers.get("user-agent") || undefined,
+      });
+    } catch {
+      // Authentication remains available when session analytics is unavailable.
+    }
 
     // Create response with member data
     const response = NextResponse.json({

@@ -459,7 +459,7 @@ export const AdminLayoutView = memo(function AdminLayoutView({
                   </span>
                   <h2 style={{ fontSize: "1.2rem" }}>Switch the hero to announcement mode</h2>
                   <p style={{ margin: "0.4rem 0 0", color: "var(--admin-muted)", fontSize: "0.72rem", maxWidth: "45rem", lineHeight: 1.5 }}>
-                    When you set an announcement title, the hero shows this message with a "More details" link on top of the rotating scenes — useful for promoting summits or registration windows.
+                    When you set an announcement title, the hero shows this message with a &quot;More details&quot; link on top of the rotating scenes — useful for promoting summits or registration windows.
                   </p>
                 </div>
               </header>
@@ -882,7 +882,7 @@ export const AdminLayoutView = memo(function AdminLayoutView({
                     Global logo display size
                   </strong>
                   <p style={{ fontSize: "0.65rem", color: "var(--admin-muted)", marginTop: "0.15rem" }}>
-                    All partner logos in the public marquee render at the same height. Use "Apply to all" to update every logo at once.
+                    All partner logos in the public marquee render at the same height. Use &quot;Apply to all&quot; to update every logo at once.
                   </p>
                 </div>
                 <div style={{ display: "flex", gap: "0.4rem", alignItems: "center" }}>
@@ -1044,7 +1044,7 @@ export const AdminLayoutView = memo(function AdminLayoutView({
             <section className="space-y-3">
               <header className="border-b border-surface-subtle pb-2">
                 <h4 className="text-sm font-bold text-text-primary">Events section</h4>
-                <p className="text-xs text-text-muted mt-0.5">"Where the network comes together" — events list headline.</p>
+                <p className="text-xs text-text-muted mt-0.5">&quot;Where the network comes together&quot; — events list headline.</p>
               </header>
               <Field label="Title (line 1)">
                 <input
@@ -1084,7 +1084,7 @@ export const AdminLayoutView = memo(function AdminLayoutView({
             <section className="space-y-3">
               <header className="border-b border-surface-subtle pb-2">
                 <h4 className="text-sm font-bold text-text-primary">News section</h4>
-                <p className="text-xs text-text-muted mt-0.5">"Stories that move the work forward" — news list headline.</p>
+                <p className="text-xs text-text-muted mt-0.5">&quot;Stories that move the work forward&quot; — news list headline.</p>
               </header>
               <Field label="Title (line 1)">
                 <input

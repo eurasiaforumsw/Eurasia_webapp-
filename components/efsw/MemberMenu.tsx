@@ -55,6 +55,7 @@ export function MemberMenu({ member }: MemberMenuProps) {
   const pathname = usePathname();
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
+  const [logoutError, setLogoutError] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const reducedMotion = useRef(false);
@@ -91,11 +92,16 @@ export function MemberMenu({ member }: MemberMenuProps) {
     setOpen(false);
   }, [pathname]);
 
-  const handleLogout = () => {
-    logoutMember();
-    setOpen(false);
-    router.push("/");
-    router.refresh();
+  const handleLogout = async () => {
+    setLogoutError("");
+    try {
+      await logoutMember();
+      setOpen(false);
+      router.push("/");
+      router.refresh();
+    } catch (error) {
+      setLogoutError(error instanceof Error ? error.message : "Sign out failed");
+    }
   };
 
   const primaryName = member.fullName || member.email;
@@ -195,6 +201,7 @@ export function MemberMenu({ member }: MemberMenuProps) {
             </nav>
 
             <footer className="efsw-member-menu__footer">
+              {logoutError && <p role="alert">{logoutError}</p>}
               <button
                 type="button"
                 className="efsw-member-menu__logout"

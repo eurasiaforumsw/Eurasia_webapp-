@@ -1,39 +1,49 @@
 'use client';
 
 import { Bell } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function NotificationBell() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [hasNewMessage, setHasNewMessage] = useState(false);
+  const countRef = useRef(0);
   const router = useRouter();
 
-  const fetchUnreadCount = async () => {
-    try {
-      const response = await fetch('/api/messages/unread-count');
+  useEffect(() => {
+    const controller = new AbortController();
+    let pulseTimer: ReturnType<typeof setTimeout> | undefined;
+    const fetchUnreadCount = async () => {
+      try {
+      const response = await fetch('/api/messages/unread-count', { cache: 'no-store', signal: controller.signal });
       if (response.ok) {
         const data = await response.json();
         const newCount = data.unreadCount || 0;
 
         // Trigger pulse animation if count increased
-        if (newCount > unreadCount) {
+        if (newCount > countRef.current) {
           setHasNewMessage(true);
-          setTimeout(() => setHasNewMessage(false), 2000);
+          if (pulseTimer) clearTimeout(pulseTimer);
+          pulseTimer = setTimeout(() => setHasNewMessage(false), 2000);
         }
 
+        countRef.current = newCount;
         setUnreadCount(newCount);
       }
     } catch (error) {
-      console.error('Failed to fetch unread count:', error);
+      if (!controller.signal.aborted) console.error('Failed to fetch unread count:', error);
     }
   };
 
-  useEffect(() => {
-    fetchUnreadCount();
+    void fetchUnreadCount();
     const interval = setInterval(fetchUnreadCount, 30000);
-    return () => clearInterval(interval);
-  }, [unreadCount]);
+    window.addEventListener('efsw:messages-read', fetchUnreadCount);
+    return () => {
+      controller.abort(); clearInterval(interval);
+      if (pulseTimer) clearTimeout(pulseTimer);
+      window.removeEventListener('efsw:messages-read', fetchUnreadCount);
+    };
+  }, []);
 
   const handleClick = () => {
     router.push('/user/messages');

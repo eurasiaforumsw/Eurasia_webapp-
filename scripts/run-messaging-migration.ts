@@ -1,62 +1,20 @@
-/**
- * Run messaging system migration using Supabase client
- * This is safer than using psql with credentials
- */
-
-import { supabaseAdmin } from '../lib/supabase';
-import * as fs from 'fs';
-import * as path from 'path';
+/** Backwards-compatible Neon migration command. */
+import 'dotenv/config';
+// push-schema.js is a CommonJS utility with no separate declaration file.
+// @ts-expect-error -- its exported runtime API is validated by the JS module.
+import { pushSchema } from './push-schema.js';
 
 async function runMigration() {
-  console.log('🚀 Running messaging system migration...\n');
-
-  if (!supabaseAdmin) {
-    console.error('❌ Supabase admin client not configured');
-    process.exit(1);
+  if (!process.env.DATABASE_URL) {
+    throw new Error('DATABASE_URL is required. Set it in .env or the shell environment.');
   }
 
-  try {
-    const migrationPath = path.join(process.cwd(), 'supabase/migrations/012_create_messaging_system.sql');
-    const sql = fs.readFileSync(migrationPath, 'utf8');
-
-    console.log('📄 Migration file loaded');
-    console.log('📊 Executing SQL statements...\n');
-
-    // Split SQL by statements (simple split by semicolon + newline)
-    const statements = sql
-      .split(';\n')
-      .map(s => s.trim())
-      .filter(s => s.length > 0 && !s.startsWith('--'));
-
-    for (let i = 0; i < statements.length; i++) {
-      const statement = statements[i];
-      if (!statement) continue;
-
-      console.log(`Executing statement ${i + 1}/${statements.length}...`);
-
-      const { error } = await supabaseAdmin.rpc('exec_sql', { sql_query: statement });
-
-      if (error) {
-        console.error(`❌ Error in statement ${i + 1}:`, error);
-        console.error('Statement:', statement.substring(0, 200));
-
-        // Try using raw query instead
-        console.log('Trying alternative method...');
-        const { error: altError } = await (supabaseAdmin as any).from('_').select(statement);
-
-        if (altError) {
-          console.error('❌ Alternative method also failed:', altError);
-        }
-      } else {
-        console.log(`✅ Statement ${i + 1} executed successfully`);
-      }
-    }
-
-    console.log('\n✅ Migration completed!');
-
-  } catch (error: any) {
-    console.error('❌ Error:', error.message);
-  }
+  console.log('🚀 Running pending migrations on Neon...\n');
+  const summary = await pushSchema({ databaseUrl: process.env.DATABASE_URL });
+  console.log(`\n✅ Migration run completed. Applied ${summary.applied}, skipped ${summary.skipped}.`);
 }
 
-runMigration().catch(console.error);
+runMigration().catch((error) => {
+  console.error('❌ Migration failed:', error instanceof Error ? error.message : error);
+  process.exitCode = 1;
+});

@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 interface RegistrationField {
   id: string;
   field_name: string;
-  field_type: "text" | "textarea" | "select" | "radio" | "checkbox" | "date" | "time" | "email" | "phone";
+  field_type: "text" | "textarea" | "select" | "radio" | "checkbox" | "date" | "time" | "email" | "phone" | "number";
   field_label: string;
   placeholder?: string;
   required: boolean;
@@ -69,7 +69,7 @@ export default function RegistrationModal({
       }
 
       const data = await response.json();
-      const sortedFields = data.sort((a: RegistrationField, b: RegistrationField) =>
+      const sortedFields = (data.fields || []).sort((a: RegistrationField, b: RegistrationField) =>
         a.display_order - b.display_order
       );
 
@@ -198,7 +198,7 @@ export default function RegistrationModal({
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || "Registration failed");
+        throw new Error(errorData.error || errorData.message || "Registration failed");
       }
 
       const result = await response.json();
@@ -253,9 +253,10 @@ export default function RegistrationModal({
       case "text":
       case "email":
       case "phone":
+      case "number":
         return (
           <input
-            type={field.field_type === "email" ? "email" : field.field_type === "phone" ? "tel" : "text"}
+            type={field.field_type === "email" ? "email" : field.field_type === "phone" ? "tel" : field.field_type === "number" ? "number" : "text"}
             id={field.id}
             value={formData[field.id] as string || ""}
             onChange={(e) => handleInputChange(field.id, e.target.value)}

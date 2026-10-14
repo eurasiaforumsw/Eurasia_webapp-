@@ -4,6 +4,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const Module = require("node:module");
 const ts = require("typescript");
+const { createHash } = require("node:crypto");
 
 const root = path.resolve(__dirname, "..");
 const resolve = Module._resolveFilename;
@@ -23,14 +24,21 @@ process.env.JWT_SECRET = "login-expiry-test-0123456789abcdef0123456789";
 let suspensions = [];
 let expiryStatus = "active";
 let lookupError = null;
+let sessionInsertError = null;
 const calls = [];
 const database = {
   from(table) {
+    let inserted = null;
     const result = () => table === "members" ? { data: { id: "member-one", full_name: "Member One", email: "one@example.com",
       password_hash: "hash", status: "suspended", role: "member" }, error: null }
       : { data: suspensions, error: lookupError };
     const query = { select() { calls.push(["read", table]); return query; }, eq() { return query; },
-      maybeSingle() { return Promise.resolve(result()); }, then(yes, no) { return Promise.resolve(result()).then(yes, no); } };
+      insert(value) { inserted = value; calls.push(["insert", table, value]); return query; },
+      maybeSingle() { return Promise.resolve(result()); },
+      then(yes, no) {
+        if (inserted && sessionInsertError) return Promise.reject(sessionInsertError).then(yes, no);
+        return Promise.resolve(inserted ? { data: [inserted], error: null } : result()).then(yes, no);
+      } };
     return query;
   },
   async rpc(name, args) { calls.push([name, args]); return { data: expiryStatus, error: null }; },
@@ -56,11 +64,20 @@ test("expired temporary suspensions no longer block login while permanent bans d
 test("member login resolves an expired temporary ban atomically before issuing a token", async () => {
   suspensions = [{ is_active: true, expires_at: "2000-01-01T00:00:00Z" }];
   expiryStatus = "active";
+  sessionInsertError = null;
   calls.length = 0;
   const response = await login.POST(request());
   assert.equal(response.status, 200);
   assert.equal((await response.json()).member.status, "active");
   assert.match(response.headers.get("set-cookie"), /member_token=/);
+  const token = response.cookies.get("member_token").value;
+  const sessionInsert = calls.find(([action]) => action === "insert");
+  assert.equal(sessionInsert[1], "member_sessions");
+  assert.equal(sessionInsert[2].member_id, "member-one");
+  assert.equal(sessionInsert[2].token, createHash("sha256").update(token).digest("hex"));
+  assert.notEqual(sessionInsert[2].token, token);
+  assert.equal(sessionInsert[2].is_active, undefined);
+  assert.ok(Date.parse(sessionInsert[2].expires_at) > Date.now());
   assert.deepEqual(calls.find(([name]) => name === "expire_member_suspensions"), ["expire_member_suspensions", { p_member_id: "member-one" }]);
 });
 
@@ -83,6 +100,15 @@ test("a permanent ban created during expiry resolution stays blocked", async () 
   const response = await login.POST(request());
   assert.equal(response.status, 403);
   assert.equal(response.headers.get("set-cookie"), null);
+});
+
+test("session tracking database failure does not prevent a valid login", async () => {
+  suspensions = [{ is_active: true, expires_at: "2000-01-01T00:00:00Z" }];
+  expiryStatus = "active";
+  sessionInsertError = new Error("member_sessions unavailable");
+  const response = await login.POST(request());
+  assert.equal(response.status, 200);
+  assert.ok(response.cookies.get("member_token").value);
 });
 
 test("failed suspension checks and invalid passwords never issue a session", async () => {

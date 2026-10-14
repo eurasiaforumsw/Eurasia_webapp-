@@ -1,5 +1,6 @@
 import { verifySessionToken } from "./session";
 import { NextRequest } from "next/server";
+import { db } from "@/lib/db";
 
 export interface JWTPayload {
   memberId: string;
@@ -37,10 +38,10 @@ export async function verifyMemberToken(request: NextRequest): Promise<JWTPayloa
  * Check if member is currently suspended
  */
 export async function checkMemberSuspension(
-  supabase: any,
+  _db: any,
   memberId: string
 ): Promise<{ suspended: boolean; reason?: string; expiresAt?: string }> {
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from("member_suspensions")
     .select("*")
     .eq("member_id", memberId)
@@ -56,7 +57,7 @@ export async function checkMemberSuspension(
 
   // Check if temporary suspension has expired
   if (data.expires_at && new Date(data.expires_at) < new Date()) {
-    const { data: status, error: expiryError } = await supabase
+    const { data: status, error: expiryError } = await db
       .rpc("expire_member_suspensions", { p_member_id: memberId });
     if (expiryError) throw new Error("Unable to verify account status");
     return { suspended: status === "suspended" };

@@ -35,11 +35,8 @@ const getMemberId = (): string | null => {
   return null;
 };
 
-/* Check if API is available by looking for Supabase env vars. */
-const isAPIEnabled = (): boolean =>
-  typeof window !== "undefined" &&
-  Boolean((window as any).__NEXT_DATA__?.props?.pageProps?.env?.SUPABASE_URL ||
-    process.env.NEXT_PUBLIC_SUPABASE_URL);
+/* Same-origin APIs keep database credentials on the server. */
+const isAPIEnabled = (): boolean => typeof window !== "undefined";
 
 export type Interest = {
   memberId: string;

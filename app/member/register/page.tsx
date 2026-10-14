@@ -223,11 +223,11 @@ export default function MemberRegisterPage() {
                 </h2>
                 <p className="efsw-signin__card-lede">
                   {isRemoteMemberStoreEnabled()
-                    ? "Your profile has been saved and is pending review by the EFSW team."
+                    ? "Your profile has been saved and is pending review by the EFSW team. Check your email to verify your account, then sign in."
                     : "Your profile was created in this browser and is pending review."}
                 </p>
-                <a href="/member/profile" className="efsw-signin__submit" style={{ textDecoration: "none", display: "inline-flex" }}>
-                  Open profile <ArrowUpRight size={16} />
+                <a href="/member/login" className="efsw-signin__submit" style={{ textDecoration: "none", display: "inline-flex" }}>
+                  Sign in <ArrowUpRight size={16} />
                 </a>
               </div>
             ) : (

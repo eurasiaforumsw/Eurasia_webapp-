@@ -21,7 +21,6 @@ import { SiteNav } from "@/components/efsw/SiteNav";
 import CoverImage from "@/components/content/CoverImage";
 import {
   ADMIN_CONTENT_KEY,
-  getAdminContent,
   type AdminContentItem,
 } from "@/lib/admin-data";
 import {
@@ -80,31 +79,23 @@ export default function AcademicDocumentsPage() {
       controller = requestController;
       setLoadError(false);
       try {
-        let nextItems: AdminContentItem[];
-        if (
-          !process.env.NEXT_PUBLIC_SUPABASE_URL ||
-          !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-        ) {
-          nextItems = getAdminContent();
-        } else {
-          const responses = await Promise.all(
-            ["academic", "document"].map((kind) =>
-              fetch(`/api/content/public?kind=${kind}`, {
-                cache: "no-store",
-                signal: requestController.signal,
-              }),
-            ),
-          );
-          if (responses.some((response) => !response.ok))
-            throw new Error("Library unavailable");
-          const payloads = await Promise.all(
-            responses.map(
-              (response) =>
-                response.json() as Promise<{ items: AdminContentItem[] }>,
-            ),
-          );
-          nextItems = payloads.flatMap((payload) => payload.items);
-        }
+        const responses = await Promise.all(
+          ["academic", "document"].map((kind) =>
+            fetch(`/api/content/public?kind=${kind}`, {
+              cache: "no-store",
+              signal: requestController.signal,
+            }),
+          ),
+        );
+        if (responses.some((response) => !response.ok))
+          throw new Error("Library unavailable");
+        const payloads = await Promise.all(
+          responses.map(
+            (response) =>
+              response.json() as Promise<{ items: AdminContentItem[] }>,
+          ),
+        );
+        const nextItems = payloads.flatMap((payload) => payload.items);
         if (!disposed) setItems(nextItems);
       } catch (error) {
         if (

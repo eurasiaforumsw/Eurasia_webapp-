@@ -1,14 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { db } from '@/lib/db';
 import { requireRole } from '@/lib/api-auth';
 import { ADMIN_ROLES } from '@/lib/auth/session';
 
 export const dynamic = 'force-dynamic';
-
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
 
 /**
  * GET /api/settings
@@ -16,14 +11,14 @@ const supabaseAdmin = createClient(
  */
 export async function GET() {
   try {
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await db
       .from('site_settings')
       .select('config')
       .eq('id', 'default')
       .maybeSingle();
 
     if (error) {
-      console.error('[GET /api/settings] Supabase error:', error);
+      console.error('[GET /api/settings] Database error:', error);
       return NextResponse.json(
         { error: 'Failed to fetch settings' },
         { status: 500 }
@@ -69,18 +64,19 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 3. Update settings in Supabase
-    const { error } = await supabaseAdmin
+    // 3. Update settings in database
+    const { error } = await db
       .from('site_settings')
       .upsert({
         id: 'default',
         config: settings,
         updated_by: admin.memberId ?? null,
         updated_at: new Date().toISOString(),
-      });
+      })
+      .execute();
 
     if (error) {
-      console.error('[POST /api/settings] Supabase error:', error);
+      console.error('[POST /api/settings] Database error:', error);
       return NextResponse.json(
         { error: 'Failed to save settings' },
         { status: 500 }

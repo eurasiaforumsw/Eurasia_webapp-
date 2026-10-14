@@ -21,7 +21,7 @@
       - generic [ref=e29]:
         - generic [ref=e30]: Prototype access
         - code [ref=e31]: admin@efsw.local
-        - code [ref=e32]: EFSW-demo-admin
+        - code [ref=e32]: <configured-admin-password>
     - link "กลับหน้าหลัก" [ref=e33] [cursor=pointer]:
       - /url: /
     - paragraph [ref=e36]: "Prototype mode: session นี้เก็บไว้ในเบราว์เซอร์เพื่อทดสอบ workflow เท่านั้น"

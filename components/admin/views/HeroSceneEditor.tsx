@@ -465,7 +465,7 @@ export function HeroSceneEditor({
                 />
               </div>
               <small style={{ color: "var(--admin-muted)", fontSize: "0.65rem" }}>
-                Shown until the video's first frame is ready.
+                Shown until the video&apos;s first frame is ready.
               </small>
             </div>
           )}

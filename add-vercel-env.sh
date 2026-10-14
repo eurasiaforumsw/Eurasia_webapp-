@@ -1,18 +1,14 @@
-#!/bin/bash
-# Quick script to add environment variables to Vercel
+#!/usr/bin/env bash
+set -euo pipefail
 
-echo "🔐 Adding JWT_SECRET to Vercel..."
-echo "Vei6k0vFaMfZmI67q9BH8Iubv6ePDXCc8OZBQbjx9Xw=" | vercel env add JWT_SECRET production
-echo "Vei6k0vFaMfZmI67q9BH8Iubv6ePDXCc8OZBQbjx9Xw=" | vercel env add JWT_SECRET preview
-echo "Vei6k0vFaMfZmI67q9BH8Iubv6ePDXCc8OZBQbjx9Xw=" | vercel env add JWT_SECRET development
+# Values must come from the caller's environment. Never commit or reuse
+# credentials from an earlier deployment.
+: "${JWT_SECRET:?Set a fresh JWT_SECRET (at least 32 bytes) before running}"
+: "${ADMIN_PASSWORD_HASH:?Set ADMIN_PASSWORD_HASH generated for the new admin password}"
 
-echo ""
-echo "🔐 Adding ADMIN_PASSWORD_HASH to Vercel..."
-echo '$2b$12$QI870B2LMENPYRNKh9s.POFRpqLMmXJ7SqpnrqAM9HK7xiNU4aEHq' | vercel env add ADMIN_PASSWORD_HASH production
-echo '$2b$12$QI870B2LMENPYRNKh9s.POFRpqLMmXJ7SqpnrqAM9HK7xiNU4aEHq' | vercel env add ADMIN_PASSWORD_HASH preview
-echo '$2b$12$QI870B2LMENPYRNKh9s.POFRpqLMmXJ7SqpnrqAM9HK7xiNU4aEHq' | vercel env add ADMIN_PASSWORD_HASH development
+for environment in production preview development; do
+  printf '%s\n' "$JWT_SECRET" | vercel env add JWT_SECRET "$environment"
+  printf '%s\n' "$ADMIN_PASSWORD_HASH" | vercel env add ADMIN_PASSWORD_HASH "$environment"
+done
 
-echo ""
-echo "✅ Environment variables added!"
-echo ""
-echo "🔄 Now run: vercel --prod"
+echo "Environment variables added. Trigger a deployment after reviewing Vercel's environment list."

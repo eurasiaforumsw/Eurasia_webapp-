@@ -1,14 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-
-const supabase = createClient(supabaseUrl, supabaseServiceKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false
-  }
-});
+import { db } from '../lib/db';
 
 async function createTestMember() {
   console.log('Creating test member...\n');
@@ -25,7 +15,7 @@ async function createTestMember() {
   };
 
   // Check if member already exists
-  const { data: existing } = await supabase
+  const { data: existing } = await db
     .from('members')
     .select('id')
     .eq('id', testMember.id)
@@ -37,7 +27,7 @@ async function createTestMember() {
   }
 
   // Insert test member
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from('members')
     .insert(testMember)
     .select()

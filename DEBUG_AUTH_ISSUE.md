@@ -66,7 +66,7 @@ npm run dev
 
 | Email | Password | Role |
 |-------|----------|------|
-| `admin@efsw.local` | `EFSW-secure-admin-2024` | Admin (full access) |
+| `admin@efsw.local` | `<configured-admin-password>` | Admin (full access) |
 | `member@efsw.local` | `M` | Member |
 | `news@efsw.local` | `EFSW-news-pr-2024` | PR Editor |
 
@@ -81,7 +81,7 @@ npx tsx scripts/test-login-api.ts
 ```bash
 curl -X POST http://localhost:3000/api/members/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@efsw.local","password":"EFSW-secure-admin-2024"}'
+  -d '{"email":"admin@efsw.local","password":"<configured-admin-password>"}'
 ```
 
 ## Expected Response เมื่อ Login สำเร็จ
@@ -143,7 +143,7 @@ WHERE email IN ('admin@efsw.local', 'member@efsw.local', 'news@efsw.local');
 ### Error: "Invalid email or password"
 - ❌ Account ยังไม่ถูก seed หรือ password ไม่ถูกต้อง
 - ✅ Run `SETUP_COMPLETE_AUTH.sql` เพื่อ seed accounts
-- ✅ ตรวจสอบว่าใช้ password ที่ถูกต้อง (เช่น `EFSW-secure-admin-2024` ไม่ใช่ `EFSW-demo-admin-2024`)
+- ✅ ตรวจสอบว่าใช้ password ที่ถูกต้อง (เช่น `<configured-admin-password>` ไม่ใช่ `<configured-admin-password>`)
 
 ### Error: Network timeout
 - ❌ Supabase service ไม่ available หรือ network มีปัญหา

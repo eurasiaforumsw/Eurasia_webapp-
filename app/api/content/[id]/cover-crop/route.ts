@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabaseAdmin } from "@/lib/supabase";
+import { db } from "@/lib/db";
 import { requireRole } from "@/lib/api-auth";
 import { CONTENT_ROLES } from "@/lib/auth/session";
+import { canReadContent, contentViewer } from "@/lib/content-access";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -59,7 +60,7 @@ export async function POST(
     const contentId = params.id;
 
     // Verify content exists
-    const { data: content, error: contentError } = await supabaseAdmin
+    const { data: content, error: contentError } = await db
       .from("content")
       .select("id, cover_image")
       .eq("id", contentId)
@@ -91,7 +92,7 @@ export async function POST(
     }
 
     // Update content.cover_image_crop column
-    const { data: updated, error: updateError } = await supabaseAdmin
+    const { data: updated, error: updateError } = await db
       .from("content")
       .update({
         cover_image_crop: cropData,
@@ -125,14 +126,14 @@ export async function GET(
   try {
     const contentId = params.id;
 
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await db
       .from("content")
-      .select("id, cover_image_crop")
+      .select("id, cover_image_crop, status, publish_at, expires_at, target_membership_types, target_groups")
       .eq("id", contentId)
       .maybeSingle();
 
     if (error) throw error;
-    if (!data) {
+    if (!data || !canReadContent(data, await contentViewer(req))) {
       return NextResponse.json(
         { error: "Content not found" },
         { status: 404 }
@@ -169,7 +170,7 @@ export async function DELETE(
 
     const contentId = params.id;
 
-    const { error } = await supabaseAdmin
+    const { error } = await db
       .from("content")
       .update({
         cover_image_crop: null,

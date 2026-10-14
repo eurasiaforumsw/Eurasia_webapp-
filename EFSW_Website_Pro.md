@@ -70,7 +70,7 @@ This document records both the browser-functional prototype currently in this re
 
 ```text
 Email: admin@efsw.local
-Password: EFSW-demo-admin
+Password: <configured-admin-password>
 ```
 
 ### 0.4 Verification Completed

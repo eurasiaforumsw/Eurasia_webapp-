@@ -53,12 +53,17 @@ const EDUCATION_LABELS: Record<NonNullable<AdminMember["educationLevel"]>, strin
 
 export const MemberDetailDrawer = memo(function MemberDetailDrawer({
   member,
+  ...props
+}: MemberDetailDrawerProps) {
+  return member ? <MemberDetailForm key={member.id} member={member} {...props} /> : null;
+});
+
+function MemberDetailForm({
+  member,
   onClose,
   onUpdateStatus,
   onDeleteMember,
-}: MemberDetailDrawerProps) {
-  if (!member) return null;
-
+}: Omit<MemberDetailDrawerProps, "member"> & { member: AdminMember }) {
   const [note, setNote] = useState(member.reviewNote || "");
   const [isSavingNote, setIsSavingNote] = useState(false);
 
@@ -313,7 +318,7 @@ export const MemberDetailDrawer = memo(function MemberDetailDrawer({
             }}
           >
             Passwords are securely hashed. Admins can approve, suspend, or
-            delete accounts — but cannot view or recover a member's password.
+            delete accounts — but cannot view or recover a member&apos;s password.
           </p>
           <div
             style={{
@@ -414,4 +419,4 @@ export const MemberDetailDrawer = memo(function MemberDetailDrawer({
       </aside>
     </div>
   );
-});
+}

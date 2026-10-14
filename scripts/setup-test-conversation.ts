@@ -2,25 +2,27 @@
  * Setup test conversations for messaging system
  */
 
-import { supabaseAdmin } from '../lib/supabase';
+import 'dotenv/config';
+import { db } from '../lib/db';
 
 async function setupConversations() {
   console.log('💬 Setting up test conversations...\n');
 
-  if (!supabaseAdmin) {
-    console.error('❌ Supabase admin client not configured');
-    process.exit(1);
+  if (!process.env.DATABASE_URL) {
+    console.error('❌ DATABASE_URL is not configured');
+    process.exitCode = 1;
+    return;
   }
 
   try {
     // Get admin and test member IDs
-    const { data: admin } = await supabaseAdmin
+    const { data: admin } = await db
       .from('members')
       .select('id, email, role')
       .eq('email', 'admin@efsw.local')
       .single();
 
-    const { data: member } = await supabaseAdmin
+    const { data: member } = await db
       .from('members')
       .select('id, email, role')
       .eq('email', 'testmember@efsw.local')
@@ -39,12 +41,12 @@ async function setupConversations() {
     console.log('\n📝 Creating test conversation...');
 
     // Delete existing test conversation if any
-    await supabaseAdmin
+    await db
       .from('conversations')
       .delete()
       .eq('id', 'test-conv-1');
 
-    const { data: conversation, error: convError } = await supabaseAdmin
+    const { data: conversation, error: convError } = await db
       .from('conversations')
       .insert({
         id: 'test-conv-1',
@@ -66,12 +68,12 @@ async function setupConversations() {
     console.log('\n👥 Adding participants...');
 
     // Delete existing participants
-    await supabaseAdmin
+    await db
       .from('conversation_participants')
       .delete()
       .eq('conversation_id', 'test-conv-1');
 
-    const { error: participantsError } = await supabaseAdmin
+    const { error: participantsError } = await db
       .from('conversation_participants')
       .insert([
         {
@@ -94,7 +96,7 @@ async function setupConversations() {
     console.log('✅ Participants added');
 
     // Verify
-    const { data: participants } = await supabaseAdmin
+    const { data: participants } = await db
       .from('conversation_participants')
       .select('member_id, role')
       .eq('conversation_id', conversation.id);

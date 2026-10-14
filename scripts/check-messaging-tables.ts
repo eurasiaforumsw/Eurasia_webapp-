@@ -1,15 +1,14 @@
-/**
- * Check if messaging tables exist in database
- */
-
-import { supabaseAdmin } from '../lib/supabase';
+/** Check whether the messaging tables exist in Neon. */
+import 'dotenv/config';
+import { query } from '../lib/db';
 
 async function checkTables() {
   console.log('🔍 Checking messaging tables...\n');
 
-  if (!supabaseAdmin) {
-    console.error('❌ Supabase admin client not configured');
-    process.exit(1);
+  if (!process.env.DATABASE_URL) {
+    console.error('❌ DATABASE_URL is not configured');
+    process.exitCode = 1;
+    return;
   }
 
   try {
@@ -23,23 +22,28 @@ async function checkTables() {
     ];
 
     for (const table of tables) {
-      const { data, error } = await supabaseAdmin
-        .from(table)
-        .select('*')
-        .limit(1);
-
-      if (error) {
+      try {
+        const result = await query<{ exists: boolean }>(
+          `SELECT EXISTS (
+             SELECT 1 FROM information_schema.tables
+             WHERE table_schema = 'public' AND table_name = $1
+           ) AS exists`,
+          [table],
+        );
+        const status = result.rows[0];
+        if (!status?.exists) {
+          console.log(`❌ ${table}: NOT FOUND`);
+        } else {
+          const count = await query<{ count: string }>(`SELECT COUNT(*)::text AS count FROM public.${table}`);
+          console.log(`✅ ${table}: EXISTS (${count.rows[0]?.count || '0'} rows)`);
+        }
+      } catch (error) {
         console.log(`❌ ${table}: NOT FOUND`);
-        console.log(`   Error: ${error.message}`);
-      } else {
-        console.log(`✅ ${table}: EXISTS (${data?.length || 0} rows)`);
+        console.log(`   Error: ${error instanceof Error ? error.message : error}`);
       }
     }
 
-    console.log('\n💡 If tables are missing, you need to run the migration:');
-    console.log('   1. Go to Supabase Dashboard > SQL Editor');
-    console.log('   2. Copy content from: supabase/migrations/012_create_messaging_system.sql');
-    console.log('   3. Paste and run it');
+    console.log('\n💡 If tables are missing, run: node scripts/push-schema.js');
 
   } catch (error: any) {
     console.error('❌ Error:', error.message);

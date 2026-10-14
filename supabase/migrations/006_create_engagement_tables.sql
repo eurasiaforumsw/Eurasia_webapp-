@@ -6,9 +6,9 @@
 -- 1. CONTENT LIKES TABLE
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS content_likes (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    member_id UUID NOT NULL REFERENCES members(id) ON DELETE CASCADE,
-    content_id UUID NOT NULL REFERENCES content(id) ON DELETE CASCADE,
+    id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+    member_id TEXT NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+    content_id TEXT NOT NULL REFERENCES content(id) ON DELETE CASCADE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
     -- Prevent duplicate likes
@@ -29,19 +29,19 @@ CREATE POLICY "Members can view all likes"
 
 CREATE POLICY "Members can create their own likes"
     ON content_likes FOR INSERT
-    WITH CHECK (auth.uid() = member_id);
+    WITH CHECK (auth.uid()::text = member_id);
 
 CREATE POLICY "Members can delete their own likes"
     ON content_likes FOR DELETE
-    USING (auth.uid() = member_id);
+    USING (auth.uid()::text = member_id);
 
 -- ============================================================================
 -- 2. MEMBER INTERESTS (BOOKMARKS/SAVES) TABLE
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS member_interests (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    member_id UUID NOT NULL REFERENCES members(id) ON DELETE CASCADE,
-    content_id UUID NOT NULL REFERENCES content(id) ON DELETE CASCADE,
+    id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+    member_id TEXT NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+    content_id TEXT NOT NULL REFERENCES content(id) ON DELETE CASCADE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     notes TEXT, -- Optional: member's private notes about saved content
 
@@ -59,34 +59,31 @@ ALTER TABLE member_interests ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Members can view only their own interests"
     ON member_interests FOR SELECT
-    USING (auth.uid() = member_id);
+    USING (auth.uid()::text = member_id);
 
 CREATE POLICY "Members can create their own interests"
     ON member_interests FOR INSERT
-    WITH CHECK (auth.uid() = member_id);
+    WITH CHECK (auth.uid()::text = member_id);
 
 CREATE POLICY "Members can update their own interests"
     ON member_interests FOR UPDATE
-    USING (auth.uid() = member_id);
+    USING (auth.uid()::text = member_id);
 
 CREATE POLICY "Members can delete their own interests"
     ON member_interests FOR DELETE
-    USING (auth.uid() = member_id);
+    USING (auth.uid()::text = member_id);
 
 -- ============================================================================
 -- 3. CONTENT VIEWS TABLE
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS content_views (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    content_id UUID NOT NULL REFERENCES content(id) ON DELETE CASCADE,
+    id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+    content_id TEXT NOT NULL REFERENCES content(id) ON DELETE CASCADE,
     visitor_id TEXT NOT NULL, -- Can be member_id or anonymous session ID
     viewed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     ip_address INET,
     user_agent TEXT,
-    referrer TEXT,
-
-    -- Prevent counting multiple views from same visitor within short timeframe
-    CONSTRAINT unique_visitor_view_per_hour UNIQUE (content_id, visitor_id, DATE_TRUNC('hour', viewed_at))
+    referrer TEXT
 );
 
 -- Indexes
@@ -94,6 +91,9 @@ CREATE INDEX idx_content_views_content_id ON content_views(content_id);
 CREATE INDEX idx_content_views_visitor_id ON content_views(visitor_id);
 CREATE INDEX idx_content_views_viewed_at ON content_views(viewed_at DESC);
 CREATE INDEX idx_content_views_ip_address ON content_views(ip_address);
+
+-- Note: Unique constraint per hour removed due to DATE_TRUNC immutability issue
+-- Anti-spam protection should be handled at application layer
 
 -- RLS Policies
 ALTER TABLE content_views ENABLE ROW LEVEL SECURITY;
@@ -110,8 +110,8 @@ CREATE POLICY "Anyone can insert content views"
 -- 4. MEMBER SESSIONS TABLE
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS member_sessions (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    member_id UUID NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+    id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+    member_id TEXT NOT NULL REFERENCES members(id) ON DELETE CASCADE,
     token TEXT NOT NULL UNIQUE,
     ip_address INET,
     user_agent TEXT,
@@ -132,20 +132,20 @@ ALTER TABLE member_sessions ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Members can view only their own sessions"
     ON member_sessions FOR SELECT
-    USING (auth.uid() = member_id);
+    USING (auth.uid()::text = member_id);
 
 CREATE POLICY "Members can update their own sessions"
     ON member_sessions FOR UPDATE
-    USING (auth.uid() = member_id);
+    USING (auth.uid()::text = member_id);
 
 -- ============================================================================
 -- 5. MEMBER ACTIVITY (AUDIT TRAIL) TABLE
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS member_activity (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    member_id UUID NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+    id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+    member_id TEXT NOT NULL REFERENCES members(id) ON DELETE CASCADE,
     action_type TEXT NOT NULL, -- 'login', 'logout', 'like', 'unlike', 'save', 'unsave', 'view', 'share', 'profile_update', etc.
-    content_id UUID REFERENCES content(id) ON DELETE SET NULL, -- Optional: related content
+    content_id TEXT REFERENCES content(id) ON DELETE SET NULL, -- Optional: related content
     metadata JSONB, -- Additional context (e.g., share platform, device info)
     ip_address INET,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -170,7 +170,7 @@ ALTER TABLE member_activity ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Members can view only their own activity"
     ON member_activity FOR SELECT
-    USING (auth.uid() = member_id);
+    USING (auth.uid()::text = member_id);
 
 CREATE POLICY "System can insert activity logs"
     ON member_activity FOR INSERT
@@ -180,10 +180,10 @@ CREATE POLICY "System can insert activity logs"
 -- 6. CONTENT SHARES TABLE
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS content_shares (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    content_id UUID NOT NULL REFERENCES content(id) ON DELETE CASCADE,
+    id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+    content_id TEXT NOT NULL REFERENCES content(id) ON DELETE CASCADE,
     platform TEXT NOT NULL, -- 'facebook', 'line', 'kakao', 'whatsapp', 'telegram', 'email'
-    member_id UUID REFERENCES members(id) ON DELETE SET NULL, -- NULL for anonymous shares
+    member_id TEXT REFERENCES members(id) ON DELETE SET NULL, -- NULL for anonymous shares
     shared_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     ip_address INET,
 
@@ -216,10 +216,9 @@ CREATE POLICY "Anyone can insert share records"
 CREATE OR REPLACE VIEW content_engagement_summary AS
 SELECT
     c.id AS content_id,
-    c.title_th,
-    c.title_en,
-    c.content_type,
-    c.published_at,
+    c.title,
+    c.kind AS content_type,
+    c.created_at AS published_at,
 
     -- Like stats
     COUNT(DISTINCT cl.id) AS total_likes,
@@ -255,19 +254,19 @@ LEFT JOIN content_likes cl ON c.id = cl.content_id
 LEFT JOIN member_interests mi ON c.id = mi.content_id
 LEFT JOIN content_views cv ON c.id = cv.content_id
 LEFT JOIN content_shares cs ON c.id = cs.content_id
-GROUP BY c.id, c.title_th, c.title_en, c.content_type, c.published_at;
+GROUP BY c.id, c.title, c.kind, c.created_at;
 
 -- ============================================================================
 -- FUNCTION: GET MEMBER ENGAGEMENT STATS
 -- ============================================================================
-CREATE OR REPLACE FUNCTION get_member_engagement_stats(p_member_id UUID)
+CREATE OR REPLACE FUNCTION get_member_engagement_stats(p_member_id TEXT)
 RETURNS TABLE (
     total_likes BIGINT,
     total_saves BIGINT,
     total_views BIGINT,
     total_shares BIGINT,
-    liked_content_ids UUID[],
-    saved_content_ids UUID[],
+    liked_content_ids TEXT[],
+    saved_content_ids TEXT[],
     recent_activity JSONB
 )
 LANGUAGE plpgsql
@@ -283,7 +282,7 @@ BEGIN
         (SELECT COUNT(*) FROM member_interests WHERE member_id = p_member_id) AS total_saves,
 
         -- Total views by this member (if logged in)
-        (SELECT COUNT(*) FROM content_views WHERE visitor_id = p_member_id::TEXT) AS total_views,
+        (SELECT COUNT(*) FROM content_views WHERE visitor_id = p_member_id) AS total_views,
 
         -- Total shares by this member
         (SELECT COUNT(*) FROM content_shares WHERE member_id = p_member_id) AS total_shares,

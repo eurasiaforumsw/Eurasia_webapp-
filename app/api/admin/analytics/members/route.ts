@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabaseAdmin } from "@/lib/supabase";
+import { db } from "@/lib/db";
 import { requireRole } from "@/lib/api-auth";
 import { analyticsError, analyticsRows, analyticsWindow } from "../_shared";
 
@@ -13,9 +13,9 @@ export async function GET(request: NextRequest) {
     await requireRole(request, ["admin"]);
     const window = analyticsWindow(request);
     const [members, activity] = await Promise.all([
-      analyticsRows<MemberRow>(() => supabaseAdmin.from("members")
+      analyticsRows<MemberRow>(() => db.from("members")
         .select("id, full_name, email, country, membership_type, joined_at").order("id"), "Members"),
-      analyticsRows<{ member_id: string }>(() => supabaseAdmin.from("member_activity")
+      analyticsRows<{ member_id: string }>(() => db.from("member_activity")
         .select("member_id").gte("created_at", window.start.toISOString())
         .lte("created_at", window.now.toISOString()).order("id"), "Member activity"),
     ]);

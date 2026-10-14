@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyMemberToken } from "@/lib/auth/jwt";
-import { supabaseAdmin } from "@/lib/supabase";
+import { query } from "@/lib/db";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -63,13 +63,6 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  if (!supabaseAdmin) {
-    return NextResponse.json(
-      { error: "Database service is not configured" },
-      { status: 503 }
-    );
-  }
-
   const memberId = payload.memberId;
 
   // Rate limiting check
@@ -105,45 +98,17 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Get list of suspended member IDs
-    const { data: suspensions } = await supabaseAdmin
-      .from("member_suspensions")
-      .select("member_id")
-      .eq("is_active", true);
-
-    const suspendedIds = new Set(
-      suspensions?.map((s: any) => s.member_id) || []
-    );
-
-    // Search members by full_name or email
     const searchPattern = `%${trimmedQuery}%`;
-
-    const { data: members, error } = await supabaseAdmin
-      .from("members")
-      .select("id, full_name, email, avatar_url")
-      .neq("id", memberId) // Exclude requester
-      .or(`full_name.ilike.${searchPattern},email.ilike.${searchPattern}`)
-      .eq("status", "active") // Only active members
-      .order("full_name", { ascending: true })
-      .limit(20);
-
-    if (error) {
-      console.error("Member search error:", error);
-      return NextResponse.json(
-        { error: "Failed to search members" },
-        { status: 500 }
-      );
-    }
-
-    // Filter out suspended members
-    const filteredMembers = (members || [])
-      .filter((member: any) => !suspendedIds.has(member.id))
-      .map((member: any) => ({
-        id: member.id,
-        fullName: member.full_name,
-        email: member.email,
-        avatar: member.avatar_url || null,
-      }));
+    const { rows: members } = await query(`SELECT member.id, member.full_name, member.email, (to_jsonb(member)->>'avatar_url') AS avatar_url
+      FROM members member WHERE member.id != $1 AND member.status = 'active'
+      AND (member.full_name ILIKE $2 OR member.email ILIKE $2)
+      AND NOT EXISTS (SELECT 1 FROM member_suspensions suspension
+        WHERE suspension.member_id = member.id AND suspension.is_active = true
+        AND (suspension.expires_at IS NULL OR suspension.expires_at > NOW()))
+      ORDER BY member.full_name LIMIT 20`, [memberId, searchPattern]);
+    const filteredMembers = members.map((member: any) => ({
+      id: member.id, fullName: member.full_name, email: member.email, avatar: member.avatar_url || null,
+    }));
 
     return NextResponse.json({
       success: true,

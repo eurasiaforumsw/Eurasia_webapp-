@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabaseAdmin } from "@/lib/supabase";
+import { db } from "@/lib/db";
 import { requireRole } from "@/lib/api-auth";
 import { CONTENT_ROLES } from "@/lib/auth/session";
 
@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "category must contain between 1 and 100 characters" }, { status: 400 });
   }
   try {
-    const query = supabaseAdmin.from("content");
+    const query = db.from("content");
     const mutation = action === "delete" ? query.delete() : query.update({
       ...(action === "updateStatus" ? { status } : { category }), updated_at: new Date().toISOString(),
     });

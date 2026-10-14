@@ -375,7 +375,7 @@ export const AdminContentView = memo(function AdminContentView({
           </div>
           <div className="efsw-admin-summary-card__value">{counts.scheduled}</div>
           <div className="efsw-admin-summary-card__meta">
-            Items waiting for their "Show from" window.
+            Items waiting for their &quot;Show from&quot; window.
           </div>
         </div>
 
@@ -386,7 +386,7 @@ export const AdminContentView = memo(function AdminContentView({
           </div>
           <div className="efsw-admin-summary-card__value">{counts.expired}</div>
           <div className="efsw-admin-summary-card__meta">
-            Auto-archive on next sync — they won't appear on the public site.
+            Auto-archive on next sync — they won&apos;t appear on the public site.
           </div>
         </div>
 

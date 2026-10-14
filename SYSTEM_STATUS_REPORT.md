@@ -12,7 +12,7 @@
 - ✅ Login: `/admin/login`
 - ✅ JWT authentication with HttpOnly cookies
 - ✅ Middleware protection for `/admin/*` routes
-- ✅ Demo credentials: `admin@efsw.local` / `EFSW-demo-admin-2024`
+- ✅ Demo credentials: `admin@efsw.local` / `<configured-admin-password>`
 - ✅ Session management with 7-day expiry
 
 ### 2. 👥 ระบบ Member Management

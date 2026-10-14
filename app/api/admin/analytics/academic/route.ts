@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabaseAdmin } from "@/lib/supabase";
+import { db } from "@/lib/db";
 import { requireRole } from "@/lib/api-auth";
 import { analyticsError, analyticsRows } from "../_shared";
 import { academicEngagement } from "./_data";
@@ -13,7 +13,7 @@ type DocumentRow = { id: string; title: string; author: string | null; file_name
 export async function GET(request: NextRequest) {
   try {
     await requireRole(request, ["admin"]);
-    const documents = await analyticsRows<DocumentRow>(() => supabaseAdmin.from("content")
+    const documents = await analyticsRows<DocumentRow>(() => db.from("content")
       .select("id, title, author, file_name, file_size, publish_at, created_at")
       .in("kind", ["academic", "document"]).eq("status", "published").order("id"), "Academic documents");
     const engagement = await academicEngagement(documents.map((document) => document.id));

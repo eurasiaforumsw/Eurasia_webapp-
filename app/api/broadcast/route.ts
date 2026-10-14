@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabaseAdmin } from "@/lib/supabase";
+import { db, query } from "@/lib/db";
 import { broadcastActor } from "./_auth";
+
+export const runtime = "nodejs";
 
 const KINDS = new Set(["news", "event", "document", "academic", "custom"]);
 const AUDIENCES = new Set(["all", "professional", "student", "institutional"]);
@@ -51,11 +53,23 @@ export async function GET(req: NextRequest) {
   const pageSize = Math.max(1, Math.min(100, Number(req.nextUrl.searchParams.get("pageSize")) || 20));
   const status = req.nextUrl.searchParams.get("status");
   if (status && status !== "all" && !["draft", "scheduled", "sending", "sent", "failed"].includes(status)) return fail("Invalid status", 400);
-  let query = supabaseAdmin.from("email_campaigns").select("*", { count: "exact" }).order("created_at", { ascending: false });
+
+  let query = db.from("email_campaigns").select("*").order("created_at", { ascending: false });
   if (status && status !== "all") query = query.eq("status", status);
-  const { data, error, count } = await query.range((page - 1) * pageSize, page * pageSize - 1);
-  if (error) return fail("Failed to fetch campaigns", 500);
-  return NextResponse.json({ campaigns: data || [], total: count || 0, page, pageSize, hasMore: page * pageSize < (count || 0) });
+
+  const result = await query.range((page - 1) * pageSize, page * pageSize - 1).execute();
+  if (result.error) return fail("Failed to fetch campaigns", 500);
+
+  // Count the same filtered query so pagination remains correct when a
+  // status filter is active. The previous implementation counted every
+  // campaign, which could report `hasMore` after the filtered result ended.
+  let countQuery = db.from("email_campaigns").select("*", { count: "exact", head: true });
+  if (status && status !== "all") countQuery = countQuery.eq("status", status);
+  const countResult = await countQuery.execute();
+  if (countResult.error) return fail("Failed to count campaigns", 500);
+  const count = countResult.count || 0;
+
+  return NextResponse.json({ campaigns: result.data || [], total: count, page, pageSize, hasMore: page * pageSize < count });
 }
 
 export async function POST(req: NextRequest) {
@@ -65,17 +79,20 @@ export async function POST(req: NextRequest) {
   if (!input || typeof input !== "object" || Array.isArray(input)) return fail("Invalid campaign", 400);
   const fields = campaignFields(input);
   if (!fields) return fail("Invalid campaign fields", 400);
-  if (fields.content_id) {
-    const { data: source, error: sourceError } = await supabaseAdmin.from("content")
-      .select("id").eq("id", fields.content_id).maybeSingle();
-    if (sourceError) return fail("Failed to verify source content", 500);
-    if (!source) return fail("Source content not found", 400);
+  try {
+    if (fields.content_id) {
+      const source = await db.from("content")
+        .select("id").eq("id", fields.content_id).maybeSingle();
+      if (!source.data) return fail("Source content not found", 400);
+    }
+    const result = await db.from("email_campaigns")
+      .insert({ ...fields, created_by: actor.memberId || null, created_by_actor: actor.email })
+      .select("*");
+    return NextResponse.json({ campaign: result.data }, { status: 201 });
+  } catch (error) {
+    console.error("[POST /api/broadcast] Database error:", error);
+    return fail("Failed to create campaign", 500);
   }
-  const { data, error } = await supabaseAdmin.from("email_campaigns")
-    .insert({ ...fields, created_by: actor.memberId || null, created_by_actor: actor.email })
-    .select("*").single();
-  if (error) return fail("Failed to create campaign", 500);
-  return NextResponse.json({ campaign: data }, { status: 201 });
 }
 
 export async function PATCH(req: NextRequest) {
@@ -84,26 +101,36 @@ export async function PATCH(req: NextRequest) {
   if (!input || typeof input !== "object" || Array.isArray(input) || typeof input.campaignId !== "string") return fail("Invalid campaign", 400);
   const fields = campaignFields(input);
   if (!fields) return fail("Invalid campaign fields", 400);
-  if (fields.content_id) {
-    const { data: source, error: sourceError } = await supabaseAdmin.from("content")
-      .select("id").eq("id", fields.content_id).maybeSingle();
-    if (sourceError) return fail("Failed to verify source content", 500);
-    if (!source) return fail("Source content not found", 400);
+  try {
+    if (fields.content_id) {
+      const source = await db.from("content")
+        .select("id").eq("id", fields.content_id).maybeSingle();
+      if (!source.data) return fail("Source content not found", 400);
+    }
+    const result = await db.from("email_campaigns")
+      .update(fields).match({ id: input.campaignId, status: "draft" });
+    if (!result.data || result.data.length === 0) return fail("Campaign not found or no longer editable", 409);
+    return NextResponse.json({ campaign: result.data[0] });
+  } catch (error) {
+    console.error("[PATCH /api/broadcast] Database error:", error);
+    return fail("Failed to update campaign", 500);
   }
-  const { data, error } = await supabaseAdmin.from("email_campaigns")
-    .update(fields).eq("id", input.campaignId).eq("status", "draft").select("*").maybeSingle();
-  if (error) return fail("Failed to update campaign", 500);
-  if (!data) return fail("Campaign not found or no longer editable", 409);
-  return NextResponse.json({ campaign: data });
 }
 
 export async function DELETE(req: NextRequest) {
   if (!await broadcastActor(req)) return fail("Unauthorized", 401);
   const input = await req.json().catch(() => null);
   if (!input || typeof input.campaignId !== "string") return fail("Invalid campaign ID", 400);
-  const { data, error } = await supabaseAdmin.from("email_campaigns")
-    .delete().eq("id", input.campaignId).eq("status", "draft").select("id").maybeSingle();
-  if (error) return fail("Failed to delete campaign", 500);
-  if (!data) return fail("Campaign not found or no longer deletable", 409);
-  return NextResponse.json({ success: true });
+
+  try {
+    const { rows } = await query(
+      `DELETE FROM email_campaigns WHERE id = $1 AND status = $2 RETURNING id`,
+      [input.campaignId, "draft"]
+    );
+    if (rows.length === 0) return fail("Campaign not found or no longer deletable", 409);
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("[DELETE /api/broadcast] Database error:", error);
+    return fail("Failed to delete campaign", 500);
+  }
 }

@@ -1,13 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { db } from '@/lib/db';
 import { requireRole } from '@/lib/api-auth';
 import { ADMIN_ROLES } from '@/lib/auth/session';
 
 export const dynamic = 'force-dynamic';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
 /**
  * GET /api/layout
@@ -15,14 +11,14 @@ const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
  */
 export async function GET() {
   try {
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await db
       .from('layout_config')
       .select('config')
       .eq('id', 'default')
       .maybeSingle();
 
     if (error) {
-      console.error('Supabase error fetching layout:', error);
+      console.error('Database error fetching layout:', error);
       return NextResponse.json(
         { error: 'Failed to fetch layout config' },
         { status: 500 }
@@ -70,18 +66,17 @@ export async function POST(req: NextRequest) {
     }
 
     // Upsert layout config
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await db
       .from('layout_config')
       .upsert({
         id: 'default',
         config,
         updated_at: new Date().toISOString(),
       })
-      .select()
-      .single();
+      .select();
 
     if (error) {
-      console.error('Supabase error saving layout:', error);
+      console.error('Database error saving layout:', error);
       return NextResponse.json(
         { error: 'Failed to save layout config' },
         { status: 500 }
@@ -90,7 +85,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      config: data.config
+      config: Array.isArray(data) ? data[0]?.config : data?.config
     });
   } catch (err) {
     console.error('Error saving layout:', err);

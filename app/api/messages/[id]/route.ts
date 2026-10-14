@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabaseAdmin } from "@/lib/supabase";
+import { db, query } from "@/lib/db";
 import { verifyMemberToken, checkMemberSuspension } from "@/lib/auth/jwt";
 
 export const runtime = "nodejs";
@@ -10,10 +10,6 @@ export const dynamic = "force-dynamic";
  * Get all messages in a conversation
  */
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
-  if (!supabaseAdmin) {
-    return NextResponse.json({ error: "Messaging service is not configured" }, { status: 503 });
-  }
-
   // Verify authentication
   const payload = await verifyMemberToken(request);
   if (!payload) {
@@ -24,7 +20,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   const conversationId = params.id;
 
   // Check if member is suspended
-  const suspension = await checkMemberSuspension(supabaseAdmin, memberId);
+  const suspension = await checkMemberSuspension(db, memberId);
   if (suspension.suspended) {
     const message = suspension.expiresAt
       ? `Your account is suspended until ${new Date(suspension.expiresAt).toLocaleString()}. Reason: ${suspension.reason}`
@@ -34,7 +30,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 
   try {
     // Verify member is participant in this conversation
-    const { data: participant } = await supabaseAdmin
+    const { data: participant } = await db
       .from("conversation_participants")
       .select("id")
       .eq("conversation_id", conversationId)
@@ -46,31 +42,16 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     }
 
     // Get messages with sender information
-    const { data: messages, error: messagesError } = await supabaseAdmin
-      .from("messages")
-      .select(`
-        id,
-        content,
-        has_link,
-        created_at,
-        sender_id,
-        sender:sender_id (
-          id,
-          full_name,
-          avatar_url,
-          role
-        )
-      `)
-      .eq("conversation_id", conversationId)
-      .is("deleted_at", null)
-      .order("created_at", { ascending: true });
-
-    if (messagesError) {
-      return NextResponse.json({ error: messagesError.message }, { status: 500 });
-    }
+    const { rows: messages } = await query(`SELECT message.id, message.content, message.has_link,
+      message.created_at, message.sender_id,
+      json_build_object('id', member.id, 'full_name', member.full_name,
+        'avatar_url', (to_jsonb(member)->>'avatar_url'), 'role', member.role) AS sender
+      FROM messages message JOIN members member ON member.id = message.sender_id
+      WHERE message.conversation_id = $1 AND message.deleted_at IS NULL AND message.expires_at > NOW()
+      ORDER BY message.created_at ASC`, [conversationId]);
 
     // Update last_read_at for this member
-    await supabaseAdmin
+    await db
       .from("conversation_participants")
       .update({ last_read_at: new Date().toISOString() })
       .eq("conversation_id", conversationId)

@@ -206,12 +206,17 @@ export default function AdminDashboardPage() {
 
   // Content actions
   const handleSaveContent = useCallback(
-    async (item: AdminContentItem) => {
+    async (item: AdminContentItem, options?: { deferClose?: boolean }) => {
       const isNew = !item.id || !content.some((c) => c.id === item.id);
       const updatedList = await saveAdminContentRemote(item);
       setContent(updatedList);
-      setIsContentModalOpen(false);
-      setContentEditorItem(null);
+      // The editor passes deferClose while it is still uploading gallery
+      // assets. Direct callers can omit it and retain the traditional modal
+      // close-after-save behavior.
+      if (!options?.deferClose) {
+        setIsContentModalOpen(false);
+        setContentEditorItem(null);
+      }
       logActivity(isNew ? "Created content" : "Updated content", item.title, "success");
       notify("Content saved");
     },
@@ -347,7 +352,7 @@ export default function AdminDashboardPage() {
       const response = await fetch('/api/admin/auth/logout', { method: 'POST' });
       if (!response.ok) throw new Error("Unable to end server session");
       logoutAdmin();
-      logoutMember();
+      await logoutMember();
       window.location.replace("/admin/login");
     } catch (error) {
       notify(error instanceof Error ? error.message : "Sign out failed");

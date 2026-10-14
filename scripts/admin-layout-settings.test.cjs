@@ -20,6 +20,7 @@ const database = {
       upsert(value) { payload = value; writes.push({ table, value }); return query; },
       maybeSingle() { return Promise.resolve(result()); },
       single() { return Promise.resolve(result()); },
+      execute() { return Promise.resolve(result()); },
       then(yes, no) { return Promise.resolve(result()).then(yes, no); },
     };
     return query;
@@ -53,6 +54,7 @@ for (const extension of ['.ts', '.tsx']) require.extensions[extension] = (module
   }).outputText, filename);
 };
 
+require.cache[path.join(root, 'lib/db.ts')] = { exports: { db: database } };
 process.env.JWT_SECRET = 'admin-layout-test-0123456789abcdef0123456789';
 process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://layout-test.example.invalid';
 process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'test-public-key';

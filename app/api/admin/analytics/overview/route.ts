@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabaseAdmin } from "@/lib/supabase";
+import { db } from "@/lib/db";
 import { requireRole } from "@/lib/api-auth";
 import { analyticsCount, analyticsError, analyticsRows, analyticsWindow } from "../_shared";
 
@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     await requireRole(request, ["admin"]);
     const window = analyticsWindow(request);
     const count = (table: string, timestamp?: string, start?: Date, end?: Date, event?: string) => {
-      let query = supabaseAdmin.from(table).select("id", { count: "exact", head: true });
+      let query = db.from(table).select("COUNT(*) as count");
       if (timestamp && start) query = query.gte(timestamp, start.toISOString());
       if (timestamp && end) query = query.lt(timestamp, end.toISOString());
       if (event) query = query.eq("event_type", event);
@@ -34,11 +34,11 @@ export async function GET(request: NextRequest) {
     const [totalMembers, newMembers, membersBefore, content, likes, saves, views, shares, activeSessions, academicLikes, academicViews] = await Promise.all([
       count("members"), count("members", "joined_at", window.start),
       count("members", "joined_at", undefined, window.start),
-      analyticsRows<{ kind: string }>(() => supabaseAdmin.from("content")
+      analyticsRows<{ kind: string }>(() => db.from("content")
         .select("kind").eq("status", "published").order("id"), "Published content"),
       metrics("content_likes", "created_at"), metrics("member_interests", "created_at"),
       metrics("content_views", "viewed_at"), metrics("content_shares", "shared_at"),
-      analyticsCount(supabaseAdmin.from("member_sessions").select("id", { count: "exact", head: true })
+      analyticsCount(db.from("member_sessions").select("COUNT(*) as count")
         .eq("is_active", true).gte("expires_at", window.now.toISOString()), "Active sessions"),
       metrics("academic_document_engagement", "occurred_at", "like"),
       metrics("academic_document_engagement", "occurred_at", "view"),

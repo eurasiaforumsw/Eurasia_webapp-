@@ -575,7 +575,7 @@ export const AdminBroadcastView = memo(function AdminBroadcastView({
         <div className="efsw-admin-empty">
           <Mail size={40} style={{ color: "var(--admin-green)" }} />
           <h2>No broadcasts yet</h2>
-          <p>Click "New broadcast" to compose your first email campaign.</p>
+          <p>Click &quot;New broadcast&quot; to compose your first email campaign.</p>
         </div>
       ) : (
         <div style={{ display: "grid", gap: "0.65rem" }}>

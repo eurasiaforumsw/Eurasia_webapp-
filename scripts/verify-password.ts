@@ -2,20 +2,22 @@
  * Verify password hash in database
  */
 
-import { supabaseAdmin } from '../lib/supabase';
+import 'dotenv/config';
+import { db } from '../lib/db';
 import * as bcrypt from 'bcryptjs';
 
 async function verifyPassword() {
   console.log('🔐 Verifying password setup...\n');
 
-  if (!supabaseAdmin) {
-    console.error('❌ Supabase admin client not configured');
-    process.exit(1);
+  if (!process.env.DATABASE_URL) {
+    console.error('❌ DATABASE_URL is not configured');
+    process.exitCode = 1;
+    return;
   }
 
   try {
     // Get member from database
-    const { data: member, error } = await supabaseAdmin
+    const { data: member, error } = await db
       .from('members')
       .select('id, email, password_hash')
       .eq('email', 'testmember@efsw.local')

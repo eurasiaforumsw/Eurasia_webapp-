@@ -106,7 +106,7 @@ export async function POST(req: NextRequest) {
       originalSizeBytes: raw.byteLength,
       humanSize: formatBytes(buf.byteLength),
       originalHumanSize: formatBytes(raw.byteLength),
-      bucket: process.env.R2_BUCKET || process.env.CLOUDFLARE_R2_BUCKET || null,
+      bucket: process.env.R2_BUCKET_NAME || process.env.R2_BUCKET || process.env.CLOUDFLARE_R2_BUCKET || null,
       kind: isVideo(file.type) ? "video" : "image",
     });
   } catch (err: any) {

@@ -1,10 +1,11 @@
-import { supabaseAdmin } from '@/lib/supabase';
+import { db } from '@/lib/db';
+import { query } from '@/lib/db';
 
 /**
  * Check if member is currently suspended
  */
 export async function checkMemberSuspension(memberId: string) {
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await db
     .rpc('is_member_suspended', { p_member_id: memberId });
 
   if (error) {
@@ -38,7 +39,7 @@ export async function suspendMember(params: {
   reasonDetails?: string;
   customDays?: number;
 }) {
-  const { data, error } = await supabaseAdmin.rpc('admin_suspend_member', {
+  const { data, error } = await db.rpc('admin_suspend_member', {
     p_member_id: params.memberId,
     p_actor_id: params.suspendedBy,
     p_suspension_type: params.suspensionType,
@@ -59,7 +60,7 @@ export async function suspendMember(params: {
  * Lift a suspension
  */
 export async function liftSuspension(suspensionId: string, liftedBy: string) {
-  const { data, error } = await supabaseAdmin.rpc('admin_lift_suspension', {
+  const { data, error } = await db.rpc('admin_lift_suspension', {
     p_suspension_id: suspensionId,
     p_actor_id: liftedBy,
   });
@@ -76,11 +77,12 @@ export async function liftSuspension(suspensionId: string, liftedBy: string) {
  * Get suspension history for a member
  */
 export async function getMemberSuspensionHistory(memberId: string) {
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await db
     .from('member_suspensions')
     .select('*')
     .eq('member_id', memberId)
-    .order('suspended_at', { ascending: false });
+    .order('suspended_at', { ascending: false })
+    .execute();
 
   if (error) {
     console.error('Error fetching suspension history:', error);
@@ -94,29 +96,22 @@ export async function getMemberSuspensionHistory(memberId: string) {
  * Get all active suspensions (for admin dashboard)
  */
 export async function getActiveSuspensions() {
-  const { data, error } = await supabaseAdmin
-    .from('member_suspensions')
-    .select(`
-      *,
-      member:members!member_suspensions_member_id_fkey(id, full_name, email),
-      suspended_by_member:members!member_suspensions_suspended_by_fkey(id, full_name)
-    `)
-    .eq('is_active', true)
-    .order('suspended_at', { ascending: false });
-
-  if (error) {
-    console.error('Error fetching active suspensions:', error);
-    throw new Error('Failed to fetch active suspensions');
-  }
-
-  return data;
+  const { rows } = await query(`SELECT suspension.*,
+    json_build_object('id', member.id, 'full_name', member.full_name, 'email', member.email) AS member,
+    CASE WHEN actor.id IS NULL THEN NULL ELSE json_build_object('id', actor.id, 'full_name', actor.full_name) END AS suspended_by_member
+    FROM member_suspensions suspension
+    JOIN members member ON member.id = suspension.member_id
+    LEFT JOIN members actor ON actor.id = suspension.suspended_by
+    WHERE suspension.is_active = true AND (suspension.expires_at IS NULL OR suspension.expires_at > NOW())
+    ORDER BY suspension.suspended_at DESC`);
+  return rows;
 }
 
 /**
  * Expire old suspensions (call this periodically via cron)
  */
 export async function expireSuspensions() {
-  const { data, error } = await supabaseAdmin.rpc('expire_suspensions');
+  const { data, error } = await db.rpc('expire_suspensions');
 
   if (error) {
     console.error('Error expiring suspensions:', error);
@@ -130,7 +125,7 @@ export async function expireSuspensions() {
  * Delete expired messages (call this periodically via cron)
  */
 export async function deleteExpiredMessages() {
-  const { data, error } = await supabaseAdmin.rpc('delete_expired_messages');
+  const { data, error } = await db.rpc('delete_expired_messages');
 
   if (error) {
     console.error('Error deleting expired messages:', error);

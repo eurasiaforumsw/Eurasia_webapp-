@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabaseAdmin } from "@/lib/supabase";
+import { db } from "@/lib/db";
 import { requireRole } from "@/lib/api-auth";
 import { MEMBER_REVIEW_ROLES } from "@/lib/auth/session";
 import { suspendMember, liftSuspension } from "@/lib/member-suspension";
@@ -45,7 +45,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     const actor = await requireRole(request, MEMBER_REVIEW_ROLES);
     const id = request.nextUrl.searchParams.get("suspension_id");
     if (!id) return NextResponse.json({ error: "suspension_id is required" }, { status: 400 });
-    const { data, error } = await supabaseAdmin.from("member_suspensions").select("id")
+    const { data, error } = await db.from("member_suspensions").select("id")
       .eq("id", id).eq("member_id", params.id).maybeSingle();
     if (error) throw error;
     if (!data) return NextResponse.json({ error: "Suspension not found" }, { status: 404 });

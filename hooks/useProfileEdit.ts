@@ -85,7 +85,7 @@ export function useProfileEdit(member: MemberProfile | null) {
 
     try {
       const updates = draftToMemberUpdates(draft, section);
-      updateMember(updates);
+      await updateMember(updates);
       setEditingSection(null);
       return true;
     } catch (err) {

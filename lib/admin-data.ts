@@ -2,7 +2,6 @@ import {
   getMember,
   MemberProfile,
   removeMember,
-  updateMember,
 } from "@/lib/member-auth";
 import { normalizeSiteSettings } from "@/lib/site-settings";
 
@@ -741,8 +740,6 @@ export const setAdminMemberStatus = (id: string, status: MemberProfile["status"]
   const members = getAdminMembers();
   const next = members.map((member) => member.id === id ? { ...member, status, reviewNote, reviewedAt: new Date().toISOString() } : member);
   write(ADMIN_MEMBERS_KEY, next);
-  const current = getMember();
-  if (current?.id === id) updateMember({ status });
   return next.find((member) => member.id === id) ?? null;
 };
 
@@ -904,10 +901,8 @@ export const getAdminActivity = () => readArray<AdminActivity>(ADMIN_ACTIVITY_KE
    pulls from Supabase and writes the merged result back.
    ═════════════════════════════════════════════════════════════ */
 
-const USE_REMOTE =
-  typeof window !== "undefined" &&
-  Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL) &&
-  Boolean(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+// Same-origin APIs own Neon/R2 credentials and report configuration failures.
+const USE_REMOTE = typeof window !== "undefined";
 
 /** Fetch all admin content rows from Supabase. */
 async function fetchRemoteContent(): Promise<AdminContentItem[] | null> {
@@ -1083,6 +1078,13 @@ export async function uploadMediaToR2(file: File): Promise<R2UploadResult> {
       kind: "image",
       bucket: null,
     };
+  }
+
+  if (file.size > 4 * 1024 * 1024) {
+    const { uploadFileDirect } = await import("@/lib/r2-upload");
+    const result = await uploadFileDirect(file, "media");
+    return { ...result, humanSize: formatBytesLocal(result.sizeBytes ?? file.size),
+      originalHumanSize: formatBytesLocal(file.size) };
   }
 
   const form = new FormData();

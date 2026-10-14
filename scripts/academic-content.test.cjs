@@ -43,18 +43,22 @@ const database = {
       delete() { action = 'delete'; return query; },
       maybeSingle() { return Promise.resolve(result(true)); },
       single() { return Promise.resolve(result(true)); },
+      execute() { return Promise.resolve(result()); },
       then(onFulfilled, onRejected) { return Promise.resolve(result()).then(onFulfilled, onRejected); },
     };
     return query;
   },
 };
 require.cache[path.join(root, 'lib/supabase.ts')] = { exports: { supabaseAdmin: database, supabase: database } };
+require.cache[path.join(root, 'lib/db.ts')] = { exports: { db: database, query: async () => ({ rows: [{ membership_type: "professional", target_groups: ["Educators"] }] }) } };
 let authorized = true;
+let viewerSession = null;
 require.cache[path.join(root, 'lib/api-auth.ts')] = { exports: {
   requireRole: async () => { if (!authorized) throw new Error('Unauthorized'); return { role: 'admin' }; },
 } };
 require.cache[path.join(root, 'lib/auth/session.ts')] = { exports: {
   CONTENT_ROLES: ['admin', 'pr', 'content-editor', 'super-admin'],
+  verifyRequestSession: async () => viewerSession,
 } };
 const uploads = [];
 require.cache[path.join(root, 'lib/r2.ts')] = { exports: {
@@ -113,6 +117,17 @@ test('academic metadata survives create, public read, edit, file removal, and de
   assert.equal((await removed.json()).item.fileUrl, undefined);
   assert.equal((await content.DELETE(request('DELETE', null, '?id=academic-one'))).status, 200);
   assert.equal(rows.size, 0);
+});
+
+test('unfiltered public feed returns published content across kinds and both filters select one item', async () => {
+  rows.clear();
+  for (const [id, kind, status] of [['academic-one', 'academic', 'published'], ['news-one', 'news', 'published'], ['draft-one', 'news', 'draft']]) {
+    assert.equal((await content.POST(request('POST', { ...document, id, kind, status }))).status, 200);
+  }
+  const all = await publicContent.GET(new Request('http://localhost:2024/api/content/public'));
+  assert.deepEqual((await all.json()).items.map((item) => item.id).sort(), ['academic-one', 'news-one']);
+  const one = await publicContent.GET(new Request('http://localhost:2024/api/content/public?kind=news&slug=news-one'));
+  assert.deepEqual((await one.json()).items.map((item) => item.id), ['news-one']);
 });
 
 test('full saves preserve creation date and partial updates preserve omitted content and attachments', async () => {
@@ -216,4 +231,16 @@ test('academic upload rejects empty and oversized files without writing storage'
   assert.equal((await upload.POST(uploadRequest(''))).status, 413);
   assert.equal((await upload.POST(uploadRequest(new Uint8Array(4 * 1024 * 1024 + 1)))).status, 413);
   assert.equal(uploads.length, count);
+});
+
+test('query parameters cannot grant restricted audience access; active signed member audience can', async () => {
+  rows.clear();viewerSession=null;
+  const privateDoc={...document,id:'private-doc',targetMembershipTypes:['professional'],targetGroups:['Educators']};
+  assert.equal((await content.POST(request('POST',privateDoc))).status,200);
+  const spoofed=await publicContent.GET(new Request('http://localhost/api/content/public?membership=professional&groups=Educators'));
+  assert.deepEqual((await spoofed.json()).items,[]);
+  viewerSession={id:'member-one',role:'member'};
+  const signed=await publicContent.GET(new Request('http://localhost/api/content/public'));
+  assert.equal((await signed.json()).items[0].id,'private-doc');
+  viewerSession=null;
 });

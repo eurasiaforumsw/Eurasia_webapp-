@@ -2,7 +2,7 @@ import { defaultSiteSettings, normalizeSiteSettings } from "./site-settings";
 import type { AdminSettings } from "./admin-data";
 
 export async function getPublicSiteSettings(): Promise<AdminSettings> {
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) return defaultSiteSettings;
+  if (!process.env.DATABASE_URL) return defaultSiteSettings;
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
     const response = await Promise.race([

@@ -1,19 +1,7 @@
-import { createClient } from '@supabase/supabase-js'
+// Database operations using Neon PostgreSQL
+import { db } from './db';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-
-// Client-side Supabase client (สำหรับใช้ใน components)
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
-
-// Server-side Supabase client with service role (สำหรับ API routes)
-export const supabaseAdmin = createClient(
-  supabaseUrl,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false
-    }
-  }
-)
+export { db };
+export const supabase = db;
+export const supabaseAdmin = db;
+export const isConfigured = !!process.env.DATABASE_URL;

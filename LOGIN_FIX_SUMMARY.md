@@ -40,7 +40,7 @@ npm run dev
 ```bash
 curl -X POST http://localhost:2024/api/members/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@efsw.local","password":"EFSW-secure-admin-2024"}'
+  -d '{"email":"admin@efsw.local","password":"<configured-admin-password>"}'
 ```
 
 **ผลลัพธ์:** ✅ Login สำเร็จ!
@@ -77,7 +77,7 @@ curl -X POST http://localhost:2024/api/members/login \
 
 | Role | Email | Password |
 |------|-------|----------|
-| **Admin** | `admin@efsw.local` | `EFSW-secure-admin-2024` |
+| **Admin** | `admin@efsw.local` | `<configured-admin-password>` |
 | **Member** | `member@efsw.local` | `EFSW-member-demo-2024` |
 | **PR Editor** | `news@efsw.local` | `EFSW-news-pr-2024` |
 

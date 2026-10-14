@@ -1,10 +1,5 @@
 export function contentSecurityPolicy(nonce: string): string {
-  const connections = ["'self'"];
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  if (supabaseUrl) {
-    const url = new URL(supabaseUrl);
-    connections.push(url.origin, url.origin.replace(/^https:/, "wss:"));
-  }
+  const connections = ["'self'", "https://*.r2.cloudflarestorage.com"];
   if (process.env.NODE_ENV !== "production") connections.push("ws:", "http://localhost:2024");
   return [
     "default-src 'self'",

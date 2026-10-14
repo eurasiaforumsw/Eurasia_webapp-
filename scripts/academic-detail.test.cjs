@@ -33,6 +33,7 @@ Module._load = function (name, ...args) {
     };
   }
   if (name === "next/navigation") return { notFound: () => { throw notFoundError; } };
+  if (name === "next/headers") return { headers: () => new Headers({ cookie: "member_token=test-member-session" }) };
   if (name === "@/components/efsw/ArticleView") return { __esModule: true, default: function ArticleView() {} };
   if (name === "@/components/academic/LocalDocumentView") return { __esModule: true, default: function LocalDocumentView() {} };
   if (name === "@/components/efsw/SiteNav") return { SiteNav: function SiteNav() {} };
@@ -184,18 +185,18 @@ test("public API failures surface as load errors rather than a false missing doc
   await assert.rejects(page.default({ params: { slug: academic.id } }), /Failed to load academic document/);
 });
 
-test("local development defers content resolution to the browser without loading the public handler", async () => {
+test("missing legacy Supabase variables still resolves persisted Neon content", async () => {
   for (const key of ["NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY"]) {
     const saved = process.env[key];
     delete process.env[key];
     const rendered = await page.default({ params: { slug: academic.id } });
-    assert.equal(rendered.type.name, "LocalDocumentView");
+    assert.equal(rendered.type.name, "ArticleView");
     assert.equal(rendered.props.slug, academic.id);
-    assert.equal(rendered.props.seed, undefined);
+    assert.equal(rendered.props.seed.id, academic.id);
     const metadata = await page.generateMetadata({ params: { slug: academic.id } });
-    assert.equal(metadata.title, "Academic Documents | EFSW");
-    assert.equal(requests.length, 0);
-    assert.equal(publicHandlerImports, 0);
+    assert.equal(metadata.title, `${academic.seoTitle} | EFSW Academic Documents`);
+    assert.ok(requests.length > 0);
+    assert.ok(publicHandlerImports > 0);
     process.env[key] = saved;
   }
 });

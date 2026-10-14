@@ -1,46 +1,27 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -euo pipefail
 
-# Apply Message Rate Limiting and Suspensions Migration
-# This script applies migration 016 to add rate limiting and suspension tables
+# Apply the pending Neon schema migrations. Migration 016 is included in the
+# ordered migration set and must not be run in isolation on a fresh database.
 
 echo "🚀 Applying Migration 016: Message Rate Limiting and Suspensions"
 echo "================================================================"
 
-# Load environment variables
+# Load environment variables without breaking values containing spaces or '#'.
 if [ -f .env ]; then
-    export $(grep -v '^#' .env | xargs)
+    set -a
+    # shellcheck disable=SC1091
+    . ./.env
+    set +a
 fi
 
 # Check for required environment variables
-if [ -z "$SUPABASE_DB_URL" ]; then
-    echo "❌ Error: SUPABASE_DB_URL not found in .env"
-    echo "Please add the database connection string to .env file"
+if [ -z "${DATABASE_URL:-}" ]; then
+    echo "❌ Error: DATABASE_URL not found in .env or the environment"
+    echo "Please add the Neon connection string to .env file"
     exit 1
 fi
 
-# Apply the migration
-echo "📝 Applying migration..."
-psql "$SUPABASE_DB_URL" -f supabase/migrations/016_message_rate_limiting_and_suspensions.sql
-
-if [ $? -eq 0 ]; then
-    echo "✅ Migration applied successfully!"
-    echo ""
-    echo "📊 Created tables:"
-    echo "   - message_rate_limits"
-    echo "   - member_suspensions"
-    echo ""
-    echo "🔧 Created functions:"
-    echo "   - is_member_suspended()"
-    echo "   - suspend_member()"
-    echo "   - lift_suspension()"
-    echo "   - expire_suspensions()"
-    echo "   - delete_expired_messages()"
-    echo ""
-    echo "⚡ Added features:"
-    echo "   - Rate limiting with exponential backoff"
-    echo "   - Member suspension system (24h/custom/permanent)"
-    echo "   - Message expiry (180 days auto-deletion)"
-else
-    echo "❌ Migration failed!"
-    exit 1
-fi
+echo "📝 Applying pending migrations through scripts/push-schema.js..."
+node scripts/push-schema.js
+echo "✅ Neon schema migrations applied successfully!"

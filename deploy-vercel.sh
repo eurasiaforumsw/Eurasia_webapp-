@@ -26,18 +26,12 @@ echo "🔧 Required Environment Variables:"
 echo "--------------------------------"
 echo ""
 echo "1. JWT_SECRET"
-echo "   Value: Vei6k0vFaMfZmI67q9BH8Iubv6ePDXCc8OZBQbjx9Xw="
-echo "   Command:"
-echo '   echo "Vei6k0vFaMfZmI67q9BH8Iubv6ePDXCc8OZBQbjx9Xw=" | vercel env add JWT_SECRET production'
-echo '   echo "Vei6k0vFaMfZmI67q9BH8Iubv6ePDXCc8OZBQbjx9Xw=" | vercel env add JWT_SECRET preview'
-echo '   echo "Vei6k0vFaMfZmI67q9BH8Iubv6ePDXCc8OZBQbjx9Xw=" | vercel env add JWT_SECRET development'
+echo "   Generate a fresh value locally and add it to Vercel (never commit it)."
+echo '   openssl rand -base64 48 | vercel env add JWT_SECRET production'
 echo ""
 echo "2. ADMIN_PASSWORD_HASH"
-echo '   Value: $2b$12$QI870B2LMENPYRNKh9s.POFRpqLMmXJ7SqpnrqAM9HK7xiNU4aEHq'
-echo "   Command:"
-echo '   echo "$2b$12$QI870B2LMENPYRNKh9s.POFRpqLMmXJ7SqpnrqAM9HK7xiNU4aEHq" | vercel env add ADMIN_PASSWORD_HASH production'
-echo '   echo "$2b$12$QI870B2LMENPYRNKh9s.POFRpqLMmXJ7SqpnrqAM9HK7xiNU4aEHq" | vercel env add ADMIN_PASSWORD_HASH preview'
-echo '   echo "$2b$12$QI870B2LMENPYRNKh9s.POFRpqLMmXJ7SqpnrqAM9HK7xiNU4aEHq" | vercel env add ADMIN_PASSWORD_HASH development'
+echo "   Generate a bcrypt hash for a new password and add it to Vercel (never commit it)."
+echo '   node -e "require(\"bcrypt\").hash(process.env.NEW_ADMIN_PASSWORD, 12).then(console.log)" | vercel env add ADMIN_PASSWORD_HASH production'
 echo ""
 echo "3. Remove old variable (NEXT_PUBLIC_ADMIN_PASSWORD)"
 echo "   Command:"
@@ -61,10 +55,6 @@ vercel --prod --yes
 
 echo ""
 echo "✅ Deployment triggered!"
-echo ""
-echo "🔑 New Admin Credentials:"
-echo "   Email: admin@efsw.local"
-echo "   Password: EFSW-secure-admin-2024"
 echo ""
 echo "📊 Monitor deployment at: https://vercel.com"
 echo ""

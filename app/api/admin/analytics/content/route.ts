@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabaseAdmin } from "@/lib/supabase";
+import { db } from "@/lib/db";
 import { requireRole } from "@/lib/api-auth";
 import { analyticsError, analyticsRows, analyticsWindow } from "../_shared";
 
@@ -13,14 +13,14 @@ export async function GET(request: NextRequest) {
     await requireRole(request, ["admin"]);
     const window = analyticsWindow(request);
     const [content, likes, views, saves] = await Promise.all([
-      analyticsRows<ContentRow>(() => supabaseAdmin.from("content")
+      analyticsRows<ContentRow>(() => db.from("content")
         .select("id, title, kind, author, status, created_at").order("id"), "Content"),
       ...[["content_likes", "created_at"], ["content_views", "viewed_at"], ["member_interests", "created_at"]]
-        .map(([table, timestamp]) => analyticsRows<{ content_id: string }>(() => supabaseAdmin.from(table)
+        .map(([table, timestamp]) => analyticsRows<{ content_id: string }>(() => db.from(table)
           .select("content_id").gte(timestamp, window.start.toISOString())
           .lte(timestamp, window.now.toISOString()).order("id"), table)),
     ]);
-    const academicEvents = await analyticsRows<{ content_id: string; event_type: string }>(() => supabaseAdmin
+    const academicEvents = await analyticsRows<{ content_id: string; event_type: string }>(() => db
       .from("academic_document_engagement").select("content_id, event_type")
       .gte("occurred_at", window.start.toISOString()).lte("occurred_at", window.now.toISOString()).order("id"), "Academic engagement");
     academicEvents.forEach((event) => {

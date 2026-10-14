@@ -77,6 +77,7 @@ export default function RegistrationButton({
         // Determine button state based on settings
         if (!settingsData.registrationEnabled) {
           setState("registration-closed");
+          return;
         } else if (settingsData.registrationStartsAt) {
           const startsAt = new Date(settingsData.registrationStartsAt);
           if (startsAt > new Date()) {
@@ -118,7 +119,7 @@ export default function RegistrationButton({
   const handleClick = () => {
     if (state === "not-logged-in") {
       // Redirect to login with return URL
-      window.location.href = `/login?returnTo=/events/${eventId}`;
+      window.location.href = `/member/login?redirect=${encodeURIComponent(`/events/${eventId}`)}`;
     } else if (state === "can-register" && onOpenModal) {
       onOpenModal();
     }

@@ -14,7 +14,7 @@ export function analyticsWindow(request: NextRequest, now = new Date()) {
   return { range: range as AnalyticsRange, days, start, previousStart, now };
 }
 
-// Page through Supabase responses so larger catalogs do not stop at 1,000 rows.
+// Page through query results without loading the whole catalog at once.
 export async function analyticsRows<T>(query: () => any, label: string): Promise<T[]> {
   const rows: T[] = [];
   for (let offset = 0; ; offset += 1000) {
@@ -26,9 +26,9 @@ export async function analyticsRows<T>(query: () => any, label: string): Promise
 }
 
 export async function analyticsCount(query: any, label: string): Promise<number> {
-  const { count, error } = await query;
+  const { data, error } = await query.execute();
   if (error) throw new Error(`${label}: ${error.message}`);
-  return count ?? 0;
+  return Number(data?.[0]?.count ?? 0);
 }
 
 export function analyticsError(error: unknown, label: string) {

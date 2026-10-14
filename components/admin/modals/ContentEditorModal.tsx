@@ -38,6 +38,10 @@ import {
 import CoverImageCropper from "@/components/admin/content/CoverImageCropper";
 import GalleryManager, { GalleryImage } from "@/components/admin/content/GalleryManager";
 import { AcademicFileUploader } from "@/components/admin/AcademicFileUploader";
+import { uploadFileDirect } from "@/lib/r2-upload";
+import FormBuilder from "@/components/admin/events/FormBuilder";
+import RegistrationSettings from "@/components/admin/events/RegistrationSettings";
+import RegistrationManager from "@/components/admin/events/RegistrationManager";
 
 type Area = { width: number; height: number; x: number; y: number };
 
@@ -56,7 +60,13 @@ interface ContentEditorModalProps {
   initialItem: AdminContentItem | null;
   isOpen: boolean;
   onClose: () => void;
-  onSave: (item: AdminContentItem) => Promise<void>;
+  /**
+   * Persist content. Gallery uploads happen immediately after this callback,
+   * so the modal asks the parent to defer closing until that work completes.
+   * Keeping the option optional preserves the callback's standalone behavior
+   * for callers that only persist the content record.
+   */
+  onSave: (item: AdminContentItem, options?: { deferClose?: boolean }) => Promise<void>;
   onDelete?: (id: string) => void;
   contentCategories?: AdminContentCategory[];
 }
@@ -403,13 +413,14 @@ export const ContentEditorModal = memo(function ContentEditorModal({
 
     setIsSaving(true);
     try {
-      await onSave(updated);
-      if (hasGallery && updated.id) await saveGalleryImages(updated.id);
+      await onSave(updated, { deferClose: true });
+      if (updated.id && (hasGallery || initialItem?.id)) await saveGalleryImages(updated.id);
       addToast({
         type: "success",
         title: formData.id ? "Content updated" : "Content created",
         description: `${KIND_LABELS[updated.kind]} saved to the library.`,
       });
+      onClose();
     } catch (err) {
       addToast({ type: "error", title: "Content could not be saved", description: err instanceof Error ? err.message : "Please try again." });
     } finally {
@@ -418,33 +429,30 @@ export const ContentEditorModal = memo(function ContentEditorModal({
   };
 
   const saveGalleryImages = async (contentId: string) => {
-    try {
-      // Upload new images (those with file objects)
-      for (const image of galleryImages) {
-        if (image.file) {
-          const formData = new FormData();
-          formData.append("file", image.file);
-          formData.append("caption", image.alt || "");
-          formData.append("displayOrder", image.order.toString());
-
-          const res = await fetch(`/api/content/${contentId}/gallery`, {
-            method: "POST",
-            body: formData,
-          });
-
-          if (!res.ok) {
-            const { error } = await res.json();
-            throw new Error(error || "Gallery upload failed");
-          }
-        }
-      }
-    } catch (err) {
-      addToast({
-        type: "error",
-        title: "Gallery save failed",
-        description: err instanceof Error ? err.message : "Could not save gallery images.",
+    const persisted: GalleryImage[] = [];
+    for (const image of galleryImages) {
+      if (!image.file) { persisted.push(image); continue; }
+      const uploaded = await uploadFileDirect(image.file, "gallery");
+      const response = await fetch(`/api/content/${contentId}/gallery`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ uploadToken: uploaded.uploadToken, caption: image.alt || "", displayOrder: image.order }),
       });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error || "Gallery upload failed");
+      const savedImage = { ...image, file: undefined, id: body.id, url: body.url };
+      persisted.push(savedImage);
+      // Keep successful uploads if a later upload fails, so retry does not duplicate them.
+      setGalleryImages((current) => current.map((entry) => entry.id === image.id ? savedImage : entry));
     }
+    const response = await fetch(`/api/content/${contentId}/gallery`, {
+      method: "PUT", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ images: persisted.map((image) => ({ id: image.id, caption: image.alt || "" })) }),
+    });
+    if (!response.ok) {
+      const body = await response.json().catch(() => ({}));
+      throw new Error(body.error || "Gallery captions, removals or order could not be saved");
+    }
+    setGalleryImages(persisted);
   };
 
   const handleDelete = () => {
@@ -1168,21 +1176,8 @@ export const ContentEditorModal = memo(function ContentEditorModal({
                 onUploadingChange={setIsUploadingDocument}
                 onFileSelect={async (file) => {
                   try {
-                    const formData = new FormData();
-                    formData.append("file", file);
-                    formData.append("contentId", initialItem?.id || "temp-" + Date.now());
-
-                    const res = await fetch("/api/admin/content/upload-file", {
-                      method: "POST",
-                      body: formData,
-                    });
-
-                    if (!res.ok) {
-                      const { error } = await res.json();
-                      throw new Error(error || "Upload failed");
-                    }
-
-                    const result = await res.json();
+                    const uploaded = await uploadFileDirect(file, "document");
+                    const result = { fileUrl: uploaded.url, fileName: file.name, fileSize: uploaded.sizeBytes, fileType: uploaded.mimeType };
                     setFormData((prev) => ({
                       ...prev,
                       fileUrl: result.fileUrl,
@@ -1346,6 +1341,28 @@ export const ContentEditorModal = memo(function ContentEditorModal({
             </fieldset>
           )}
 
+          {formData.kind === "event" && (
+            <section style={{ marginTop: "1.6rem" }}>
+              <h3 style={{ fontSize: "1.1rem", fontWeight: 650 }}>Event registration</h3>
+              {initialItem?.id ? (
+                <>
+                  <details style={{ marginTop: "1rem" }}>
+                    <summary style={{ cursor: "pointer", padding: "1rem" }}>Registration dates, capacity and email</summary>
+                    <RegistrationSettings eventId={initialItem.id} />
+                  </details>
+                  <details style={{ marginTop: "1rem" }}>
+                    <summary style={{ cursor: "pointer", padding: "1rem" }}>Registration form fields</summary>
+                    <FormBuilder eventId={initialItem.id} />
+                  </details>
+                  <details style={{ marginTop: "1rem" }}>
+                    <summary style={{ cursor: "pointer", padding: "1rem" }}>Registrations, approval and Excel export (administrators)</summary>
+                    <RegistrationManager eventId={initialItem.id} />
+                  </details>
+                </>
+              ) : <p>Save the event, then reopen it to configure registration.</p>}
+            </section>
+          )}
+
           {/* ── Display window + Audience ──────────────────────── */}
           <fieldset
             style={{
@@ -1406,7 +1423,7 @@ export const ContentEditorModal = memo(function ContentEditorModal({
               }}
             >
               Leave either field empty to leave that side of the window open.
-              Once "Hide after" passes, the item is automatically excluded from the public feed.
+              Once &quot;Hide after&quot; passes, the item is automatically excluded from the public feed.
             </p>
 
             {/* Audience mode switch */}

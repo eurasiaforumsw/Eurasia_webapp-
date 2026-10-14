@@ -1,251 +1,98 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase';
+import { query } from '@/lib/db';
+import { requireRole } from '@/lib/api-auth';
+import { ADMIN_ROLES } from '@/lib/auth/session';
 
-interface AdminMessage {
-  id: string;
-  sender_id: string;
-  sender_name: string;
-  sender_email: string;
-  conversation_id: string;
-  recipient_id?: string;
-  recipient_name?: string;
-  recipient_email?: string;
-  content: string;
-  created_at: string;
-  read_at: string | null;
-  deleted_at: string | null;
-  contains_link: boolean;
-  is_flagged: boolean;
-}
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
-interface AdminMessagesResponse {
-  messages: AdminMessage[];
-  total: number;
-  page: number;
-  pageSize: number;
-  hasMore: boolean;
-  stats: {
-    total_today: number;
-    with_links: number;
-    flagged: number;
-  };
+const withLinks = "m.content ~* 'https?://'";
+const flagged = String.raw`(
+  LENGTH(REGEXP_REPLACE(m.content, '[^A-Z]', '', 'g'))::numeric / NULLIF(LENGTH(m.content), 0) > 0.7
+  OR m.content ~ '[!?]{3,}' OR m.content ~ '(.)\1{4,}' OR LENGTH(BTRIM(m.content)) < 5
+)`;
+
+function failure(error: unknown) {
+  const message = error instanceof Error ? error.message : 'Internal server error';
+  const status = message === 'Unauthorized' ? 401 : message === 'Forbidden' ? 403 : 500;
+  if (status === 500) console.error('Admin messages error:', error);
+  return NextResponse.json({ error: status === 500 ? 'Internal server error' : message }, { status });
 }
 
 export async function GET(req: NextRequest) {
   try {
-    // Parse query parameters
-    const searchParams = req.nextUrl.searchParams;
-    const page = parseInt(searchParams.get('page') || '1');
-    const pageSize = parseInt(searchParams.get('pageSize') || '50');
-    const search = searchParams.get('search') || '';
-    const filterType = searchParams.get('filterType') || 'all'; // all, with_links, flagged
-    const startDate = searchParams.get('startDate');
-    const endDate = searchParams.get('endDate');
-
-    // Validate pagination
-    const offset = Math.max(0, (page - 1) * pageSize);
-    const limit = Math.min(pageSize, 100);
-
-    // Build base query
-    let query = supabaseAdmin
-      .from('messages')
-      .select(
-        `
-        id,
-        sender_id,
-        conversation_id,
-        content,
-        created_at,
-        read_at,
-        deleted_at,
-        conversations!inner(id),
-        sender:members!messages_sender_id_fkey(id, full_name, email),
-        conversation_participants(member_id)
-      `,
-        { count: 'exact' }
-      )
-      .is('deleted_at', null) // Only show non-deleted messages
-      .order('created_at', { ascending: false });
-
-    // Add date filters if provided
-    if (startDate) {
-      query = query.gte('created_at', new Date(startDate).toISOString());
+    await requireRole(req, ADMIN_ROLES);
+    const params = req.nextUrl.searchParams;
+    const page = Math.max(1, Number.parseInt(params.get('page') || '1', 10) || 1);
+    const pageSize = Math.min(100, Math.max(1, Number.parseInt(params.get('pageSize') || '50', 10) || 50));
+    const offset = (page - 1) * pageSize;
+    const filterType = params.get('filterType') || params.get('filter') || 'all';
+    if (!['all', 'with_links', 'flagged'].includes(filterType) || !Number.isSafeInteger(offset)) {
+      return NextResponse.json({ error: 'Invalid message filters' }, { status: 400 });
     }
-    if (endDate) {
-      const endDateTime = new Date(endDate);
-      endDateTime.setHours(23, 59, 59, 999);
-      query = query.lte('created_at', endDateTime.toISOString());
-    }
-
-    // Apply search filter
-    if (search) {
-      const searchLower = search.toLowerCase();
-      query = query.or(
-        `sender_id.ilike.%${searchLower}%,content.ilike.%${searchLower}%`
-      );
-    }
-
-    // Get total count before pagination
-    const countQuery = await supabaseAdmin
-      .from('messages')
-      .select('id', { count: 'exact' })
-      .is('deleted_at', null);
-
-    if (countQuery.error) {
-      return NextResponse.json(
-        { error: 'Failed to fetch message count' },
-        { status: 500 }
-      );
-    }
-
-    const totalCount = countQuery.count || 0;
-
-    // Apply pagination
-    const { data: messages, error, count } = await query.range(offset, offset + limit - 1);
-
-    if (error) {
-      console.error('Supabase error:', error);
-      return NextResponse.json(
-        { error: 'Failed to fetch messages' },
-        { status: 500 }
-      );
-    }
-
-    // Get stats
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const todayIso = today.toISOString();
-
-    const statsQuery = await supabaseAdmin
-      .from('messages')
-      .select('content, created_at', { count: 'exact' })
-      .is('deleted_at', null);
-
-    const withLinksQuery = await supabaseAdmin
-      .from('messages')
-      .select('id', { count: 'exact' })
-      .is('deleted_at', null)
-      .or('content.ilike.%http://%,content.ilike.%https://%');
-
-    const todayQuery = await supabaseAdmin
-      .from('messages')
-      .select('id', { count: 'exact' })
-      .is('deleted_at', null)
-      .gte('created_at', todayIso);
-
-    // Check for flagged messages (basic spam detection)
-    let flaggedCount = 0;
-    if (messages) {
-      flaggedCount = messages.filter((m: any) => {
-        const content = m.content || '';
-        // Simple spam detection
-        const upperCaseRatio = (content.match(/[A-Z]/g) || []).length / content.length;
-        const hasExcessivePunctuation = /[!?]{3,}/.test(content);
-        const hasRepeatingChars = /(.)\1{4,}/.test(content);
-        const isTooShort = content.trim().length < 5;
-
-        return (
-          upperCaseRatio > 0.7 ||
-          hasExcessivePunctuation ||
-          hasRepeatingChars ||
-          isTooShort
-        );
-      }).length;
-    }
-
-    // Process messages to include sender/recipient info
-    const processedMessages: AdminMessage[] = (messages || []).map((msg: any) => {
-      const hasLinks = /https?:\/\//.test(msg.content || '');
-      const content = msg.content || '';
-      const upperCaseRatio = (content.match(/[A-Z]/g) || []).length / content.length;
-      const hasExcessivePunctuation = /[!?]{3,}/.test(content);
-      const hasRepeatingChars = /(.)\1{4,}/.test(content);
-      const isTooShort = content.trim().length < 5;
-
-      const isFlagged =
-        upperCaseRatio > 0.7 ||
-        hasExcessivePunctuation ||
-        hasRepeatingChars ||
-        isTooShort;
-
-      return {
-        id: msg.id,
-        sender_id: msg.sender_id,
-        sender_name: msg.sender?.full_name || 'Unknown',
-        sender_email: msg.sender?.email || 'unknown@example.com',
-        conversation_id: msg.conversation_id,
-        content: msg.content,
-        created_at: msg.created_at,
-        read_at: msg.read_at,
-        deleted_at: msg.deleted_at,
-        contains_link: hasLinks,
-        is_flagged: isFlagged,
-        recipient_name: 'Conversation',
-        recipient_email: msg.conversation_id,
-      };
-    });
-
-    // Apply filter type after processing
-    let filteredMessages = processedMessages;
-    if (filterType === 'with_links') {
-      filteredMessages = filteredMessages.filter((m) => m.contains_link);
-    } else if (filterType === 'flagged') {
-      filteredMessages = filteredMessages.filter((m) => m.is_flagged);
-    }
-
-    const response: AdminMessagesResponse = {
-      messages: filteredMessages,
-      total: count || 0,
-      page,
-      pageSize: limit,
-      hasMore: offset + limit < (count || 0),
-      stats: {
-        total_today: todayQuery.count || 0,
-        with_links: withLinksQuery.count || 0,
-        flagged: flaggedCount,
-      },
+    const conditions = ['m.deleted_at IS NULL'];
+    const values: unknown[] = [];
+    const add = (condition: string, value: unknown) => {
+      values.push(value);
+      conditions.push(condition.replace('?', `$${values.length}`));
     };
-
-    return NextResponse.json(response);
-  } catch (error) {
-    console.error('Error fetching admin messages:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
-  }
+    const startDate = params.get('startDate');
+    const endDate = params.get('endDate');
+    for (const [value, end] of [[startDate, false], [endDate, true]] as const) {
+      if (!value) continue;
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return NextResponse.json({ error: 'Invalid date filter' }, { status: 400 });
+      if (end) date.setUTCHours(23, 59, 59, 999);
+      add(end ? 'm.created_at <= ?' : 'm.created_at >= ?', date.toISOString());
+    }
+    if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
+      return NextResponse.json({ error: 'Invalid date range' }, { status: 400 });
+    }
+    const search = params.get('search')?.trim();
+    if (search) add('m.content ILIKE ?', `%${search}%`);
+    if (filterType === 'with_links') conditions.push(withLinks);
+    if (filterType === 'flagged') conditions.push(flagged);
+    const where = conditions.join(' AND ');
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+    const [messages, count, stats] = await Promise.all([
+      query(`SELECT m.id, m.sender_id, m.conversation_id, m.content, m.created_at, m.read_at, m.deleted_at,
+        COALESCE(sender.full_name, 'Unknown') AS sender_name,
+        COALESCE(sender.email, 'unknown@example.com') AS sender_email,
+        ${withLinks} AS contains_link, ${flagged} AS is_flagged
+        FROM messages m LEFT JOIN members sender ON sender.id = m.sender_id
+        WHERE ${where} ORDER BY m.created_at DESC, m.id DESC
+        LIMIT $${values.length + 1} OFFSET $${values.length + 2}`, [...values, pageSize, offset]),
+      query(`SELECT COUNT(*) AS count FROM messages m WHERE ${where}`, values),
+      query(`SELECT COUNT(*) FILTER (WHERE m.created_at >= $1) AS total_today,
+        COUNT(*) FILTER (WHERE ${withLinks}) AS with_links,
+        COUNT(*) FILTER (WHERE ${flagged}) AS flagged
+        FROM messages m WHERE m.deleted_at IS NULL`, [today.toISOString()]),
+    ]);
+    const total = Number(count.rows[0]?.count || 0);
+    return NextResponse.json({
+      messages: messages.rows.map((message) => ({ ...message,
+        is_flagged: !!message.is_flagged, contains_link: !!message.contains_link,
+        recipient_name: 'Conversation', recipient_email: message.conversation_id,
+      })), total, page, pageSize, hasMore: offset + pageSize < total,
+      stats: { total_today: Number(stats.rows[0]?.total_today || 0),
+        with_links: Number(stats.rows[0]?.with_links || 0), flagged: Number(stats.rows[0]?.flagged || 0) },
+    });
+  } catch (error) { return failure(error); }
 }
 
 export async function DELETE(req: NextRequest) {
   try {
-    const { messageId } = await req.json();
-
-    if (!messageId) {
-      return NextResponse.json(
-        { error: 'Message ID is required' },
-        { status: 400 }
-      );
+    await requireRole(req, ADMIN_ROLES);
+    const input = await req.json().catch(() => null);
+    if (typeof input?.messageId !== 'string' || !input.messageId.trim()) {
+      return NextResponse.json({ error: 'Message ID is required' }, { status: 400 });
     }
-
-    const { error } = await supabaseAdmin
-      .from('messages')
-      .update({ deleted_at: new Date().toISOString() })
-      .eq('id', messageId);
-
-    if (error) {
-      console.error('Supabase error:', error);
-      return NextResponse.json(
-        { error: 'Failed to delete message' },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('Error deleting message:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
+    const { rows } = await query(
+      'UPDATE messages SET deleted_at = $1 WHERE id = $2 AND deleted_at IS NULL RETURNING id',
+      [new Date().toISOString(), input.messageId],
     );
-  }
+    if (!rows.length) return NextResponse.json({ error: 'Message not found or already deleted' }, { status: 404 });
+    return NextResponse.json({ success: true });
+  } catch (error) { return failure(error); }
 }

@@ -31,10 +31,10 @@ BEGIN
       ALTER TABLE public.message_rate_limits ADD PRIMARY KEY (id);
       ALTER TABLE public.message_rate_limits ADD UNIQUE(member_id);
 
-      -- Drop old columns that are no longer needed
-      ALTER TABLE public.message_rate_limits
-      DROP COLUMN IF EXISTS cooldown_until,
-      DROP COLUMN IF EXISTS cooldown_seconds;
+      -- Preserve existing cooldowns and legacy columns while switching reads
+      -- to next_allowed_at; upgrades must not reset a member's active delay.
+      UPDATE public.message_rate_limits
+      SET next_allowed_at = COALESCE(cooldown_until, next_allowed_at);
     END IF;
   ELSE
     -- Table doesn't exist, create it with the new schema
@@ -78,19 +78,26 @@ BEGIN
       -- Migrate old schema to new schema
       -- Add new columns first
       ALTER TABLE public.member_suspensions
-      ADD COLUMN reason_details text,
-      ADD COLUMN lifted_at timestamptz,
-      ADD COLUMN lifted_by text,
-      ADD COLUMN updated_at timestamptz DEFAULT now();
+      ADD COLUMN IF NOT EXISTS reason_details text,
+      ADD COLUMN IF NOT EXISTS lifted_at timestamptz,
+      ADD COLUMN IF NOT EXISTS lifted_by text,
+      ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now();
 
       -- Copy data from old column to new column
       UPDATE public.member_suspensions
-      SET reason_details = reason_detail
-      WHERE reason_detail IS NOT NULL;
+      SET reason_details = COALESCE(reason_details, reason_detail)
+      WHERE reason_details IS NULL AND reason_detail IS NOT NULL;
 
-      -- Drop old column
+      -- Keep the legacy column for forward compatibility. Migration 027 and
+      -- existing reports can still read records created before this change.
+
+      -- Remove old checks before rewriting values. PostgreSQL validates every
+      -- UPDATE against the current constraint, so the old labels would make
+      -- this migration fail before the normalized checks are installed.
       ALTER TABLE public.member_suspensions
-      DROP COLUMN reason_detail;
+      DROP CONSTRAINT IF EXISTS member_suspensions_suspension_type_check;
+      ALTER TABLE public.member_suspensions
+      DROP CONSTRAINT IF EXISTS member_suspensions_reason_category_check;
 
       -- Rename suspension_type values to match new constraints
       UPDATE public.member_suspensions
@@ -109,20 +116,11 @@ BEGIN
       END
       WHERE reason_category = 'tos_violation';
 
-      -- Update the constraint
-      ALTER TABLE public.member_suspensions
-      DROP CONSTRAINT member_suspensions_suspension_type_check,
-      DROP CONSTRAINT member_suspensions_reason_category_check;
-
       ALTER TABLE public.member_suspensions
       ADD CONSTRAINT member_suspensions_suspension_type_check
         CHECK (suspension_type IN ('temporary_24h', 'temporary_custom', 'permanent')),
       ADD CONSTRAINT member_suspensions_reason_category_check
         CHECK (reason_category IN ('spam_flooding', 'abusive_language', 'harassment', 'inappropriate_content', 'terms_violation', 'other'));
-
-      -- Update suspended_by constraint to NOT NULL
-      ALTER TABLE public.member_suspensions
-      ALTER COLUMN suspended_by SET NOT NULL;
 
       -- Drop old indexes and recreate
       DROP INDEX IF EXISTS public.idx_suspensions_member;
@@ -133,7 +131,7 @@ BEGIN
     CREATE TABLE public.member_suspensions (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       member_id text NOT NULL REFERENCES public.members(id) ON DELETE CASCADE,
-      suspended_by text NOT NULL REFERENCES public.members(id),
+      suspended_by text REFERENCES public.members(id),
       suspension_type text NOT NULL CHECK (suspension_type IN ('temporary_24h', 'temporary_custom', 'permanent')),
       reason_category text NOT NULL CHECK (reason_category IN (
         'spam_flooding',
@@ -337,6 +335,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS trigger_set_message_expiry ON public.messages;
 CREATE TRIGGER trigger_set_message_expiry
   BEFORE INSERT ON public.messages
   FOR EACH ROW

@@ -97,7 +97,7 @@ export function DocumentCard({
           </div>
         )}
         {featured && (
-          <span className="document-card__badge">Editor's pick</span>
+          <span className="document-card__badge">Editor&apos;s pick</span>
         )}
       </Link>
       <div className="document-card__body">

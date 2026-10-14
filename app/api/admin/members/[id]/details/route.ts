@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase';
+import { db } from '@/lib/db';
 import { requireRole } from "@/lib/api-auth";
 import { MEMBER_REVIEW_ROLES } from "@/lib/auth/session";
 
@@ -15,11 +15,8 @@ export async function GET(
 
     const memberId = params.id;
 
-    // Use Supabase admin client
-    const supabase = supabaseAdmin;
-
     // Fetch member details
-    const { data: member, error: memberError } = await supabase
+    const { data: member, error: memberError } = await db
       .from('members')
       .select('id, full_name, email, created_at, updated_at')
       .eq('id', memberId)

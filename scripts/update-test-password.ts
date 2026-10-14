@@ -2,15 +2,17 @@
  * Update member password hash
  */
 
-import { supabaseAdmin } from '../lib/supabase';
+import 'dotenv/config';
+import { db } from '../lib/db';
 import * as bcrypt from 'bcryptjs';
 
 async function updatePassword() {
   console.log('🔄 Updating password hash...\n');
 
-  if (!supabaseAdmin) {
-    console.error('❌ Supabase admin client not configured');
-    process.exit(1);
+  if (!process.env.DATABASE_URL) {
+    console.error('❌ DATABASE_URL is not configured');
+    process.exitCode = 1;
+    return;
   }
 
   try {
@@ -20,7 +22,7 @@ async function updatePassword() {
     console.log('Generated new hash:', newHash);
 
     // Update password hash
-    const { error } = await supabaseAdmin
+    const { error } = await db
       .from('members')
       .update({ password_hash: newHash })
       .eq('email', 'testmember@efsw.local');
@@ -33,7 +35,7 @@ async function updatePassword() {
     console.log('✅ Password hash updated successfully');
 
     // Verify it works
-    const { data: member } = await supabaseAdmin
+    const { data: member } = await db
       .from('members')
       .select('password_hash')
       .eq('email', 'testmember@efsw.local')

@@ -1,4 +1,4 @@
-import { supabaseAdmin } from '@/lib/supabase';
+import { db } from '@/lib/db';
 
 // Configurable profanity and spam patterns
 const PROFANITY_LIST = [
@@ -30,15 +30,14 @@ interface RateLimitResult {
  * Returns success true if allowed to send, false with retryAfter seconds if rate limited
  */
 export async function checkRateLimit(memberId: string): Promise<RateLimitResult> {
-  const supabase = supabaseAdmin;
   const now = new Date();
 
   // Query existing rate limit record
-  const { data: existingLimit, error: queryError } = await supabase
+  const { data: existingLimit, error: queryError } = await db
     .from('message_rate_limits')
     .select('*')
     .eq('member_id', memberId)
-    .single();
+    .maybeSingle();
 
   if (queryError && queryError.code !== 'PGRST116') {
     // PGRST116 is "no rows returned" - that's ok, other errors are not
@@ -50,7 +49,7 @@ export async function checkRateLimit(memberId: string): Promise<RateLimitResult>
   if (!existingLimit) {
     const nextAllowed = new Date(now.getTime() + 5000); // 5 seconds from now
 
-    const { error: insertError } = await supabase
+    const { error: insertError } = await db
       .from('message_rate_limits')
       .insert({
         member_id: memberId,
@@ -99,7 +98,7 @@ export async function checkRateLimit(memberId: string): Promise<RateLimitResult>
     const retryAfter = Math.ceil((nextAllowedAt.getTime() - now.getTime()) / 1000);
 
     // Update violation count and next allowed time
-    await supabase
+    await db
       .from('message_rate_limits')
       .update({
         violation_count: newViolationCount,
@@ -117,7 +116,7 @@ export async function checkRateLimit(memberId: string): Promise<RateLimitResult>
   // Not rate limited - reset and allow
   const nextAllowed = new Date(now.getTime() + 5000); // 5 seconds from now
 
-  await supabase
+  await db
     .from('message_rate_limits')
     .update({
       violation_count: 0,

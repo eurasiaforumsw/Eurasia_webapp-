@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabaseAdmin } from "@/lib/supabase";
+import { db, query } from "@/lib/db";
 import { broadcastActor } from "../_auth";
 
 const AUDIENCES = new Set(["all", "professional", "student", "institutional"]);
@@ -16,10 +16,30 @@ export async function POST(req: NextRequest) {
       !Array.isArray(statuses) || !statuses.length || statuses.some((status: unknown) => !STATUSES.has(String(status)))) {
     return NextResponse.json({ error: "Invalid target filters" }, { status: 400 });
   }
-  let query = supabaseAdmin.from("members").select("id", { count: "exact", head: true }).in("status", statuses);
-  if (audience !== "all") query = query.eq("membership_type", audience);
-  if (groups.length) query = query.overlaps("target_groups", groups);
-  const { count, error } = await query;
-  if (error) return NextResponse.json({ error: "Failed to count recipients" }, { status: 500 });
-  return NextResponse.json({ count: count || 0 });
+
+  // Build WHERE conditions
+  const conditions: string[] = [`status = ANY($1)`];
+  const params: any[] = [statuses];
+
+  if (audience !== "all") {
+    conditions.push(`membership_type = $${params.length + 1}`);
+    params.push(audience);
+  }
+
+  if (groups.length) {
+    conditions.push(`target_groups && $${params.length + 1}`);
+    params.push(groups);
+  }
+
+  const whereClause = conditions.join(' AND ');
+
+  try {
+    const result = await query(
+      `SELECT COUNT(*) as count FROM members WHERE ${whereClause}`,
+      params
+    );
+    return NextResponse.json({ count: parseInt(result.rows[0].count) || 0 });
+  } catch (error) {
+    return NextResponse.json({ error: "Failed to count recipients" }, { status: 500 });
+  }
 }

@@ -53,7 +53,6 @@ const sha256 = async (value: string): Promise<string> => {
 /* Node-crypto fallback for environments without `globalThis.crypto.subtle`. */
 const sha256Sync = (value: string): string => {
   // Lazy require so it doesn't crash in browser-only contexts.
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
   const { createHash } = require("crypto") as typeof import("crypto");
   return createHash("sha256").update(value).digest("hex");
 };

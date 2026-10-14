@@ -59,16 +59,20 @@ export async function POST(request: NextRequest) {
     }
     if (allowedIds.length) {
       if (body.action === "delete") {
-        const { data, error } = await supabaseAdmin.from("members").delete().in("id", allowedIds).select("id");
+        const { data, error } = await supabaseAdmin.from("members").delete().in("id", allowedIds).select("id").execute();
         for (const id of allowedIds) results.push({ id, success: !error && !!data?.some((item: { id: string }) => item.id === id), ...(error ? { error: error.message } : {}) });
       } else {
         const status = body.action === "approve" ? "active" : body.status;
         for (const id of allowedIds) {
-          const { error } = await supabaseAdmin.rpc("admin_review_member", {
-            p_member_id: id, p_status: status, p_actor_id: session.id,
-            p_review_note: null,
-          });
-          results.push({ id, success: !error, ...(error ? { error: error.message } : {}) });
+          try {
+            const { error } = await supabaseAdmin.rpc("admin_review_member", {
+              p_member_id: id, p_status: status, p_actor_id: session.id,
+              p_review_note: null,
+            });
+            results.push({ id, success: !error, ...(error ? { error: error.message } : {}) });
+          } catch (error) {
+            results.push({ id, success: false, error: error instanceof Error ? error.message : "Member review failed" });
+          }
         }
       }
     }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase';
+import { db } from '@/lib/db';
 
 /**
  * Test setup endpoint - creates test data for API testing
@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
       };
 
       // Check if member exists
-      const { data: existing } = await supabaseAdmin
+      const { data: existing } = await db
         .from('members')
         .select('id')
         .eq('id', testMember.id)
@@ -45,18 +45,19 @@ export async function POST(request: NextRequest) {
       }
 
       // Create member
-      const { data, error } = await supabaseAdmin
+      const insertResult = await db
         .from('members')
         .insert(testMember)
-        .select()
-        .single();
+        .select();
 
-      if (error) {
+      if (insertResult.error) {
         return NextResponse.json(
-          { error: 'Failed to create test member', details: error },
+          { error: 'Failed to create test member', details: insertResult.error },
           { status: 500 }
         );
       }
+
+      const data = insertResult.data?.[0];
 
       return NextResponse.json({
         success: true,

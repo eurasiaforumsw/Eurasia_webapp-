@@ -32,11 +32,11 @@
 
 **ยังไม่ได้ทำ:**
 - [ ] เพิ่ม Environment Variables ใน Vercel Dashboard:
-  - `JWT_SECRET=Vei6k0vFaMfZmI67q9BH8Iubv6ePDXCc8OZBQbjx9Xw=`
-  - `ADMIN_PASSWORD_HASH=$2b$12$QI870B2LMENPYRNKh9s.POFRpqLMmXJ7SqpnrqAM9HK7xiNU4aEHq`
+  - `JWT_SECRET=<redacted; set in Vercel>`
+  - `ADMIN_PASSWORD_HASH=<redacted bcrypt hash>`
 - [ ] ลบ `NEXT_PUBLIC_ADMIN_PASSWORD` (เก่า)
 - [ ] Redeploy
-- [ ] ทดสอบ login: `admin@efsw.local` / `EFSW-secure-admin-2024`
+- [ ] ทดสอบ login: `admin@efsw.local` / `<configured admin password>`
 
 **วิธีทำ:** อ่าน [VERCEL_SETUP.md](./VERCEL_SETUP.md)
 
@@ -402,7 +402,7 @@ node scripts/generate-admin-hash.js "password"
 
 ### Credentials:
 
-- Admin: `admin@efsw.local` / `EFSW-secure-admin-2024`
+- Admin: `admin@efsw.local` / `<configured admin password>`
 
 ---
 

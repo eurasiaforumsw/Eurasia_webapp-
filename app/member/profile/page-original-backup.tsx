@@ -436,7 +436,7 @@ export default function MemberProfilePage() {
     };
 
     try {
-      const updated = updateMember(updates);
+      const updated = await updateMember(updates);
       setMember(updated);
       setStatus("success");
       setTimeout(() => setStatus(""), 2400);
@@ -446,9 +446,13 @@ export default function MemberProfilePage() {
     }
   };
 
-  const handleLogout = () => {
-    logoutMember();
-    window.location.href = "/member/login";
+  const handleLogout = async () => {
+    try {
+      await logoutMember();
+      window.location.href = "/member/login";
+    } catch {
+      setStatus("error");
+    }
   };
 
   const toggleTargetGroup = (key: TargetGroupKey) => {

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase';
+import { db } from '@/lib/db';
 import { requireRole } from "@/lib/api-auth";
 import { MEMBER_REVIEW_ROLES } from "@/lib/auth/session";
 
@@ -15,22 +15,20 @@ export async function GET(
 
     const memberId = params.id;
 
-    // Use Supabase admin client
-    const supabase = supabaseAdmin;
-
     // Fetch all suspensions for this member (active and inactive)
-    const { data: suspensions, error: suspensionError } = await supabase
+    const { data: suspensions, error: suspensionError } = await db
       .from('member_suspensions')
       .select(
         'id, suspension_type, reason_category, reason_details, suspended_at, expires_at, is_active, lifted_at'
       )
       .eq('member_id', memberId)
-      .order('suspended_at', { ascending: false });
+      .order('suspended_at', { ascending: false })
+      .execute();
 
     if (suspensionError) {
       console.error('Suspension fetch error:', suspensionError);
       return NextResponse.json(
-        { error: 'Failed to fetch suspensions', details: suspensionError.message },
+        { error: 'Failed to fetch suspensions', details: String(suspensionError) },
         { status: 500 }
       );
     }

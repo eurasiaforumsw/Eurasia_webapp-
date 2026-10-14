@@ -6,20 +6,13 @@
  * 3. news@efsw.local - pr role (content management only)
  */
 
-import { createClient } from "@supabase/supabase-js";
+import { db } from "../lib/db";
 import * as bcrypt from "bcrypt";
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
-  console.error("❌ Missing Supabase environment variables");
-  console.error("   NEXT_PUBLIC_SUPABASE_URL:", SUPABASE_URL ? "✓" : "✗");
-  console.error("   SUPABASE_SERVICE_ROLE_KEY:", SUPABASE_SERVICE_KEY ? "✓" : "✗");
+if (!process.env.DATABASE_URL) {
+  console.error("❌ Missing DATABASE_URL environment variable");
   process.exit(1);
 }
-
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
 // Password for all accounts (change in production)
 const DEFAULT_PASSWORD = "EFSW-demo";
@@ -90,7 +83,7 @@ async function seedAccounts() {
       contact_position: "",
     };
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("members")
       .upsert(record, { onConflict: "id" })
       .select()

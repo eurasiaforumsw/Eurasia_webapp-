@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabaseAdmin } from "@/lib/supabase";
+import { db } from "@/lib/db";
 import { requireRole } from "@/lib/api-auth";
 import { CONTENT_ROLES } from "@/lib/auth/session";
 import type { CoverImageCrop } from "@/lib/admin-data";
@@ -11,9 +11,8 @@ type AdminContentKind = "news" | "document" | "event" | "academic";
 type AdminContentStatus = "draft" | "published" | "archived";
 type ContentLocale = "en" | "th" | "ko";
 
-// Column → row mapping. The localStorage model uses camelCase keys; we keep
-// camelCase columns in Supabase too so this is mostly a 1:1 copy. Optional
-// fields (event metadata, registration URL) can be null.
+// Column → row mapping. The localStorage model uses camelCase keys while the
+// Neon schema uses snake_case columns. Optional fields can be null.
 type ContentRow = {
   id: string;
   kind: AdminContentKind;
@@ -261,7 +260,7 @@ export async function GET(req: NextRequest) {
     const kind = sanitizeKind(searchParams.get("kind"));
     const status = searchParams.get("status");
 
-    let query = supabaseAdmin.from("content").select("*");
+    let query = db.from("content").select("*");
     if (kind) query = query.eq("kind", kind);
     if (status && VALID_STATUSES.includes(status as AdminContentStatus)) {
       query = query.eq("status", status as AdminContentStatus);
@@ -300,7 +299,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Idempotency: if a row with this id already exists, update it instead.
-    const { data: existing, error: existingError } = await supabaseAdmin
+    const { data: existing, error: existingError } = await db
       .from("content")
       .select("id")
       .eq("id", row.id)
@@ -309,8 +308,8 @@ export async function POST(req: NextRequest) {
     const { created_at, ...update } = row;
 
     const query = existing
-      ? supabaseAdmin.from("content").update(update).eq("id", row.id).select().single()
-      : supabaseAdmin.from("content").insert(row).select().single();
+      ? db.from("content").update(update).eq("id", row.id).select().single()
+      : db.from("content").insert(row).select().single();
 
     const { data, error } = await query;
     if (error) throw error;
@@ -342,7 +341,7 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: "id is required" }, { status: 400 });
     }
 
-    const { data: existing, error: existingError } = await supabaseAdmin
+    const { data: existing, error: existingError } = await db
       .from("content").select("*").eq("id", body.id).maybeSingle();
     if (existingError) throw existingError;
     if (!existing) return NextResponse.json({ error: "Content not found" }, { status: 404 });
@@ -370,7 +369,7 @@ export async function PATCH(req: NextRequest) {
       const column = columns[field];
       if (column) update[column] = patch[column];
     }
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await db
       .from("content")
       .update(update)
       .eq("id", body.id)
@@ -406,7 +405,7 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: "id is required" }, { status: 400 });
     }
 
-    const { error } = await supabaseAdmin.from("content").delete().eq("id", id);
+    const { error } = await db.from("content").delete().eq("id", id).execute();
     if (error) throw error;
 
     return NextResponse.json({ ok: true });

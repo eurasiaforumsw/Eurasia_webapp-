@@ -1,14 +1,12 @@
 import type { Metadata } from "next";
 import { cache } from "react";
+import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import ArticleView from "@/components/efsw/ArticleView";
-import LocalDocumentView from "@/components/academic/LocalDocumentView";
 import type { AdminContentItem } from "@/lib/admin-data";
 import "./detail.css";
 
 type PageProps = { params: { slug: string } };
-
-const hasRemoteContent = () => Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
 
 // Call the public handler directly so detail pages share its publication,
 // scheduling and audience rules without relying on a deployment hostname.
@@ -16,7 +14,7 @@ const findDocument = cache(async (slug: string): Promise<AdminContentItem | unde
   const { GET: getPublicContent } = await import("@/app/api/content/public/route");
   const url = new URL("https://eurasiaforumsw.org/api/content/public");
   url.searchParams.set("slug", slug);
-  const response = await getPublicContent(new Request(url));
+  const response = await getPublicContent(new Request(url, { headers: { cookie: headers().get("cookie") || "" } }));
   if (!response.ok) throw new Error("Failed to load academic document");
   const { items } = await response.json() as { items: AdminContentItem[] };
   return items.find((item) => item.id === slug && (item.kind === "academic" || item.kind === "document"));
@@ -25,7 +23,6 @@ const findDocument = cache(async (slug: string): Promise<AdminContentItem | unde
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  if (!hasRemoteContent()) return { title: "Academic Documents | EFSW" };
   const seed = await findDocument(params.slug);
   if (!seed) return { title: "Document not found | EFSW" };
 
@@ -57,7 +54,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function DocumentPage({ params }: PageProps) {
-  if (!hasRemoteContent()) return <LocalDocumentView key={params.slug} slug={params.slug} />;
   const seed = await findDocument(params.slug);
   if (!seed) notFound();
 

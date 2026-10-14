@@ -21,8 +21,7 @@ require.extensions['.ts'] = (module, filename) => {
 process.env.JWT_SECRET = 'security-test-secret-0123456789abcdef0123456789';
 process.env.SECURITY_RATE_LIMIT_STORE = 'memory';
 process.env.NEXT_PUBLIC_APP_URL = 'http://localhost:2024';
-process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://security-test.example.invalid';
-process.env.SUPABASE_SERVICE_ROLE_KEY = 'security-test-service-key';
+process.env.DATABASE_URL = 'postgresql://test:password@ep-security-test-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require';
 const calls = [];
 let queryResult = { data: null, error: null };
 const query = new Proxy({}, {
@@ -40,7 +39,8 @@ const database = {
   rpc: async (...args) => { calls.push(['rpc', ...args]); return queryResult; },
 };
 // No test talks to the real database or sends mail.
-require.cache[path.join(root, 'lib/supabase.ts')] = { exports: { supabaseAdmin: database } };
+require.cache[path.join(root, 'lib/supabase.ts')] = { exports: { supabaseAdmin: database, supabase: database } };
+require.cache[path.join(root, 'lib/db.ts')] = { exports: { db: database } };
 let storedUploads = [];
 require.cache[path.join(root, 'lib/r2.ts')] = { exports: {
   uploadToR2: async (...args) => { storedUploads.push(args); return 'https://media.example.invalid/test.webp'; },
@@ -296,10 +296,11 @@ test('database rate limits fail closed and transmit only an HMAC bucket identity
   try {
     global.fetch = async (_url, options) => {
       sent = JSON.parse(options.body);
-      return Response.json({ allowed: false, remaining: 0, retryAfter: 30 });
+      return Response.json({ rows: [{ result: JSON.stringify({ allowed: false, remaining: 0, retryAfter: 30 }) }] });
     };
     assert.equal((await consumeRateLimit('account:private@example.com', 5, 15000)).allowed, false);
-    assert.match(sent.p_key, /^[a-f0-9]{64}$/);
+    assert.match(sent.params[0], /^[a-f0-9]{64}$/);
+    assert.deepEqual(sent.params.slice(1), [5, 15]);
     assert.equal(JSON.stringify(sent).includes('private@example.com'), false);
     global.fetch = async () => new Response('', { status: 503 });
     await assert.rejects(consumeRateLimit('unavailable', 5, 15000));

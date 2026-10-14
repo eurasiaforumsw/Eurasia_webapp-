@@ -1,11 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyMemberToken } from "@/lib/auth/jwt";
-import { createClient } from "@supabase/supabase-js";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { db } from "@/lib/db";
 
 /**
  * GET /api/events/[id]/registration-status
@@ -22,9 +17,9 @@ export async function GET(
   }
 
   try {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("event_registrations")
-      .select("id, status, created_at")
+      .select("id, status, created_at, confirmation_number")
       .eq("event_id", params.id)
       .eq("member_id", payload.memberId)
       .maybeSingle();
@@ -38,7 +33,7 @@ export async function GET(
     }
 
     return NextResponse.json({
-      registered: !!data,
+      registered: !!data && data.status !== "cancelled",
       registration: data || null,
     });
   } catch (error) {

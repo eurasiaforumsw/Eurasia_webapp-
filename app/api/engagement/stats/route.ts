@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase';
+import { db } from '@/lib/db';
 import { verifyMemberToken } from '@/lib/auth/jwt';
 
-export const runtime = 'edge';
+export const runtime = 'nodejs';
 
 /**
  * GET /api/engagement/stats?memberId=xxx
@@ -26,8 +26,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Call the Supabase function
-    const { data, error } = await supabaseAdmin.rpc('get_member_engagement_stats', {
+    // Call the database function
+    const { data, error } = await db.rpc('get_member_engagement_stats', {
       p_member_id: memberId
     });
 

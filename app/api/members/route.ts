@@ -103,15 +103,20 @@ const rowToMember = (row: MemberRow) => ({
   reviewedAt: row.reviewed_at ?? undefined,
 });
 
-/** Run a Supabase thenable with a 10s timeout so we fail fast when the table
- *  doesn't exist yet (instead of hanging the request forever). */
-const withTimeout = <T extends PromiseLike<any>>(run: () => T, label = "query"): Promise<any> =>
-  Promise.race([
-    Promise.resolve(run()),
-    new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error(`${label} timed out — check that the members table exists`)), 10_000),
-    ),
-  ]);
+/** Bound database response time and clear the timer once the query settles. */
+const withTimeout = async <T extends PromiseLike<any>>(run: () => T, label = "query"): Promise<any> => {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      Promise.resolve(run()),
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new Error(`${label} timed out — check that the members table exists`)), 10_000);
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+};
 
 /** Read a member by email — used for email-uniqueness checks */
 const getMemberByEmail = async (email: string) => {
@@ -436,19 +441,24 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: message }, { status });
   }
 
-  const id = request.nextUrl.searchParams.get("id");
-  if (!id) return NextResponse.json({ error: "id is required" }, { status: 400 });
-  const { data: target, error: targetError } = await supabaseAdmin.from("members").select("id, role").eq("id", id).maybeSingle();
-  if (targetError) return NextResponse.json({ error: targetError.message }, { status: 500 });
-  if (!target) return NextResponse.json({ error: "Member not found" }, { status: 404 });
-  if (actor.id === id || target.role === "admin" || target.role === "super-admin") {
-    return NextResponse.json({ error: "Cannot delete your own account or an administrator" }, { status: 403 });
-  }
+  try {
+    const id = request.nextUrl.searchParams.get("id");
+    if (!id) return NextResponse.json({ error: "id is required" }, { status: 400 });
+    const { data: target, error: targetError } = await supabaseAdmin.from("members").select("id, role").eq("id", id).maybeSingle();
+    if (targetError) return NextResponse.json({ error: targetError.message }, { status: 500 });
+    if (!target) return NextResponse.json({ error: "Member not found" }, { status: 404 });
+    if (actor.id === id || target.role === "admin" || target.role === "super-admin") {
+      return NextResponse.json({ error: "Cannot delete your own account or an administrator" }, { status: 403 });
+    }
 
-  const { error } = await withTimeout(
-    () => supabaseAdmin!.from("members").delete().eq("id", id),
-    "deleteMember",
-  );
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ ok: true, deleted: id });
+    const { error } = await withTimeout(
+      () => supabaseAdmin!.from("members").delete().eq("id", id),
+      "deleteMember",
+    );
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ ok: true, deleted: id });
+  } catch (error) {
+    console.error("Delete member error:", error);
+    return NextResponse.json({ error: "Failed to delete member" }, { status: 500 });
+  }
 }

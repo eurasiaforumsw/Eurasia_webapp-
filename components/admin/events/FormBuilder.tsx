@@ -75,7 +75,13 @@ export default function FormBuilder({ eventId, onClose }: FormBuilderProps) {
 
       if (response.ok) {
         const data = await response.json();
-        setFields(data.fields || []);
+        setFields((data.fields || []).map((field: any) => ({
+          id: field.id, field_name: field.field_name,
+          type: field.field_type, label: field.field_label,
+          placeholder: field.placeholder || "", required: field.required === true,
+          order: field.display_order,
+          options: (field.options || []).map((label: string, index: number) => ({ id: `option-${index}`, label })),
+        })));
       } else if (response.status === 404) {
         // No fields yet, start with empty
         setFields([]);
@@ -193,9 +199,17 @@ export default function FormBuilder({ eventId, onClose }: FormBuilderProps) {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to save form");
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to save form");
       }
 
+      const saved = await response.json();
+      setFields((saved.fields || []).map((field: any) => ({
+        id: field.id, field_name: field.field_name, type: field.field_type,
+        label: field.field_label, placeholder: field.placeholder || "",
+        required: field.required === true, order: field.display_order,
+        options: (field.options || []).map((label: string, index: number) => ({ id: `option-${index}`, label })),
+      })));
       addToast({
         type: "success",
         title: "Form saved",
@@ -210,7 +224,7 @@ export default function FormBuilder({ eventId, onClose }: FormBuilderProps) {
       addToast({
         type: "error",
         title: "Save failed",
-        description: "Could not save registration form",
+        description: error instanceof Error ? error.message : "Could not save registration form",
       });
     } finally {
       setSaving(false);
@@ -269,6 +283,7 @@ export default function FormBuilder({ eventId, onClose }: FormBuilderProps) {
         </div>
 
         <button
+            type="button"
           onClick={() => setShowPreview(!showPreview)}
           style={{
             display: "flex",
@@ -323,6 +338,7 @@ export default function FormBuilder({ eventId, onClose }: FormBuilderProps) {
                 const Icon = config.icon;
                 return (
                   <button
+            type="button"
                     key={type}
                     onClick={() => addField(type)}
                     style={{
@@ -427,6 +443,7 @@ export default function FormBuilder({ eventId, onClose }: FormBuilderProps) {
                         {/* Move buttons */}
                         <div style={{ display: "flex", gap: "0.25rem" }}>
                           <button
+            type="button"
                             onClick={() => moveField(field.id, "up")}
                             disabled={index === 0}
                             style={{
@@ -446,6 +463,7 @@ export default function FormBuilder({ eventId, onClose }: FormBuilderProps) {
                             <ChevronUp size={16} />
                           </button>
                           <button
+            type="button"
                             onClick={() => moveField(field.id, "down")}
                             disabled={index === fields.length - 1}
                             style={{
@@ -467,6 +485,7 @@ export default function FormBuilder({ eventId, onClose }: FormBuilderProps) {
                         </div>
 
                         <button
+            type="button"
                           onClick={() => removeField(field.id)}
                           style={{
                             display: "flex",
@@ -552,6 +571,7 @@ export default function FormBuilder({ eventId, onClose }: FormBuilderProps) {
                                 Options
                               </label>
                               <button
+            type="button"
                                 onClick={() => addOption(field.id)}
                                 style={{
                                   display: "flex",
@@ -594,6 +614,7 @@ export default function FormBuilder({ eventId, onClose }: FormBuilderProps) {
                                   />
                                   {field.options.length > 1 && (
                                     <button
+            type="button"
                                       onClick={() => removeOption(field.id, option.id)}
                                       style={{
                                         display: "flex",
@@ -793,6 +814,7 @@ export default function FormBuilder({ eventId, onClose }: FormBuilderProps) {
                     })}
 
                     <button
+            type="button"
                       disabled
                       style={{
                         width: "100%",
@@ -832,21 +854,22 @@ export default function FormBuilder({ eventId, onClose }: FormBuilderProps) {
         </div>
 
         <button
+            type="button"
           onClick={handleSave}
-          disabled={saving || fields.length === 0}
+          disabled={saving}
           style={{
             display: "flex",
             alignItems: "center",
             gap: "0.625rem",
             padding: "0.875rem 1.75rem",
-            background: saving || fields.length === 0 ? "#2D3748" : "linear-gradient(135deg, #38BDF8 0%, #0EA5E9 100%)",
+            background: saving ? "#2D3748" : "linear-gradient(135deg, #38BDF8 0%, #0EA5E9 100%)",
             border: "none",
             borderRadius: "12px",
-            color: saving || fields.length === 0 ? "#64748B" : "#0F131C",
+            color: saving ? "#64748B" : "#0F131C",
             fontSize: "0.9375rem",
             fontWeight: 700,
-            cursor: saving || fields.length === 0 ? "not-allowed" : "pointer",
-            boxShadow: saving || fields.length === 0 ? "none" : "0 4px 12px rgba(56, 189, 248, 0.25)",
+            cursor: saving ? "not-allowed" : "pointer",
+            boxShadow: saving ? "none" : "0 4px 12px rgba(56, 189, 248, 0.25)",
             transition: "all 0.2s",
           }}
         >

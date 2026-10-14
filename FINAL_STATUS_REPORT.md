@@ -161,7 +161,7 @@ Settings → Environment Variables
 
 เพิ่ม:
 ```
-RESEND_API_KEY=re_FUsaQACZ_3eJAXncUPt1hTpV7qs3Nyfq7
+RESEND_API_KEY=RESEND_API_KEY=<redacted>
 RESEND_FROM_EMAIL=noreply@efsw.org
 ```
 

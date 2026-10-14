@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabaseAdmin } from "@/lib/supabase";
+import { db } from "@/lib/db";
 import { verifyAdminRequest as verifyAdmin, ADMIN_ROLES } from "@/lib/auth/session";
 
 export const runtime = "nodejs";
@@ -22,10 +22,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Admin authentication required" }, { status: 401 });
   }
 
-  if (!supabaseAdmin) {
-    return NextResponse.json({ error: "Service not configured" }, { status: 503 });
-  }
-
   try {
     // Get current month boundaries
     const now = new Date();
@@ -35,46 +31,50 @@ export async function GET(request: NextRequest) {
     // Get total active events with registration enabled
     const { data: activeEventsData, error: activeEventsError } = await withTimeout(
       () =>
-        supabaseAdmin!
+        db
           .from("event_registration_settings")
-          .select("event_id, registration_enabled, registration_end_date")
-          .eq("registration_enabled", true),
+          .select("event_id, registration_enabled, registration_ends_at")
+          .eq("registration_enabled", true)
+          .execute(),
       "getActiveEvents"
     );
 
     if (activeEventsError) {
       console.error("[registration-stats] Error fetching active events:", activeEventsError);
       return NextResponse.json(
-        { totalActiveEvents: 0, totalRegistrationsThisMonth: 0 },
-        { status: 200 }
+        { error: "Failed to fetch registration statistics" },
+        { status: 500 }
       );
     }
 
     // Filter events where registration hasn't ended yet
     const currentlyActiveEvents = (activeEventsData || []).filter((event: any) => {
-      if (!event.registration_end_date) return true;
-      const endDate = new Date(event.registration_end_date);
+      if (!event.registration_ends_at) return true;
+      const endDate = new Date(event.registration_ends_at);
       return endDate >= now;
     });
 
     const totalActiveEvents = currentlyActiveEvents.length;
 
     // Get total registrations this month
-    const { count: totalRegistrationsThisMonth, error: registrationsError } = await withTimeout(
+    const { data: registrationsData, error: registrationsError } = await withTimeout(
       () =>
-        supabaseAdmin!
+        db
           .from("event_registrations")
-          .select("*", { count: "exact", head: true })
+          .select("COUNT(*) as count")
           .gte("registered_at", monthStart.toISOString())
-          .lte("registered_at", monthEnd.toISOString()),
+          .lte("registered_at", monthEnd.toISOString())
+          .execute(),
       "getRegistrationsThisMonth"
     );
+
+    const totalRegistrationsThisMonth = Number(registrationsData?.[0]?.count ?? 0);
 
     if (registrationsError) {
       console.error("[registration-stats] Error fetching registrations:", registrationsError);
       return NextResponse.json(
-        { totalActiveEvents, totalRegistrationsThisMonth: 0 },
-        { status: 200 }
+        { error: "Failed to fetch registration statistics" },
+        { status: 500 }
       );
     }
 
@@ -86,8 +86,8 @@ export async function GET(request: NextRequest) {
     const message = error instanceof Error ? error.message : "Unexpected error";
     console.error("[registration-stats] Error:", error);
     return NextResponse.json(
-      { totalActiveEvents: 0, totalRegistrationsThisMonth: 0 },
-      { status: 200 }
+      { error: "Failed to fetch registration statistics" },
+      { status: 500 }
     );
   }
 }

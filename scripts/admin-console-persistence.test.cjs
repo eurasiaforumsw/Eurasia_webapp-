@@ -56,7 +56,8 @@ const db = {
         matching.forEach((row) => table.splice(table.indexOf(row), 1));
       }
       if (action === 'select') matching = matching.slice(start, end + 1).slice(0, limit);
-      return { data: single ? matching[0] || null : matching, error: null, count: matching.length };
+      const scalar = single || (['insert', 'upsert'].includes(action) && !Array.isArray(value));
+      return { data: scalar ? matching[0] || null : matching, error: null, count: matching.length };
     };
     const query = {
       select() { return query; },
@@ -68,6 +69,14 @@ const db = {
       order() { return query; },
       limit(val) { limit = val; return query; },
       range(from, to) { start = from; end = to; return query; },
+      offset(value) { start = value; return query; },
+      execute() { return Promise.resolve(run()); },
+      match(values) { Object.entries(values).forEach(([field, val]) => query.eq(field, val)); return query; },
+      where(fragment) {
+        assert.match(fragment.text, /recipient_ids @> ARRAY/);
+        filters.push((row) => row.recipient_ids?.includes(fragment.values[0]));
+        return query;
+      },
       insert(input) { action = 'insert'; value = input; return query; },
       upsert(input) { action = 'upsert'; value = input; return query; },
       update(input) { action = 'update'; value = input; return query; },
@@ -103,6 +112,40 @@ let actor = { id: 'admin@efsw.local', email: 'admin@efsw.local', role: 'super-ad
 let sendCalls = 0;
 let sendResponse = null;
 require.cache[path.join(root, 'lib/supabase.ts')] = { exports: { supabaseAdmin: db } };
+const sqlTag = (parts, ...values) => ({ text: parts.reduce((text, part, index) => text + part + (index < values.length ? `$${index + 1}` : ''), ''), values });
+async function rawQuery(statement, values = []) {
+  const sql = statement.trim().replace(/\s+/g, ' ');
+  if (sql.startsWith("UPDATE email_campaigns SET status = 'sending'")) {
+    const row = getTable('email_campaigns').find((row) => row.id === values[0] && row.status === 'draft');
+    if (row) row.status = 'sending';
+    return { rows: row ? [{ ...row }] : [], rowCount: row ? 1 : 0 };
+  }
+  const audience = sql.match(/^SELECT (id, email, full_name|COUNT\(\*\) as count) FROM members WHERE (.+?)(?: ORDER BY id LIMIT 500 OFFSET (\$\d+))?$/);
+  if (audience) {
+    const matching = getTable('members').filter((row) => audience[2].split(' AND ').every((condition) => {
+      const status = condition.match(/^status = ANY\((\$\d+)\)$/);
+      if (status) return values[Number(status[1].slice(1)) - 1].includes(row.status);
+      const kind = condition.match(/^membership_type = (\$\d+)$/);
+      if (kind) return row.membership_type === values[Number(kind[1].slice(1)) - 1];
+      const groups = condition.match(/^target_groups && (\$\d+)$/);
+      assert.ok(groups, `Unexpected audience filter ${condition}`);
+      return row.target_groups?.some((group) => values[Number(groups[1].slice(1)) - 1].includes(group));
+    }));
+    if (audience[1].startsWith('COUNT')) return { rows: [{ count: String(matching.length) }], rowCount: 1 };
+    const offset = audience[3] ? values[Number(audience[3].slice(1)) - 1] : 0;
+    const rows = matching.sort((a, b) => a.id.localeCompare(b.id)).slice(offset, offset + 500);
+    return { rows, rowCount: rows.length };
+  }
+  const deletion = sql.match(/^DELETE FROM email_campaigns WHERE id = \$1 AND status = \$2 RETURNING id$/);
+  if (deletion) {
+    const row = getTable('email_campaigns').find((row) => row.id === values[0] && row.status === values[1]);
+    if (row) getTable('email_campaigns').splice(getTable('email_campaigns').indexOf(row), 1);
+    return { rows: row ? [{ id: row.id }] : [], rowCount: row ? 1 : 0 };
+  }
+  assert.fail(`Unexpected raw query ${sql}`);
+}
+require.cache[path.join(root, 'lib/db.ts')] = { exports: { db, sql: sqlTag, query: rawQuery } };
+
 require.cache[path.join(root, 'lib/auth/session.ts')] = { exports: {
   verifyRequestSession: async () => actor,
   CONTENT_ROLES: ['super-admin', 'admin', 'pr', 'content-editor'],

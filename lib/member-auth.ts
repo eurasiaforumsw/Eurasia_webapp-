@@ -39,12 +39,8 @@ const canUseStorage = () => typeof window !== "undefined" && typeof window.local
 
 const normalizeEmail = (email: string) => email.trim().toLowerCase();
 
-/** True when Supabase env vars are present — enables the remote (database) path.
- *  Note: `NEXT_PUBLIC_*` vars are inlined at build time, so this works in both
- *  SSR and the browser. */
-export const isRemoteMemberStoreEnabled = () =>
-  Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL) &&
-  Boolean(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+/** Member APIs use same-origin server routes; database credentials stay on the server. */
+export const isRemoteMemberStoreEnabled = () => true;
 
 const readMember = (): StoredMember | null => {
   if (!canUseStorage()) return null;
@@ -73,7 +69,7 @@ const stripPassword = (member: StoredMember): MemberProfile => {
 };
 
 /* ══════════════════════════════════════════
-   Remote (Supabase) calls — degrade gracefully
+   Server member API calls
    ══════════════════════════════════════════ */
 
 const remoteRegisterWithPassword = async (
@@ -224,9 +220,8 @@ export const getSessionMember = (): MemberProfile | null => {
 };
 
 /**
- * Register a new member. When Supabase is configured the profile is inserted
- * into the `members` table and the returned row is mirrored into localStorage;
- * otherwise the profile stays local-only.
+ * Register a new member using the server API. The returned profile is mirrored
+ * into localStorage for display; authentication is established by sign-in.
  *
  * Password is sent PLAIN to the server — bcrypt hashing happens server-side.
  */
@@ -258,18 +253,15 @@ export const registerMember = async (
     const profile = result.member!;
     // Store profile in localStorage (no password hash stored client-side)
     writeMember({ ...profile, passwordHash: "" });
-    window.localStorage.setItem(MEMBER_SESSION_KEY, "active");
+    window.localStorage.removeItem(MEMBER_SESSION_KEY);
     return profile;
   }
 
-  // Local-only fallback (not recommended for production)
-  throw new Error("Local-only registration is not supported. Please configure Supabase.");
+  throw new Error("Member registration service is unavailable.");
 };
 
 /**
- * Sign in with email + password. Uses the server-side verify endpoint when
- * Supabase is configured (password sent PLAIN over HTTPS, verified with bcrypt),
- * and falls back to local browser copy otherwise.
+ * Sign in with email + password. Password verification happens on the server.
  */
 export const loginMember = async (email: string, password: string): Promise<MemberProfile> => {
   const normalized = normalizeEmail(email);
@@ -285,13 +277,11 @@ export const loginMember = async (email: string, password: string): Promise<Memb
     return profile;
   }
 
-  // Local-only fallback (not recommended for production)
-  throw new Error("Local-only login is not supported. Please configure Supabase.");
+  throw new Error("Member login service is unavailable.");
 };
 
 /**
- * Refresh the current member from Supabase (used after sign-in elsewhere or on
- * profile load) and mirror it into localStorage. Returns null when offline.
+ * Refresh the current member from the server and mirror it into localStorage.
  */
 export const refreshSessionMember = async (): Promise<MemberProfile | null> => {
   const local = readMember();
@@ -304,22 +294,26 @@ export const refreshSessionMember = async (): Promise<MemberProfile | null> => {
   return stripPassword(merged);
 };
 
-export const updateMember = (updates: Partial<MemberProfile>): MemberProfile => {
+export const updateMember = async (updates: Partial<MemberProfile>): Promise<MemberProfile> => {
   const member = readMember();
   if (!member) throw new Error("Member profile not found.");
+  const result = await remoteUpdate(member.id, updates);
+  if (result.error) throw new Error(result.error);
   const next: StoredMember = {
     ...member,
     ...updates,
     email: updates.email ? normalizeEmail(updates.email) : member.email,
   };
   writeMember(next);
-  if (isRemoteMemberStoreEnabled()) {
-    void remoteUpdate(member.id, updates);
-  }
   return stripPassword(next);
 };
 
-export const logoutMember = () => {
+export const logoutMember = async () => {
+  const response = await fetch("/api/members/logout", { method: "POST" });
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({})) as { error?: string };
+    throw new Error(body.error || "Unable to end server session");
+  }
   if (canUseStorage()) {
     window.localStorage.removeItem(MEMBER_SESSION_KEY);
     window.dispatchEvent(new Event("efsw:member-session-changed"));
@@ -334,17 +328,15 @@ export const removeMember = () => {
 
 /**
  * Get all members (for admin/aggregation purposes).
- * In a local-only setup this returns an empty array.
- * With Supabase enabled, it fetches from the remote store.
+ * The admin member list is loaded through its server API.
  */
 export const getAllMembers = (): MemberProfile[] => {
-  // Local-only: return empty array (single-member storage)
+  // Browser storage is only the current member cache.
   if (!isRemoteMemberStoreEnabled()) {
     const member = readMember();
     return member ? [stripPassword(member)] : [];
   }
 
-  // Remote: would need a server-side API endpoint
-  // For now, return empty array and implement server-side fetch later
+  // Use /api/members for the authoritative admin list.
   return [];
 };

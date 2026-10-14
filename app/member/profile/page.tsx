@@ -37,6 +37,7 @@ import {
   updateMember,
 } from "@/lib/member-auth";
 import AdminAnnouncements from "@/components/member/AdminAnnouncements";
+import { uploadFileDirect } from "@/lib/r2-upload";
 
 /* ═══════════════════════════════ options ═══════════════════════════════ */
 
@@ -375,7 +376,7 @@ export default function MemberProfilePage() {
     }
   };
 
-  /* ---------- avatar editor save (try R2 first, fall back to data URL) ---------- */
+  /* ---------- crop and upload the avatar to R2 ---------- */
   const handleAvatarEditorSave = async (settings: AvatarSettings) => {
     setAvatarUploading(true);
     setAvatarError("");
@@ -393,34 +394,25 @@ export default function MemberProfilePage() {
       return;
     }
 
-    // Try R2 upload of the cropped result.
-    let uploadedUrl = "";
+    // Upload the cropped result directly to R2. Keep the editor open when the
+    // upload fails so a transient storage error cannot save a data URL into Neon.
     try {
       const blob = await (await fetch(finalDataUrl)).blob();
       const file = new File([blob], "avatar.jpg", { type: "image/jpeg" });
-      const form = new FormData();
-      form.append("file", file);
-      const res = await fetch("/api/upload", { method: "POST", body: form });
-      const body = (await res.json().catch(() => ({}))) as { url?: string; error?: string };
-      if (res.ok && body.url) {
-        uploadedUrl = body.url;
-        finalSrc = body.url;
-      } else {
-        throw new Error(body.error || `HTTP ${res.status}`);
-      }
+      const result = await uploadFileDirect(file, "avatar");
+      if (!result.url) throw new Error("R2 did not return an avatar URL");
+      finalSrc = result.url;
     } catch (uploadErr) {
-      // Fallback: keep the cropped data URL so the avatar still shows.
-      finalSrc = finalDataUrl;
-      setAvatarError(
-        `R2 upload failed — saved locally instead (${uploadErr instanceof Error ? uploadErr.message : "unknown error"}).`,
-      );
+      setAvatarUploading(false);
+      setAvatarError(`R2 upload failed — please try again (${uploadErr instanceof Error ? uploadErr.message : "unknown error"}).`);
+      return;
     }
 
     const avatar: AvatarSettings = {
       src: finalSrc,
-      zoom: settings.zoom,
-      offsetX: settings.offsetX,
-      offsetY: settings.offsetY,
+      zoom: 1,
+      offsetX: 0,
+      offsetY: 0,
     };
     setDraft((current) => (current ? { ...current, avatar } : current));
     setAvatarEditor({ src: "", open: false });
@@ -494,7 +486,7 @@ export default function MemberProfilePage() {
     };
 
     try {
-      const updated = updateMember(updates);
+      const updated = await updateMember(updates);
       setMember(updated);
       setStatus("success");
       setTimeout(() => setStatus(""), 2400);
@@ -504,9 +496,13 @@ export default function MemberProfilePage() {
     }
   };
 
-  const handleLogout = () => {
-    logoutMember();
-    window.location.href = "/member/login";
+  const handleLogout = async () => {
+    try {
+      await logoutMember();
+      window.location.href = "/member/login";
+    } catch {
+      setStatus("error");
+    }
   };
 
   const toggleTargetGroup = (key: TargetGroupKey) => {
@@ -1422,6 +1418,7 @@ export default function MemberProfilePage() {
         <AvatarEditor
           src={avatarEditor.src}
           uploading={avatarUploading}
+          error={avatarError}
           onSave={handleAvatarEditorSave}
           onCancel={handleAvatarEditorCancel}
         />
@@ -1435,11 +1432,13 @@ export default function MemberProfilePage() {
 function AvatarEditor({
   src,
   uploading,
+  error,
   onSave,
   onCancel,
 }: {
   src: string;
   uploading: boolean;
+  error: string;
   onSave: (settings: AvatarSettings) => void;
   onCancel: () => void;
 }) {
@@ -1477,6 +1476,7 @@ function AvatarEditor({
           </button>
         </header>
 
+        {error && <p role="alert" className="efsw-profile__avatar-error">{error}</p>}
         <div className="efsw-profile__editor-grid">
           <div className="efsw-profile__editor-stage">
             <div

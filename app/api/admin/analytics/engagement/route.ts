@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabaseAdmin } from "@/lib/supabase";
+import { db } from "@/lib/db";
 import { requireRole } from "@/lib/api-auth";
 import { analyticsError, analyticsRows, analyticsWindow } from "../_shared";
 
@@ -15,11 +15,11 @@ export async function GET(request: NextRequest) {
       ["content_views", "viewed_at"], ["members", "joined_at"],
     ];
     const data = await Promise.all(sources.map(([table, timestamp]) =>
-      analyticsRows<Record<string, string>>(() => supabaseAdmin.from(table)
+      analyticsRows<Record<string, string>>(() => db.from(table)
         .select(timestamp).gte(timestamp, window.start.toISOString())
         .lte(timestamp, window.now.toISOString()).order("id"), table),
     ));
-    const academicEvents = await analyticsRows<{ event_type: string; occurred_at: string }>(() => supabaseAdmin
+    const academicEvents = await analyticsRows<{ event_type: string; occurred_at: string }>(() => db
       .from("academic_document_engagement").select("event_type, occurred_at")
       .gte("occurred_at", window.start.toISOString()).lte("occurred_at", window.now.toISOString()).order("id"), "Academic engagement");
     academicEvents.forEach((event) => {

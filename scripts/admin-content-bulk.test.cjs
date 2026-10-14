@@ -29,6 +29,7 @@ const database = { from() {
   }; return query;
 } };
 require.cache[path.join(root, 'lib/supabase.ts')] = { exports: { supabaseAdmin: database } };
+require.cache[path.join(root, 'lib/db.ts')] = { exports: { db: database } };
 require.cache[path.join(root, 'lib/api-auth.ts')] = { exports: { requireRole: async () => { if (!authorized) throw new Error('Unauthorized'); return { role: 'admin' }; } } };
 require.cache[path.join(root, 'lib/auth/session.ts')] = { exports: { CONTENT_ROLES: ['admin', 'pr'] } };
 const { NextRequest } = require('next/server');

@@ -27,7 +27,7 @@ INSERT INTO members (
 ) VALUES (
     gen_random_uuid(),
     'member@efsw.local',
-    '$2b$12$STpxQLlNBCnlqbkqxqSnQ.YJZ.ZeZ35GQfOl8or9G50a0B.YMUphO',
+    '<replace-with-bcrypt-hash>',
     'Demo Member',
     'Thailand',
     'professional',

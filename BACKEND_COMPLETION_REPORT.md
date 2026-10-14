@@ -66,7 +66,7 @@
    - `sendCampaignEmails()` - ส่ง campaign พร้อม progress tracking
    - `generateEmailTemplate()` - สร้าง HTML email template
    - `verifyResendApiKey()` - ตรวจสอบ API key
-   - ✅ **API Key เพิ่มแล้ว**: `re_FUsaQACZ_3eJAXncUPt1hTpV7qs3Nyfq7`
+   - ✅ **API Key เพิ่มแล้ว**: `RESEND_API_KEY=<redacted>`
 
 3. ✅ **API Endpoints**:
    - `/app/api/broadcast/route.ts` - CRUD campaigns
@@ -160,7 +160,7 @@
 
 ### API Key:
 ```
-RESEND_API_KEY=re_FUsaQACZ_3eJAXncUPt1hTpV7qs3Nyfq7
+RESEND_API_KEY=RESEND_API_KEY=<redacted>
 RESEND_FROM_EMAIL=noreply@efsw.org
 ```
 
@@ -253,7 +253,7 @@ https://vercel.com/eurasiaforumsw-4090/eurasia.webapp/settings/environment-varia
 
 เพิ่ม:
 ```
-RESEND_API_KEY=re_FUsaQACZ_3eJAXncUPt1hTpV7qs3Nyfq7
+RESEND_API_KEY=RESEND_API_KEY=<redacted>
 RESEND_FROM_EMAIL=noreply@efsw.org
 ```
 

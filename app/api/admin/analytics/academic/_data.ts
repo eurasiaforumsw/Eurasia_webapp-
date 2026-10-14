@@ -1,4 +1,4 @@
-import { supabaseAdmin } from "@/lib/supabase";
+import { db } from "@/lib/db";
 import { analyticsRows } from "../_shared";
 
 type EventRow = { content_id: string; visitor_id: string; event_type: "view" | "download" | "like" };
@@ -11,7 +11,7 @@ export async function academicEngagement(ids: string[], visitorId?: string) {
   // Small batches keep the PostgREST URL below proxy length limits.
   for (let offset = 0; offset < ids.length; offset += 100) {
     const batch = ids.slice(offset, offset + 100);
-    const events = await analyticsRows<EventRow>(() => supabaseAdmin.from("academic_document_engagement")
+    const events = await analyticsRows<EventRow>(() => db.from("academic_document_engagement")
       .select("content_id, visitor_id, event_type").in("content_id", batch).order("id"), "Academic engagement");
     events.forEach((event) => {
       const stat = stats[event.content_id];

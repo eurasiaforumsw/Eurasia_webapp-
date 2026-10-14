@@ -61,7 +61,7 @@
 
 1. เปิด SQL Editor:
    ```
-   https://supabase.com/dashboard/project/nhehjnosjzdczgpjvnmy/sql/new
+   Neon SQL client (use DATABASE_URL)
    ```
 
 2. Copy-paste และรัน 2 ไฟล์นี้ทีละไฟล์:
@@ -98,18 +98,18 @@
 
 ```bash
 # Supabase
-NEXT_PUBLIC_SUPABASE_URL=https://nhehjnosjzdczgpjvnmy.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGci...
-SUPABASE_SERVICE_ROLE_KEY=eyJhbGci...
+Legacy Supabase variable removed
+Legacy Supabase variable removed
+Legacy Supabase variable removed
 
 # JWT Secret
-JWT_SECRET=your-secret-key-change-in-production
+JWT_SECRET=<set a fresh value in Vercel>
 
 # Admin Password (bcrypt hash)
-ADMIN_PASSWORD_HASH=$2b$12$GflQX7mzcuA5pXFp6QCl/eMSZobd/.nGjLpC3IuCxEiUPsjUlkumC
+ADMIN_PASSWORD_HASH=<set a fresh bcrypt hash in Vercel>
 
 # Email (Resend)
-RESEND_API_KEY=re_...
+RESEND_API_KEY=<set in Vercel; never commit>
 RESEND_FROM_EMAIL=noreply@yourdomain.com
 NEXT_PUBLIC_SITE_URL=https://eurasiawebapp.vercel.app
 ```
@@ -136,7 +136,7 @@ https://vercel.com/eurasiaforumsw-4090/eurasia.webapp/settings/environment-varia
 4. ✅ แชร์ → track ทุก platform (Facebook, LINE, Kakao, WhatsApp, Telegram, Email, Copy)
 
 ### Admin Flow
-1. ✅ Login ด้วย admin@efsw.local / EFSW-demo-admin-2024
+1. ✅ Login ด้วย admin@efsw.local / <configured-admin-password>
 2. ✅ จัดการ members, content, broadcasts
 
 ---

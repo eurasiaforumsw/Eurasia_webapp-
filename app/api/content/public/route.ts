@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { db } from "@/lib/db";
+import { canReadContent, contentViewer } from "@/lib/content-access";
 import type { CoverImageCrop } from "@/lib/admin-data";
 
 export const runtime = "nodejs";
@@ -89,63 +90,27 @@ function payloadFromRow(row: ContentRow) {
   };
 }
 
-function isAudienceMatch(
-  row: ContentRow,
-  viewerMembershipType: string | null,
-  viewerGroups: string[],
-): boolean {
-  const mems = row.target_membership_types ?? [];
-  const groups = row.target_groups ?? [];
-  if (mems.length === 0 && groups.length === 0) return true;
-  if (mems.length > 0) {
-    if (!viewerMembershipType) return false;
-    if (!mems.includes(viewerMembershipType)) return false;
-  }
-  if (groups.length > 0) {
-    if (viewerGroups.length === 0) return false;
-    const hasOverlap = viewerGroups.some((g) => groups.includes(g));
-    if (!hasOverlap) return false;
-  }
-  return true;
-}
-
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    let query = supabase.from("content").select("*").eq("status", "published");
 
     const kind = searchParams.get("kind");
-    if (kind) query = query.eq("kind", kind);
     const slug = searchParams.get("slug");
-    if (slug) query = query.eq("id", slug);
+    const viewer = await contentViewer(req);
 
-    const viewerMembershipType = searchParams.get("membership");
-    const viewerGroupsParam = searchParams.get("groups");
-    const viewerGroups = viewerGroupsParam ? viewerGroupsParam.split(",").filter(Boolean) : [];
+    let contentQuery = db
+      .from("content")
+      .select("*")
+      .eq("status", "published");
+    if (kind) contentQuery = contentQuery.eq("kind", kind);
+    if (slug) contentQuery = contentQuery.eq("id", slug);
+    const { data, error } = await contentQuery.order("updated_at", { ascending: false });
 
-    const { data, error } = await query.order("updated_at", { ascending: false });
     if (error) throw error;
 
-    const now = Date.now();
     const items = (data ?? [])
-      .map((row: ContentRow) => ({ row, payload: payloadFromRow(row) }))
-      // Filter by display window — items outside their window never ship
-      .filter(({ payload }) => {
-        if (payload.publishAt && Date.parse(payload.publishAt) > now) return false;
-        if (payload.expiresAt && Date.parse(payload.expiresAt) < now) return false;
-        return true;
-      })
-      // Filter by audience — unless the viewer explicitly asks to see
-      // everything (`viewerMembershipType` empty + no `groups`).
-      .filter(({ row }) => {
-        if (!viewerMembershipType && viewerGroups.length === 0) {
-          const mems = row.target_membership_types ?? [];
-          const groups = row.target_groups ?? [];
-          return mems.length === 0 && groups.length === 0;
-        }
-        return isAudienceMatch(row, viewerMembershipType, viewerGroups);
-      })
-      .map(({ payload }) => payload);
+      .filter((row: ContentRow) => canReadContent(row, viewer, false))
+      .map((row: ContentRow) => payloadFromRow(row));
 
     return NextResponse.json({ items });
   } catch (err: any) {

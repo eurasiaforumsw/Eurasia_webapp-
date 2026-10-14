@@ -22,12 +22,14 @@ const database = {
     const query = { select() { return query; }, eq() { return query; }, order() { return query; },
       maybeSingle() { return Promise.resolve({ data: { id: 'susp_text-id' }, error: null }); },
       single() { return query.maybeSingle(); },
+      execute() { return Promise.resolve({ data: [], error: null }); },
       then(yes, no) { return Promise.resolve({ data: [], error: null }).then(yes, no); },
     };
     return query;
   },
 };
 require.cache[path.join(root, 'lib/supabase.ts')] = { exports: { supabaseAdmin: database } };
+require.cache[path.join(root, 'lib/db.ts')] = { exports: { db: database, query: async () => ({ rows: [], rowCount: 0 }) } };
 const { NextRequest } = require('next/server');
 const { SignJWT } = require('jose');
 const admin = require('../app/api/admin/suspensions/route.ts');

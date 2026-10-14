@@ -25,14 +25,18 @@ const BLANK_LEADER: AdminLeaderProfile = {
 };
 
 export const LeaderEditorModal = memo(function LeaderEditorModal({
-  initialLeader,
   isOpen,
+  ...props
+}: LeaderEditorModalProps) {
+  return isOpen ? <LeaderEditorForm key={props.initialLeader?.id || "new"} {...props} /> : null;
+});
+
+function LeaderEditorForm({
+  initialLeader,
   onClose,
   onSave,
   onDelete,
-}: LeaderEditorModalProps) {
-  if (!isOpen) return null;
-
+}: Omit<LeaderEditorModalProps, "isOpen">) {
   const [formData, setFormData] = useState<AdminLeaderProfile>(initialLeader || BLANK_LEADER);
   const [specInput, setSpecInput] = useState(
     initialLeader?.specializations ? initialLeader.specializations.join(", ") : ""
@@ -237,4 +241,4 @@ export const LeaderEditorModal = memo(function LeaderEditorModal({
       </div>
     </div>
   );
-});
+}

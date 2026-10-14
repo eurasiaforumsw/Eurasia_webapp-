@@ -31,7 +31,7 @@ export function AcademicFileUploader({
   const [success, setSuccess] = useState(false);
 
   const allowedTypes = ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"];
-  const maxSize = 4 * 1024 * 1024;
+  const maxSize = 20 * 1024 * 1024;
 
   const validateFile = (file: File): boolean => {
     if (!allowedTypes.includes(file.type)) {
@@ -112,7 +112,7 @@ export function AcademicFileUploader({
     <div className="academic-file-uploader">
       <div className="academic-file-uploader__label">
         <strong>Academic Document File</strong>
-        <span className="academic-file-uploader__hint">PDF or Word document (max 4 MB). Use a hosted URL for larger files.</span>
+        <span className="academic-file-uploader__hint">PDF or Word document (max 20 MB).</span>
       </div>
 
       {currentFile?.fileUrl ? (
