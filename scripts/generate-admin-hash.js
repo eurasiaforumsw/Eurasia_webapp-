@@ -4,7 +4,8 @@
  * Admin Password Hash Generator
  *
  * This script generates a bcrypt hash for the admin password.
- * The hash should be stored in your .env file as ADMIN_PASSWORD_HASH.
+ * The hash should be stored in .env.local as ADMIN_PASSWORD_HASH, with each
+ * dollar sign escaped as \$ so Next.js does not expand it as an environment variable.
  *
  * Usage:
  *   node scripts/generate-admin-hash.js "YourSecurePassword"
@@ -12,7 +13,7 @@
  *
  * After generating the hash:
  * 1. Add to .env.local:
- *    ADMIN_PASSWORD_HASH=<generated_hash>
+ *    ADMIN_PASSWORD_HASH="<generated_hash_with_escaped_dollar_signs>"
  * 2. Remove NEXT_PUBLIC_ADMIN_PASSWORD (if exists)
  * 3. Restart your dev server
  */
@@ -35,11 +36,12 @@ async function generateHash(password) {
   console.log('\n🔐 Generating bcrypt hash...\n');
 
   const hash = await bcrypt.hash(password, SALT_ROUNDS);
+  const escapedHash = hash.replace(/\$/g, '\\$');
 
   console.log('✅ Hash generated successfully!\n');
   console.log('━'.repeat(80));
   console.log('\n📋 Add this to your .env.local file:\n');
-  console.log(`ADMIN_PASSWORD_HASH="${hash}"\n`);
+  console.log(`ADMIN_PASSWORD_HASH="${escapedHash}"\n`);
   console.log('━'.repeat(80));
   console.log('\n📝 Next steps:');
   console.log('  1. Copy the line above to .env.local');

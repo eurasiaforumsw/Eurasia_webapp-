@@ -50,6 +50,17 @@ branch to GitHub to trigger Vercel. Check the deployment against that commit.
 Use existing configured Supabase, R2 and JWT environment variables. Broadcast
 delivery also requires `RESEND_API_KEY` and a verified `RESEND_FROM_EMAIL`.
 
+Admin sign-in at `/admin/login` checks `ADMIN_PASSWORD_HASH` from the deployment
+environment; member sign-in at `/member/login` checks the account in `members`.
+Updating a local `.env.local` file does not update either production credential.
+For admin sign-in, configure a private bcrypt hash and a strong `JWT_SECRET` in
+the hosting project's Production environment, set `NEXT_PUBLIC_APP_URL` to the
+actual HTTPS origin, and redeploy after changing these values. Production rejects
+the known shared admin hash with `Server configuration error`.
+Use `node scripts/generate-admin-hash.js` to generate a hash: its output escapes
+`$` as `\$` for Next.js `.env` files. When entering the hash directly in a hosting
+environment dashboard, remove those backslashes and use the raw bcrypt value.
+
 Production checks still required:
 
 - Sign in with an administrator and with restricted console roles.
